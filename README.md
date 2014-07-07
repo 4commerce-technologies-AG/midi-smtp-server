@@ -93,8 +93,6 @@ BEGIN {
       # Output for debug
       puts "#{Time.now}: MySmtpServer stopped!"
     end
-    # check to shutdown Bunny connection
-    server 
     # Output for debug
     puts "#{Time.now}: MySmtpServer down!"
   }
