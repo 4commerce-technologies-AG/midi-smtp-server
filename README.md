@@ -146,6 +146,12 @@ So you can build SPAM protection, when raising exception while getting `RCPT TO`
   end
 ```
 
+You are able to use exceptions on any level of events, so for an example you could raise an exception on `on_message_data_event` if you checked attachments for a pdf-document and fail or so on.
+
+In case of exceptions, the remote client is noticed about its false transport.
+
+_Currently we are only sending success or ONE false code corresponding to the SMTP state._
+
 
 ## Access to server values and context
 
