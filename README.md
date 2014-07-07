@@ -94,7 +94,7 @@ BEGIN {
       puts "#{Time.now}: MySmtpServer stopped!"
     end
     # check to shutdown Bunny connection
-    server && server.bunny_stop 
+    server 
     # Output for debug
     puts "#{Time.now}: MySmtpServer down!"
   }
