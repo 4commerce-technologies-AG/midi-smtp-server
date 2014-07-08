@@ -101,11 +101,11 @@ BEGIN {
 
 ## Installation
 
-In near future we will packaged MidiSmtpServer as a RubyGem so that you can easily install by entering following at your command line:
+MidiSmtpServer is packaged as a RubyGem so that you can easily install by entering following at your command line:
 
   `gem install midi-smtp-server`
-  
-Currently, please checkout the lib/midi-smtp-server.rb file and require it by your project source
+
+Use the component in your project sources by:
 
   `require 'midi-smtp-server'`
 
@@ -197,10 +197,15 @@ We created a SMTP-Server e.g. to receive messages vie SMTP and store them to Rab
 ```
 
 
+### Package
+
+You can find, use and download the gem package from [RubyGems.org](http://rubygems.org/gems/midi-smtp-server)
+
+
 ### Author & Credits
 
 Author: [Tom Freudenberg](http://about.me/tom.freudenberg)
 
-MiniSmtpServer is inspired from [mini-smtp-server](https://github.com/aarongough/mini-smtp-server) and code originally written by [Aaron Gough](https://github.com/aarongough) and [Peter Cooper](http://peterc.org/)
+MidiSmtpServer Class is inspired from [MiniSmtpServer Class](https://github.com/aarongough/mini-smtp-server) and code originally written by [Aaron Gough](https://github.com/aarongough) and [Peter Cooper](http://peterc.org/)
 
 Copyright (c) 2014 [Tom Freudenberg](http://www.4commerce.de/), [4commerce technologies AG](http://www.4commerce.de/), released under the MIT license
