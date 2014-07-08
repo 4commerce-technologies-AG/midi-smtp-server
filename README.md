@@ -197,7 +197,7 @@ We created a SMTP-Server e.g. to receive messages vie SMTP and store them to Rab
 ```
 
 
-### Package
+## Package
 
 You can find, use and download the gem package from [RubyGems.org](http://rubygems.org/gems/midi-smtp-server)
 
