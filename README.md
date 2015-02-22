@@ -65,6 +65,9 @@ puts "#{Time.now}: Starting MySmtpServer..."
 # and accepting a maximum of 5 simultaneous connections
 server = MySmtpServer.new
 
+# Enable logging
+server.audit = true
+
 # Start the server
 server.start
 
@@ -142,15 +145,54 @@ So you can build SPAM protection, when raising exception while getting `RCPT TO`
 ```ruby
   # get each address send in RCPT TO:
   def on_rcpt_to_event(rcpt_to_data, ctx)
-    raise "This address ist not allowed" if rcpt_to_data == "not.name@domain.con"
+    raise MidiSmtpServer550Exception if rcpt_to_data == "not.name@domain.con"
   end
 ```
 
-You are able to use exceptions on any level of events, so for an example you could raise an exception on `on_message_data_event` if you checked attachments for a pdf-document and fail or so on.
+You are able to use exceptions on any level of events, so for an example you could raise an exception on `on_message_data_event` if you checked attachments for a pdf-document and fail or so on. If you use the defined `MidiSmtpServer???Exception` classes the remote client get's correct SMTP Server results. For logging purpose the default Exception.message is written to log.
 
-In case of exceptions, the remote client is noticed about its false transport.
+Please check RFC821 for correct response dialog sequences:
 
-_Currently we are only sending success or ONE false code corresponding to the SMTP state._
+```
+COMMAND-REPLY SEQUENCES
+
+   Each command is listed with its possible replies.  The prefixes
+   used before the possible replies are "P" for preliminary (not
+   used in SMTP), "I" for intermediate, "S" for success, "F" for
+   failure, and "E" for error.  The 421 reply (service not
+   available, closing transmission channel) may be given to any
+   command if the SMTP-receiver knows it must shut down.  This
+   listing forms the basis for the State Diagrams in Section 4.4.
+
+CONNECTION ESTABLISHMENT
+   S: 220
+   F: 421
+HELO
+   S: 250
+   E: 500, 501, 504, 421
+MAIL
+   S: 250
+   F: 552, 451, 452
+   E: 500, 501, 421
+RCPT
+   S: 250, 251
+   F: 550, 551, 552, 553, 450, 451, 452
+   E: 500, 501, 503, 421
+DATA
+   I: 354 -> data -> S: 250
+                     F: 552, 554, 451, 452
+   F: 451, 554
+   E: 500, 501, 503, 421
+RSET
+   S: 250
+   E: 500, 501, 504, 421
+NOOP
+   S: 250
+   E: 500, 421
+QUIT
+   S: 221
+   E: 500
+```
 
 
 ## Access to server values and context
@@ -208,4 +250,4 @@ Author: [Tom Freudenberg](http://about.me/tom.freudenberg)
 
 MidiSmtpServer Class is inspired from [MiniSmtpServer Class](https://github.com/aarongough/mini-smtp-server) and code originally written by [Aaron Gough](https://github.com/aarongough) and [Peter Cooper](http://peterc.org/)
 
-Copyright (c) 2014 [Tom Freudenberg](http://www.4commerce.de/), [4commerce technologies AG](http://www.4commerce.de/), released under the MIT license
+Copyright (c) 2014-2015 [Tom Freudenberg](http://www.4commerce.de/), [4commerce technologies AG](http://www.4commerce.de/), released under the MIT license

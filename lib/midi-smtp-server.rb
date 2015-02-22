@@ -1,5 +1,6 @@
 require 'gserver'
 
+# class for SmtpServer
 class MidiSmtpServer < GServer
 
   def initialize(port = 2525, host = "127.0.0.1", max_connections = 4, do_smtp_server_reverse_lookup = true, *args)
@@ -27,21 +28,48 @@ class MidiSmtpServer < GServer
     begin
       loop do
         if IO.select([io], nil, nil, 0.1)
+
+          # read and handle input
           data = io.readline
           log("<<< " + data) if(@audit)
-          output = process_line(data)
-          log(">>> " + output) if(@audit && !output.empty?)
-          io.print(output) unless output.empty?
+
+          # process commands and handle special MidiSmtpServerExceptions
+          begin
+            output = process_line(data)
+
+          # defined MidiSmtpServerException
+          rescue MidiSmtpServerException => e
+            # log error info if logging
+            log("!!! EXCEPTION: #{e}\n") if (@audit)
+            # get the given smtp dialog result
+            output = "#{e.smtp_server_result}"
+
+          # Unknown general Exception during processing
+          rescue Exception => e
+            # log error info if logging
+            log("!!! EXCEPTION: #{e}\n") if (@audit)
+            # set default smtp server dialog error
+            output = "#{MidiSmtpServer500Exception.new.smtp_server_result}"
+          end
+
+          # check result
+          if not output.empty?
+            # log smtp dialog // message data is stored separate
+            log(">>> #{output}\n") if(@audit)
+            # smtp dialog response
+            io.print("#{output}\r\n")
+          end
+
         end
+        # check for valid quit or broken communication
         break if (Thread.current[:cmd_sequence] == :CMD_QUIT) || io.closed?
       end
       # graceful end of connection
       io.print "221 Service closing transmission channel\r\n"
 
     rescue Exception => e
-
       # power down connection
-      io.print "421 Service not available, closing transmission channel\r\n"
+      io.print "#{MidiSmtpServer421Exception.new}\r\n"
     end
 
     # always gracefully shutdown connection
@@ -55,65 +83,49 @@ class MidiSmtpServer < GServer
       # Handle specific messages from the client
       case line
       
-      when (/^(HELO|EHLO)/i)
-        # HELO
+      when (/^(HELO|EHLO)(\s+.*)?$/i)
+        # HELO/EHLO
         # 250 Requested mail action okay, completed
+        # 421 <domain> Service not available, closing transmission channel
         # 500 Syntax error, command unrecognised
         # 501 Syntax error in parameters or arguments
         # 504 Command parameter not implemented
         # 521 <domain> does not accept mail [rfc1846]
-        # 421 <domain> Service not available, closing transmission channel
-        # EHLO
-        # 250 Requested mail action okay, completed
-        # 550 Not implemented
-        # 500 Syntax error, command unrecognised
-        # 501 Syntax error in parameters or arguments
-        # 504 Command parameter not implemented
-        # 421 <domain> Service not available, closing transmission channel
         # ---------
         # check valid command sequence
-        if Thread.current[:cmd_sequence] != :CMD_HELO
-          return "503 Bad sequence of commands\r\n"
-        end
+        raise MidiSmtpServer503Exception if Thread.current[:cmd_sequence] != :CMD_HELO
         # handle command
         @cmd_data = line.gsub(/^(HELO|EHLO)\ /i, '').strip
         # call event to handle data
-        begin
-          on_helo_event(@cmd_data, Thread.current[:ctx])
-          # if no error raised, append to message hash
-          Thread.current[:ctx][:server][:helo] = @cmd_data
-          # set sequence state as RSET
-          Thread.current[:cmd_sequence] = :CMD_RSET
-          # reply ok
-          return "250 OK\r\n"
-        rescue Exception => e
-          # something was not correct
-          return "501 #{e.message}"
-        end
+        on_helo_event(@cmd_data, Thread.current[:ctx])
+        # if no error raised, append to message hash
+        Thread.current[:ctx][:server][:helo] = @cmd_data
+        # set sequence state as RSET
+        Thread.current[:cmd_sequence] = :CMD_RSET
+        # reply ok
+        return "250 OK"
 
-      when (/^NOOP/i)
+      when (/^NOOP\s*$/i)
         # NOOP
         # 250 Requested mail action okay, completed
-        # 500 Syntax error, command unrecognised
         # 421 <domain> Service not available, closing transmission channel
-        return "250 OK\r\n"
+        # 500 Syntax error, command unrecognised
+        return "250 OK"
       
-      when (/^RSET/i)
+      when (/^RSET\s*$/i)
         # RSET
         # 250 Requested mail action okay, completed
+        # 421 <domain> Service not available, closing transmission channel
         # 500 Syntax error, command unrecognised
         # 501 Syntax error in parameters or arguments
-        # 421 <domain> Service not available, closing transmission channel
         # ---------
         # check valid command sequence
-        if Thread.current[:cmd_sequence] == :CMD_HELO
-          return "503 Bad sequence of commands\r\n"
-        end
+        raise MidiSmtpServer503Exception if Thread.current[:cmd_sequence] == :CMD_HELO
         # handle command
         reset_message
-        return "250 OK\r\n"
+        return "250 OK"
       
-      when (/^QUIT/i)
+      when (/^QUIT\s*$/i)
         # QUIT
         # 221 <domain> Service closing transmission channel
         # 500 Syntax error, command unrecognised
@@ -123,41 +135,31 @@ class MidiSmtpServer < GServer
       when (/^MAIL FROM\:/i)
         # MAIL
         # 250 Requested mail action okay, completed
-        # 552 Requested mail action aborted: exceeded storage allocation
+        # 421 <domain> Service not available, closing transmission channel
         # 451 Requested action aborted: local error in processing
         # 452 Requested action not taken: insufficient system storage
         # 500 Syntax error, command unrecognised
         # 501 Syntax error in parameters or arguments
-        # 421 <domain> Service not available, closing transmission channel
+        # 552 Requested mail action aborted: exceeded storage allocation
         # ---------
         # check valid command sequence
-        if Thread.current[:cmd_sequence] != :CMD_RSET
-          return "503 Bad sequence of commands\r\n"
-        end
+        raise MidiSmtpServer503Exception if Thread.current[:cmd_sequence] != :CMD_RSET
         # handle command
         @cmd_data = line.gsub(/^MAIL FROM\:/i, '').strip
         # call event to handle data
-        begin
-          on_mail_from_event(@cmd_data, Thread.current[:ctx])
-          # if no error raised, append to message hash
-          Thread.current[:ctx][:envelope][:from] = @cmd_data
-          # set sequence state
-          Thread.current[:cmd_sequence] = :CMD_MAIL
-          # reply ok
-          return "250 OK\r\n"
-        rescue Exception => e
-          # something was not correct
-          return "451 #{e.message}"
-        end
+        on_mail_from_event(@cmd_data, Thread.current[:ctx])
+        # if no error raised, append to message hash
+        Thread.current[:ctx][:envelope][:from] = @cmd_data
+        # set sequence state
+        Thread.current[:cmd_sequence] = :CMD_MAIL
+        # reply ok
+        return "250 OK"
       
       when (/^RCPT TO\:/i)
         # RCPT
         # 250 Requested mail action okay, completed
         # 251 User not local; will forward to <forward-path>
-        # 550 Requested action not taken: mailbox unavailable
-        # 551 User not local; please try <forward-path>
-        # 552 Requested mail action aborted: exceeded storage allocation
-        # 553 Requested action not taken: mailbox name not allowed
+        # 421 <domain> Service not available, closing transmission channel
         # 450 Requested mail action not taken: mailbox unavailable
         # 451 Requested action aborted: local error in processing
         # 452 Requested action not taken: insufficient system storage
@@ -165,57 +167,50 @@ class MidiSmtpServer < GServer
         # 501 Syntax error in parameters or arguments
         # 503 Bad sequence of commands
         # 521 <domain> does not accept mail [rfc1846]
-        # 421 <domain> Service not available, closing transmission channel
+        # 550 Requested action not taken: mailbox unavailable
+        # 551 User not local; please try <forward-path>
+        # 552 Requested mail action aborted: exceeded storage allocation
+        # 553 Requested action not taken: mailbox name not allowed
         # ---------
         # check valid command sequence
-        if ![ :CMD_MAIL, :CMD_RCPT ].include?(Thread.current[:cmd_sequence])
-          return "503 Bad sequence of commands\r\n"
-        end
+        raise MidiSmtpServer503Exception if ![ :CMD_MAIL, :CMD_RCPT ].include?(Thread.current[:cmd_sequence])
         # handle command
         @cmd_data = line.gsub(/^RCPT TO\:/i, '').strip
         # call event to handle data
-        begin
-          on_rcpt_to_event(@cmd_data, Thread.current[:ctx])
-          # if no error raised, append to message hash
-          Thread.current[:ctx][:envelope][:to] << @cmd_data
-          # set sequence state
-          Thread.current[:cmd_sequence] = :CMD_RCPT
-          # reply ok
-          return "250 OK\r\n"
-        rescue Exception => e
-          # something was not correct
-          return "521 #{e.message}"
-        end
+        on_rcpt_to_event(@cmd_data, Thread.current[:ctx])
+        # if no error raised, append to message hash
+        Thread.current[:ctx][:envelope][:to] << @cmd_data
+        # set sequence state
+        Thread.current[:cmd_sequence] = :CMD_RCPT
+        # reply ok
+        return "250 OK"
       
-      when (/^DATA/i)
+      when (/^DATA\s*$/i)
         # DATA
         # 354 Start mail input; end with <CRLF>.<CRLF>
-        # 451 Requested action aborted: local error in processing
-        # 500 Syntax error, command unrecognised
-        # 501 Syntax error in parameters or arguments
-        # 503 Bad sequence of commands
         # 250 Requested mail action okay, completed
-        # 552 Requested mail action aborted: exceeded storage allocation
-        # 554 Transaction failed
         # 421 <domain> Service not available, closing transmission channel received data
         # 451 Requested action aborted: local error in processing
         # 452 Requested action not taken: insufficient system storage
+        # 500 Syntax error, command unrecognised
+        # 501 Syntax error in parameters or arguments
+        # 503 Bad sequence of commands
+        # 552 Requested mail action aborted: exceeded storage allocation
+        # 554 Transaction failed
         # ---------
         # check valid command sequence
-        if Thread.current[:cmd_sequence] != :CMD_RCPT
-          return "503 Bad sequence of commands\r\n"
-        end
+        raise MidiSmtpServer503Exception if Thread.current[:cmd_sequence] != :CMD_RCPT
         # handle command
         # set sequence state
         Thread.current[:cmd_sequence] = :CMD_DATA
         # reply ok / proceed with message data
-        return "354 Enter message, ending with \".\" on a line by itself\r\n"
+        return "354 Enter message, ending with \".\" on a line by itself"
       
       else
         # If we somehow get to this point then
         # we have encountered an error
-        return "500 Syntax error, command unrecognised\r\n"
-    
+        raise MidiSmtpServer500Exception
+
     end
       
     else
@@ -230,9 +225,18 @@ class MidiSmtpServer < GServer
         # call event
         begin
           on_message_data_event(Thread.current[:ctx])
-          return "250 Requested mail action okay, completed\r\n"
-        rescue
-          return "451 Requested action aborted: local error in processing\r\n"
+          return "250 Requested mail action okay, completed"
+        
+        # test for MidiSmtpServerException 
+        rescue MidiSmtpServerException
+          # just re-raise exception set by app
+          raise
+        
+        # test all other Exceptions
+        rescue Exception => e
+          # send correct aborted message to smtp dialog
+          raise MidiSmtpServer451Exception.new("#{e}")
+
         ensure
           # always start with empty values after finishing incoming message
           # and rset command sequence
@@ -302,4 +306,141 @@ class MidiSmtpServer < GServer
     })
   end
 
+end
+
+### EXCEPTION Classes ----------
+
+# generic smtp server exception class
+class MidiSmtpServerException < Exception
+
+  attr_reader :smtp_server_return_code
+  attr_reader :smtp_server_return_text
+
+  def initialize(msg = nil, smtp_server_return_code, smtp_server_return_text)
+    # save reference for smtp dialog
+    @smtp_server_return_code = smtp_server_return_code
+    @smtp_server_return_text = smtp_server_return_text
+    # call inherited constructor
+    super msg
+  end
+
+  def smtp_server_result
+    return "#{@smtp_server_return_code} #{@smtp_server_return_text}"
+  end
+  
+end
+
+# 421 <domain> Service not available, closing transmission channel
+class MidiSmtpServer421Exception < MidiSmtpServerException
+  def initialize(msg = nil)
+    # call inherited constructor
+    super msg, 421, "Service not available, closing transmission channel"
+  end
+end
+
+# 450 Requested mail action not taken: mailbox unavailable
+#     e.g. mailbox busy
+class MidiSmtpServer450Exception < MidiSmtpServerException
+  def initialize(msg = nil)
+    # call inherited constructor
+    super msg, 450, "Requested mail action not taken: mailbox unavailable"
+  end
+end
+
+# 451 Requested action aborted: local error in processing
+class MidiSmtpServer451Exception < MidiSmtpServerException
+  def initialize(msg = nil)
+    # call inherited constructor
+    super msg, 451, "Requested action aborted: local error in processing"
+  end
+end
+
+# 452 Requested action not taken: insufficient system storage
+class MidiSmtpServer452Exception < MidiSmtpServerException
+  def initialize(msg = nil)
+    # call inherited constructor
+    super msg, 452, "Requested action not taken: insufficient system storage"
+  end
+end
+
+# 500 Syntax error, command unrecognised or error in parameters or arguments.
+#     This may include errors such as command line too long
+class MidiSmtpServer500Exception < MidiSmtpServerException
+  def initialize(msg = nil)
+    # call inherited constructor
+    super msg, 500, "Syntax error, command unrecognised or error in parameters or arguments"
+  end
+end
+
+# 501 Syntax error in parameters or arguments
+class MidiSmtpServer501Exception < MidiSmtpServerException
+  def initialize(msg = nil)
+    # call inherited constructor
+    super msg, 501, "Syntax error in parameters or arguments"
+  end
+end
+
+# 502 Command not implemented
+class MidiSmtpServer502Exception < MidiSmtpServerException
+  def initialize(msg = nil)
+    # call inherited constructor
+    super msg, 502, "Command not implemented"
+  end
+end
+
+# 503 Bad sequence of commands
+class MidiSmtpServer503Exception < MidiSmtpServerException
+  def initialize(msg = nil)
+    # call inherited constructor
+    super msg, 503, "Bad sequence of commands"
+  end
+end
+
+# 504 Command parameter not implemented
+class MidiSmtpServer504Exception < MidiSmtpServerException
+  def initialize(msg = nil)
+    # call inherited constructor
+    super msg, 504, "Command parameter not implemented"
+  end
+end
+
+# 521 <domain> does not accept mail [rfc1846]
+class MidiSmtpServer521Exception < MidiSmtpServerException
+  def initialize(msg = nil)
+    # call inherited constructor
+    super msg, 521, "Service does not accept mail"
+  end
+end
+
+# 550 Requested action not taken: mailbox unavailable
+#     e.g. mailbox not found, no access
+class MidiSmtpServer550Exception < MidiSmtpServerException
+  def initialize(msg = nil)
+    # call inherited constructor
+    super msg, 550, "Requested action not taken: mailbox unavailable"
+  end
+end
+
+# 552 Requested mail action aborted: exceeded storage allocation
+class MidiSmtpServer552Exception < MidiSmtpServerException
+  def initialize(msg = nil)
+    # call inherited constructor
+    super msg, 552, "Requested mail action aborted: exceeded storage allocation"
+  end
+end
+
+# 553 Requested action not taken: mailbox name not allowed
+class MidiSmtpServer553Exception < MidiSmtpServerException
+  def initialize(msg = nil)
+    # call inherited constructor
+    super msg, 553, "Requested action not taken: mailbox name not allowed"
+  end
+end
+
+# 554 Transaction failed        
+class MidiSmtpServer554Exception < MidiSmtpServerException
+  def initialize(msg = nil)
+    # call inherited constructor
+    super msg, 554, "Transaction failed"
+  end
 end
