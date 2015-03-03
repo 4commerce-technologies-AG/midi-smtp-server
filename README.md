@@ -243,6 +243,8 @@ We created a SMTP-Server e.g. to receive messages vie SMTP and store them to Rab
 
 You can find, use and download the gem package from [RubyGems.org](http://rubygems.org/gems/midi-smtp-server)
 
+[![Gem Version](https://badge.fury.io/rb/midi-smtp-server.svg)](http://badge.fury.io/rb/midi-smtp-server)
+
 
 ### Author & Credits
 
