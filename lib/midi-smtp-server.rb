@@ -12,6 +12,24 @@ class MidiSmtpServer < GServer
     @do_smtp_server_reverse_lookup = do_smtp_server_reverse_lookup
   end
   
+  # get event on HELO:
+  def on_helo_event(helo_data, ctx)
+  end
+
+  # get address send in MAIL FROM:
+  def on_mail_from_event(mail_from_data, ctx)
+  end
+
+  # get each address send in RCPT TO:
+  def on_rcpt_to_event(rcpt_to_data, ctx)
+  end
+
+  # get each message after DATA <message> .
+  def on_message_data_event(ctx)
+  end
+
+  private
+
   def serve(io)
     # ON CONNECTION
     # 220 <domain> Service ready
@@ -254,24 +272,6 @@ class MidiSmtpServer < GServer
 
     end
   end
-
-  # get event on HELO:
-  def on_helo_event(helo_data, ctx)
-  end
-
-  # get address send in MAIL FROM:
-  def on_mail_from_event(mail_from_data, ctx)
-  end
-
-  # get each address send in RCPT TO:
-  def on_rcpt_to_event(rcpt_to_data, ctx)
-  end
-
-  # get each message after DATA <message> .
-  def on_message_data_event(ctx)
-  end
-
-  private
 
   def reset_message(connection_initialize = false)
     # set active command sequence info
