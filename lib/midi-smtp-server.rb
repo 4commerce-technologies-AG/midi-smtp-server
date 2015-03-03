@@ -69,7 +69,7 @@ class MidiSmtpServer < GServer
 
     rescue Exception => e
       # power down connection
-      io.print "#{MidiSmtpServer421Exception.new}\r\n"
+      io.print "#{MidiSmtpServer421Exception.new.smtp_server_result}\r\n"
     end
 
     # always gracefully shutdown connection
