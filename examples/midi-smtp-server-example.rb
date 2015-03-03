@@ -56,7 +56,7 @@ puts "#{Time.now}: Starting MySmtpServer..."
 # and accepting a maximum of 5 simultaneous connections
 server = MySmtpServer.new
 
-# we want io-logging enabled
+# we want smtp-server-dialog-logging enabled
 server.audit = true
 
 # Start the server

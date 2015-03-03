@@ -49,7 +49,7 @@ class MidiSmtpServer < GServer
 
           # read and handle input
           data = io.readline
-          log("<<< " + data) if(@audit)
+          log("<<< " + data) if(@audit) && ((Thread.current[:cmd_sequence] != :CMD_DATA) || @debug)
 
           # process commands and handle special MidiSmtpServerExceptions
           begin
