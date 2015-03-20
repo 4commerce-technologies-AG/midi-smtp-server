@@ -163,13 +163,19 @@ To make it easier for processing addresses, you are able to normalize them like:
   # simple rewrite and return value
   def on_mail_from_event(mail_from_data, ctx)
     # strip and normalize addresses like: <path> to path
-    mail_from_data.gsub!(/^\s*<\s*(.*)\s*>\s*$/, '\1').downcase!
+    mail_from_data.gsub!(/^\s*<\s*(.*)\s*>\s*$/, '\1')
+    # we believe in downcased addresses
+    mail_from_data.downcase!
+    # return address
+    return mail_from_data
   end
 
   # rewrite, process more checks and return value
   def on_rcpt_to_event(rcpt_to_data, ctx)
     # strip and normalize addresses like: <path> to path
-    rcpt_to_data.gsub!(/^\s*<\s*(.*)\s*>\s*$/, '\1').downcase!
+    rcpt_to_data.gsub!(/^\s*<\s*(.*)\s*>\s*$/, '\1')
+    # we believe in downcased addresses
+    rcpt_to_data.downcase!
     # Output for debug
     puts "Normalized to: [#{rcpt_to_data}]..." 
     # return address
