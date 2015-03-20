@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
   s.name        = 'midi-smtp-server'
-  s.version     = '1.1.3'
-  s.date        = '2015-03-03'
+  s.version     = '1.1.4'
+  s.date        = '2015-03-20'
   s.summary     = "MidiSmtpServer Class"
   s.description = "A small and highly customizable ruby SMTP-Server."
   s.authors     = ["Tom Freudenberg"]

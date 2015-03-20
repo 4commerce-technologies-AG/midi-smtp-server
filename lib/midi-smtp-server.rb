@@ -12,15 +12,27 @@ class MidiSmtpServer < GServer
     @do_smtp_server_reverse_lookup = do_smtp_server_reverse_lookup
   end
   
+  # get event on CONNECTION
+  def on_connect_event(ctx)
+  end
+
+  # get event before DISONNECT
+  def on_disconnect_event(ctx)
+  end
+
   # get event on HELO:
   def on_helo_event(helo_data, ctx)
   end
 
   # get address send in MAIL FROM:
+  # if any value returned, that will be used for ongoing processing
+  # otherwise the original value will be used 
   def on_mail_from_event(mail_from_data, ctx)
   end
 
   # get each address send in RCPT TO:
+  # if any value returned, that will be used for ongoing processing
+  # otherwise the original value will be used 
   def on_rcpt_to_event(rcpt_to_data, ctx)
   end
 
@@ -36,58 +48,72 @@ class MidiSmtpServer < GServer
     # 421 <domain> Service not available, closing transmission channel
     # Reset and initialize message
     reset_message(true)
-    # get local address info
-    _, Thread.current[:ctx][:server][:local_port], Thread.current[:ctx][:server][:local_host], Thread.current[:ctx][:server][:local_ip] = @do_smtp_server_reverse_lookup ? io.addr(:hostname) : io.addr(:numeric)
-    # get remote partner hostname and address
-    _, Thread.current[:ctx][:server][:remote_port], Thread.current[:ctx][:server][:remote_host], Thread.current[:ctx][:server][:remote_ip] = @do_smtp_server_reverse_lookup ? io.peeraddr(:hostname) : io.peeraddr(:numeric)
-    # reply welcome
-    io.print "220 #{Thread.current[:ctx][:server][:local_host]} says welcome!\r\n"
-    # while data handle communication
+    # do not let break this service by exception
     begin
-      loop do
-        if IO.select([io], nil, nil, 0.1)
+      # get local address info
+      _, Thread.current[:ctx][:server][:local_port], Thread.current[:ctx][:server][:local_host], Thread.current[:ctx][:server][:local_ip] = @do_smtp_server_reverse_lookup ? io.addr(:hostname) : io.addr(:numeric)
+      # get remote partner hostname and address
+      _, Thread.current[:ctx][:server][:remote_port], Thread.current[:ctx][:server][:remote_host], Thread.current[:ctx][:server][:remote_ip] = @do_smtp_server_reverse_lookup ? io.peeraddr(:hostname) : io.peeraddr(:numeric)
+      # check if we want to let this remote station connect us
+      on_connect_event(Thread.current[:ctx])
+      # reply welcome
+      io.print "220 #{Thread.current[:ctx][:server][:local_host]} says welcome!\r\n"
+      # while data handle communication
+      begin
+        loop do
+          if IO.select([io], nil, nil, 0.1)
 
-          # read and handle input
-          data = io.readline
-          log("<<< " + data) if(@audit) && ((Thread.current[:cmd_sequence] != :CMD_DATA) || @debug)
+            # read and handle input
+            data = io.readline
+            log("<<< " + data) if(@audit) && ((Thread.current[:cmd_sequence] != :CMD_DATA) || @debug)
 
-          # process commands and handle special MidiSmtpServerExceptions
-          begin
-            output = process_line(data)
+            # process commands and handle special MidiSmtpServerExceptions
+            begin
+              output = process_line(data)
 
-          # defined MidiSmtpServerException
-          rescue MidiSmtpServerException => e
-            # log error info if logging
-            log("!!! EXCEPTION: #{e}\n") if (@audit)
-            # get the given smtp dialog result
-            output = "#{e.smtp_server_result}"
+            # defined MidiSmtpServerException
+            rescue MidiSmtpServerException => e
+              # log error info if logging
+              log("!!! EXCEPTION: #{e}\n") if (@audit)
+              # get the given smtp dialog result
+              output = "#{e.smtp_server_result}"
 
-          # Unknown general Exception during processing
-          rescue Exception => e
-            # log error info if logging
-            log("!!! EXCEPTION: #{e}\n") if (@audit)
-            # set default smtp server dialog error
-            output = "#{MidiSmtpServer500Exception.new.smtp_server_result}"
+            # Unknown general Exception during processing
+            rescue Exception => e
+              # log error info if logging
+              log("!!! EXCEPTION: #{e}\n") if (@audit)
+              # set default smtp server dialog error
+              output = "#{MidiSmtpServer500Exception.new.smtp_server_result}"
+            end
+
+            # check result
+            if not output.empty?
+              # log smtp dialog // message data is stored separate
+              log(">>> #{output}\n") if(@audit)
+              # smtp dialog response
+              io.print("#{output}\r\n")
+            end
+
           end
-
-          # check result
-          if not output.empty?
-            # log smtp dialog // message data is stored separate
-            log(">>> #{output}\n") if(@audit)
-            # smtp dialog response
-            io.print("#{output}\r\n")
-          end
-
+          # check for valid quit or broken communication
+          break if (Thread.current[:cmd_sequence] == :CMD_QUIT) || io.closed?
         end
-        # check for valid quit or broken communication
-        break if (Thread.current[:cmd_sequence] == :CMD_QUIT) || io.closed?
+        # graceful end of connection
+        io.print "221 Service closing transmission channel\r\n"
+
+      rescue Exception => e
+        # log error info if logging
+        log("!!! EXCEPTION: #{e}\n") if (@audit)
+        # power down connection
+        io.print "#{MidiSmtpServer421Exception.new.smtp_server_result}\r\n"
       end
-      # graceful end of connection
-      io.print "221 Service closing transmission channel\r\n"
+
+      # event for cleanup at end of communication
+      on_disconnect_event(Thread.current[:ctx])
 
     rescue Exception => e
-      # power down connection
-      io.print "#{MidiSmtpServer421Exception.new.smtp_server_result}\r\n"
+      # log error info about connection failure if logging
+      log("!!! EXCEPTION: #{e}\n") if (@audit)
     end
 
     # always gracefully shutdown connection
@@ -165,7 +191,10 @@ class MidiSmtpServer < GServer
         # handle command
         @cmd_data = line.gsub(/^MAIL FROM\:/i, '').strip
         # call event to handle data
-        on_mail_from_event(@cmd_data, Thread.current[:ctx])
+        if return_value = on_mail_from_event(@cmd_data, Thread.current[:ctx])
+          # overwrite data with returned value
+          @cmd_data = return_value
+        end
         # if no error raised, append to message hash
         Thread.current[:ctx][:envelope][:from] = @cmd_data
         # set sequence state
@@ -195,7 +224,10 @@ class MidiSmtpServer < GServer
         # handle command
         @cmd_data = line.gsub(/^RCPT TO\:/i, '').strip
         # call event to handle data
-        on_rcpt_to_event(@cmd_data, Thread.current[:ctx])
+        if return_value = on_rcpt_to_event(@cmd_data, Thread.current[:ctx])
+          # overwrite data with returned value
+          @cmd_data = return_value
+        end
         # if no error raised, append to message hash
         Thread.current[:ctx][:envelope][:to] << @cmd_data
         # set sequence state

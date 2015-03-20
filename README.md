@@ -118,15 +118,27 @@ Use the component in your project sources by:
 MidiSmtpServer can be easy customized via subclassing. Simply subclass the `MidiSmtpServer` class as given in the example above and re-define event handlers:
 
 ```ruby
+  # get event on CONNECTION
+  def on_connect_event(ctx)
+  end
+
+  # get event before DISONNECT
+  def on_disconnect_event(ctx)
+  end
+
   # get event on HELO:
   def on_helo_event(helo_data, ctx)
   end
 
   # get address send in MAIL FROM:
+  # if any value returned, that will be used for ongoing processing
+  # otherwise the original value will be used 
   def on_mail_from_event(mail_from_data, ctx)
   end
 
   # get each address send in RCPT TO:
+  # if any value returned, that will be used for ongoing processing
+  # otherwise the original value will be used 
   def on_rcpt_to_event(rcpt_to_data, ctx)
   end
 
@@ -135,6 +147,35 @@ MidiSmtpServer can be easy customized via subclassing. Simply subclass the `Midi
   end
 ```
 
+## Modifying MAIL FROM and RCPT TO addresses
+
+Since release `1.1.4` the `on_mail_from_event` and `on_rcpt_to_event` allows to return values that should be added to the lists. This is useful if you want to e.g. normalize all incoming addresses. Format defined by RFC for `<path>` as a `MAIL FROM` or `RCPT TO` addresses is:
+
+```
+  "<" | <path> | ">"
+```
+
+Most of the mail servers today allows also `<path>` only given addresses without leading and ending `< >`.
+
+To make it easier for processing addresses, you are able to normalize them like:
+
+```ruby
+  # simple rewrite and return value
+  def on_mail_from_event(mail_from_data, ctx)
+    # strip and normalize addresses like: <path> to path
+    mail_from_data.gsub!(/^\s*<\s*(.*)\s*>\s*$/, '\1').downcase!
+  end
+
+  # rewrite, process more checks and return value
+  def on_rcpt_to_event(rcpt_to_data, ctx)
+    # strip and normalize addresses like: <path> to path
+    rcpt_to_data.gsub!(/^\s*<\s*(.*)\s*>\s*$/, '\1').downcase!
+    # Output for debug
+    puts "Normalized to: [#{rcpt_to_data}]..." 
+    # return address
+    return rcpt_to_data
+  end
+```
 
 ## Responding with errors on special conditions
 
@@ -250,6 +291,6 @@ You can find, use and download the gem package from [RubyGems.org](http://rubyge
 
 Author: [Tom Freudenberg](http://about.me/tom.freudenberg)
 
-MidiSmtpServer Class is inspired from [MiniSmtpServer Class](https://github.com/aarongough/mini-smtp-server) and code originally written by [Aaron Gough](https://github.com/aarongough) and [Peter Cooper](http://peterc.org/)
+[MidiSmtpServer Class](https://github.com/4commerce-technologies-AG/midi-smtp-server/) is inspired from [MiniSmtpServer Class](https://github.com/aarongough/mini-smtp-server) and code originally written by [Aaron Gough](https://github.com/aarongough) and [Peter Cooper](http://peterc.org/)
 
 Copyright (c) 2014-2015 [Tom Freudenberg](http://www.4commerce.de/), [4commerce technologies AG](http://www.4commerce.de/), released under the MIT license
