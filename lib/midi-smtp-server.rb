@@ -99,13 +99,18 @@ class MidiSmtpServer < GServer
           break if (Thread.current[:cmd_sequence] == :CMD_QUIT) || io.closed?
         end
         # graceful end of connection
-        io.print "221 Service closing transmission channel\r\n"
+        io.print "221 Service closing transmission channel\r\n" unless io.closed?
+
+      # connection was simply closed / aborted by remote closing socket
+      rescue EOFError
+        # log info but only while debugging otherwise ignore message
+        log("!!! EXCEPTION: EOFError - Connection lost due abort by client!\n") if (@debug)
 
       rescue Exception => e
         # log error info if logging
         log("!!! EXCEPTION: #{e}\n") if (@audit)
         # power down connection
-        io.print "#{MidiSmtpServer421Exception.new.smtp_server_result}\r\n"
+        io.print "#{MidiSmtpServer421Exception.new.smtp_server_result}\r\n" unless io.closed?
       end
 
       # event for cleanup at end of communication
