@@ -1,5 +1,6 @@
 require 'socket'
 require 'thread'
+require 'base64'
 
 module MidiSmtpServer
 
@@ -98,6 +99,7 @@ module MidiSmtpServer
       BasicSocket.do_not_reverse_lookup = true
       # save flag if this smtp server should do reverse lookups
       @do_dns_reverse_lookup = opts.include?(:do_dns_reverse_lookup) ? opts[:do_dns_reverse_lookup] : true
+      @users = make_users(opts[:users_path]) unless opts[:users_path] == nil
     end
     
     # get event on CONNECTION
@@ -349,6 +351,21 @@ module MidiSmtpServer
           # reply ok / proceed with message data
           return "354 Enter message, ending with \".\" on a line by itself"
         
+        when (/^AUTH/i)
+          # NOOP
+          # 250 Requested mail action okay, completed
+          # 421 <domain> Service not available, closing transmission channel
+          # 500 Syntax error, command unrecognised
+          splits = Base64.decode64(line[/AUTH PLAIN (.*)/,1]).split("\x00")
+          username = splits[1]
+          password = splits[2]
+          if(@users[username] == password)
+            Thread.current[:ctx][:is_authenticated] = true
+            return "235 Authentication Succeeded"
+          else
+            raise Smtpd535Exception
+          end
+        
         else
           # If we somehow get to this point then
           # we have encountered an error
@@ -509,6 +526,17 @@ module MidiSmtpServer
       self
     end
 
+    def make_users(users_path)
+      f = File.open(users_path, "r")
+      lines = f.readlines
+      ret = {}
+      lines.each do |line|
+        splits = line.split
+        ret[splits[0]] = splits[1]
+      end
+      return ret
+    end
+
   end
 
   # generic smtp server exception class
@@ -610,6 +638,12 @@ module MidiSmtpServer
     def initialize(msg = nil)
       # call inherited constructor
       super msg, 521, "Service does not accept mail"
+    end
+  end
+
+  class Smtpd535Exception < SmtpdException
+    def initialize(msg = nil)
+      super msg, 535, "Authentication credentials invalid"
     end
   end
 
