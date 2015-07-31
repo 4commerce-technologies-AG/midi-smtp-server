@@ -1,16 +1,23 @@
 require 'socket'
 require 'thread'
+require 'base64'
 
 module MidiSmtpServer
+
+  # default values
+  DEFAULT_SMTPD_HOST = "127.0.0.1"
+  DEFAULT_SMTPD_PORT = 2525
+  DEFAULT_SMTPD_MAX_CONNECTIONS = 4
+
+  # Authentification modes
+  AUTH_MODES = [ :AUTH_FORBIDDEN, :AUTH_OPTIONAL, :AUTH_REQUIRED ].freeze
 
   # class for SmtpServer
   class Smtpd
 
   public
 
-    DEFAULT_SMTPD_HOST = "127.0.0.1"
-    DEFAULT_SMTPD_PORT = 2525
-
+    # connection management
     @@services = {}   # Hash of opened ports, i.e. services
     @@servicesMutex = Mutex.new
 
@@ -70,13 +77,21 @@ module MidiSmtpServer
     attr_reader :host
     # Maximum number of connections to accept at a time, as a Fixnum
     attr_reader :maxConnections
+    # Authentification mode
+    attr_reader :auth_mode
 
     # logging object, may be overrriden by special loggers like YELL or others
-    @logger
     attr_reader :logger
 
-    # class constructor
-    def initialize(port = DEFAULT_SMTPD_PORT, host = DEFAULT_SMTPD_HOST, max_connections = 4, opts = {})
+    # Initialize SMTP Server class
+    # 
+    # +port+:: port to listen on
+    # +host+:: interface ip to listen on
+    # +max_connections+:: maximum number of simultaneous connections
+    # +opts+:: optional settings
+    # +opts.do_dns_reverse_lookup+:: flag if this smtp server should do reverse lookups on incoming connections
+    # +opts.logger+:: own logger class, otherwise default logger is created
+    def initialize(port = DEFAULT_SMTPD_PORT, host = DEFAULT_SMTPD_HOST, max_connections = DEFAULT_SMTPD_MAX_CONNECTIONS, opts = {})
       # logging
       if opts.include?(:logger)
         @logger = opts[:logger]
@@ -98,6 +113,9 @@ module MidiSmtpServer
       BasicSocket.do_not_reverse_lookup = true
       # save flag if this smtp server should do reverse lookups
       @do_dns_reverse_lookup = opts.include?(:do_dns_reverse_lookup) ? opts[:do_dns_reverse_lookup] : true
+      # check for authentification
+      @auth_mode = opts.include?(:auth_mode) ? opts[:auth_mode] : :AUTH_FORBIDDEN
+      raise "Unknown authentification mode #{@auth_mode} was given by opts!" unless AUTH_MODES.include?(@auth_mode)
     end
     
     # get event on CONNECTION
@@ -112,6 +130,16 @@ module MidiSmtpServer
 
     # get event on HELO:
     def on_helo_event(ctx, helo_data)
+    end
+
+    # check the authentification
+    # if any value returned, that will be used for ongoing processing
+    # otherwise the original value will be used for authorization_id
+    def on_auth_event(ctx, authorization_id, authentication_id, authentication)
+      # if authentification is used, override this event
+      # and implement your own user management.
+      # otherwise all authentifications are blocked per default
+      raise Smtpd535Exception
     end
 
     # get address send in MAIL FROM:
@@ -214,8 +242,23 @@ module MidiSmtpServer
     end
 
     def process_line(line)
-      # check wether in data or command mode
-      if Thread.current[:cmd_sequence] != :CMD_DATA
+      # check whether in auth challenge modes
+      if Thread.current[:cmd_sequence] == :CMD_AUTH_PLAIN_VALUES
+        # handle authentication
+        process_auth_plain(line)
+      
+      # check whether in auth challenge modes
+      elsif Thread.current[:cmd_sequence] == :CMD_AUTH_LOGIN_USER
+        # handle authentication
+        process_auth_login_user(line)
+      
+      # check whether in auth challenge modes
+      elsif Thread.current[:cmd_sequence] == :CMD_AUTH_LOGIN_PASS
+        # handle authentication
+        process_auth_login_pass(line)
+
+      # check whether in data or command mode
+      elsif Thread.current[:cmd_sequence] != :CMD_DATA
 
         # Handle specific messages from the client
         case line
@@ -241,6 +284,66 @@ module MidiSmtpServer
           Thread.current[:cmd_sequence] = :CMD_RSET
           # reply ok
           return "250 OK"
+
+        when (/^AUTH(\s+)((LOGIN|PLAIN)(\s+[A-Z0-9=]+)?|CRAM-MD5)\s*$/i)
+          # AUTH
+          # 235 Authentication Succeeded
+          # 432 A password transition is needed
+          # 454 Temporary authentication failure
+          # 500 Authentication Exchange line is too long
+          # 530 Authentication required
+          # 534 Authentication mechanism is too weak
+          # 535 Authentication credentials invalid
+          # 538 Encryption required for requested authentication mechanism
+          # ---------
+          # check that authentication is enabled
+          raise Smtpd503Exception if @auth_mode == :AUTH_FORBIDDEN
+          # check valid command sequence
+          raise Smtpd503Exception if Thread.current[:cmd_sequence] != :CMD_RSET
+          # check that not already authenticated
+          raise Smtpd503Exception if Thread.current[:ctx][:server][:authenticated] != ""
+          # handle command line
+          @auth_data = line.gsub(/^AUTH\ /i, '').strip.gsub(/\s+/, ' ').split(' ')
+          # handle auth command
+          case @auth_data[0]
+
+            when (/PLAIN/i)
+              # check if only command was given
+              if @auth_data.length == 1
+                # set sequence for next command input
+                Thread.current[:cmd_sequence] = :CMD_AUTH_PLAIN_VALUES
+                # response code include post ending with a space
+                return "334 "
+              else
+                # handle authentication with given auth_id and password
+                process_auth_plain( (@auth_data.length == 2) ? @auth_data[1] : [] )
+              end
+
+            when (/LOGIN/i)
+              # check if auth_id was sent too
+              if @auth_data.length == 1
+                # reset auth_challenge
+                Thread.current[:auth_challenge] = {}
+                # set sequence for next command input
+                Thread.current[:cmd_sequence] = :CMD_AUTH_LOGIN_USER
+                # response code with request for Username
+                return "334 " + Base64.strict_encode64("Username:")
+              elsif @auth_data.length == 2
+                # handle next sequence
+                process_auth_login_user(@auth_data[1])
+              else
+                raise Smtpd500Exception
+              end
+
+            when (/CRAM-MD5/i)
+              # not yet supported
+              raise Smtpd500Exception
+
+            else
+              # unknown auth method
+              raise Smtpd500Exception
+
+          end
 
         when (/^NOOP\s*$/i)
           # NOOP
@@ -281,6 +384,8 @@ module MidiSmtpServer
           # ---------
           # check valid command sequence
           raise Smtpd503Exception if Thread.current[:cmd_sequence] != :CMD_RSET
+          # check that authentication is enabled
+          raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && Thread.current[:ctx][:server][:authenticated] == ""
           # handle command
           @cmd_data = line.gsub(/^MAIL FROM\:/i, '').strip
           # call event to handle data
@@ -314,6 +419,8 @@ module MidiSmtpServer
           # ---------
           # check valid command sequence
           raise Smtpd503Exception if ![ :CMD_MAIL, :CMD_RCPT ].include?(Thread.current[:cmd_sequence])
+          # check that authentication is enabled
+          raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && Thread.current[:ctx][:server][:authenticated] == ""
           # handle command
           @cmd_data = line.gsub(/^RCPT TO\:/i, '').strip
           # call event to handle data
@@ -343,6 +450,8 @@ module MidiSmtpServer
           # ---------
           # check valid command sequence
           raise Smtpd503Exception if Thread.current[:cmd_sequence] != :CMD_RCPT
+          # check that authentication is enabled
+          raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && Thread.current[:ctx][:server][:authenticated] == ""
           # handle command
           # set sequence state
           Thread.current[:cmd_sequence] = :CMD_DATA
@@ -406,6 +515,8 @@ module MidiSmtpServer
     def reset_ctx(connection_initialize = false)
       # set active command sequence info
       Thread.current[:cmd_sequence] = connection_initialize ? :CMD_HELO : :CMD_RSET
+      # drop any auth challenge
+      Thread.current[:auth_challenge] = {}
       # test existing of :ctx hash
       Thread.current[:ctx] || Thread.current[:ctx] = {}
       # reset server values (only on connection start)
@@ -420,7 +531,10 @@ module MidiSmtpServer
             :remote_ip => "",
             :remote_port => "",
             :helo => "",
-            :connected => ""
+            :connected => "",
+            :authorization_id => "",
+            :authentication_id => "",
+            :authenticated => ""
           }
         })
       end
@@ -439,6 +553,72 @@ module MidiSmtpServer
           :data => ""
         }
       })
+    end
+
+    # handle plain authentification
+    def process_auth_plain(encoded_auth_response)
+      begin
+        # extract auth id (and password)
+        @auth_values = Base64.decode64(encoded_auth_response).split("\x00")
+        # check for valid credentials
+        if @auth_values.length == 3
+          if return_value = on_auth_event(Thread.current[:ctx], @auth_values[0], @auth_values[1], @auth_values[2])
+            # overwrite data with returned value as authorization id
+            @auth_values[0] = return_value
+          end
+          # save authentication information to ctx
+          Thread.current[:ctx][:server][:authorization_id] = (@auth_values[0] == "") ? @auth_values[1] : @auth_values[0]
+          Thread.current[:ctx][:server][:authentication_id] = @auth_values[1]
+          Thread.current[:ctx][:server][:authenticated] = Time.now.utc
+          # response code
+          return "235 OK"
+        else
+          # return error
+          raise Smtpd500Exception
+        end
+
+      ensure
+        # whatever happens in this check, reset next sequence
+        Thread.current[:cmd_sequence] = :CMD_RSET
+      end
+    end
+
+    def process_auth_login_user(encoded_auth_response)
+      # save challenged auth_id
+      Thread.current[:auth_challenge][:authorization_id] = Base64.decode64(encoded_auth_response)
+      Thread.current[:auth_challenge][:authentication_id] = Base64.decode64(encoded_auth_response)
+      # set sequence for next command input
+      Thread.current[:cmd_sequence] = :CMD_AUTH_LOGIN_PASS
+      # response code with request for Password
+      return "334 " + Base64.strict_encode64("Password:")
+    end
+
+    def process_auth_login_pass(encoded_auth_response)
+      begin
+        # extract auth id (and password)
+        @auth_values = [
+          Thread.current[:auth_challenge][:authorization_id],
+          Thread.current[:auth_challenge][:authentication_id],
+          Base64.decode64(encoded_auth_response)
+        ]
+        # check for valid credentials
+        if return_value = on_auth_event(Thread.current[:ctx], @auth_values[0], @auth_values[1], @auth_values[2])
+          # overwrite data with returned value as authorization id
+          @auth_values[0] = return_value
+        end
+        # save authentication information to ctx
+        Thread.current[:ctx][:server][:authorization_id] = @auth_values[0]
+        Thread.current[:ctx][:server][:authentication_id] = @auth_values[1]
+        Thread.current[:ctx][:server][:authenticated] = Time.now.utc
+        # response code
+        return "235 OK"
+
+      ensure
+        # whatever happens in this check, reset next sequence
+        Thread.current[:cmd_sequence] = :CMD_RSET
+        # and reset auth_challenge
+        Thread.current[:auth_challenge] = {}
+      end
     end
 
     # Start the server if it isn't already running
@@ -643,6 +823,56 @@ module MidiSmtpServer
     def initialize(msg = nil)
       # call inherited constructor
       super msg, 554, "Transaction failed"
+    end
+  end
+
+  # Status when using authentication
+
+  # 432 Password transition is needed        
+  class Smtpd432Exception < SmtpdException
+    def initialize(msg = nil)
+      # call inherited constructor
+      super msg, 432, "Password transition is needed"
+    end
+  end
+
+  # 454 Temporary authentication failure       
+  class Smtpd454Exception < SmtpdException
+    def initialize(msg = nil)
+      # call inherited constructor
+      super msg, 454, "Temporary authentication failure"
+    end
+  end
+
+  # 530 Authentication required       
+  class Smtpd530Exception < SmtpdException
+    def initialize(msg = nil)
+      # call inherited constructor
+      super msg, 530, "Authentication required"
+    end
+  end
+
+  # 534 Authentication mechanism is too weak       
+  class Smtpd534Exception < SmtpdException
+    def initialize(msg = nil)
+      # call inherited constructor
+      super msg, 534, "Authentication mechanism is too weak"
+    end
+  end
+
+  # 535 Authentication credentials invalid       
+  class Smtpd535Exception < SmtpdException
+    def initialize(msg = nil)
+      # call inherited constructor
+      super msg, 535, "Authentication credentials invalid"
+    end
+  end
+
+  # 538 Encryption required for requested authentication mechanism       
+  class Smtpd538Exception < SmtpdException
+    def initialize(msg = nil)
+      # call inherited constructor
+      super msg, 538, "Encryption required for requested authentication mechanism"
     end
   end
 
