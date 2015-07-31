@@ -40,15 +40,12 @@ end
 # Output for debug
 puts "#{Time.now}: Starting MySmtpd..."
 
-# Create a new server instance listening at all interfaces *:2525
+# Create a new server instance listening at localhost interfaces 127.0.0.1:2525
 # and accepting a maximum of 4 simultaneous connections
 server = MySmtpd.new
 
 # Start the server
 server.start
-
-# wait a second
-sleep 1
 
 # Run on server forever
 server.join
@@ -128,7 +125,7 @@ Since release `1.1.4` the `on_mail_from_event` and `on_rcpt_to_event` allows to 
   "<" | <path> | ">"
 ```
 
-Most of the mail servers today allows also `<path>` only given addresses without leading and ending `< >`.
+Most mail servers allows also `<path>` only given addresses without leading and ending `< >`.
 
 To make it easier for processing addresses, you are able to normalize them like:
 
@@ -157,6 +154,70 @@ To make it easier for processing addresses, you are able to normalize them like:
 ```
 
 
+## Authentication support
+
+There is built-in authentication support for `AUTH LOGIN` and `AUTH PLAIN` since release `2.1.0`. If you want to enable authentication you have to set the appropriate value to `auth_mode` opts.
+
+Allowed values are:
+
+```ruby
+# no authentication is allowed (mostly for internal services)
+opts = { auth_mode: AUTH_FORBIDDEN }
+
+# authentication is optional (you may grant higher possibilities if authenticated)
+opts = { auth_mode: AUTH_OPTIONAL }
+
+# session must be authenticated before service may be used for mail transport
+opts = { auth_mode: AUTH_REQUIRED }
+```
+
+You may initialize your server class like:
+
+```ruby
+server = MySmtpd.new(2525, '127.0.0.1', 4, { auth_mode: :AUTH_REQUIRED })
+```
+
+If you have enabled authentication you should provide your own user and access methods to grant access to your server. The default event method will deny all access per default.
+
+Your own server class should implement the `on_auth_event`:
+
+```ruby
+# check the authentification
+# if any value returned, that will be used for ongoing processing
+# otherwise the original value will be used for authorization_id
+def on_auth_event(ctx, authorization_id, authentication_id, authentication)
+  if authentication_id == "test" && authentication == "demo"
+    return authentication_id
+  else
+    raise Smtpd535Exception
+  end
+end
+```
+
+Most of the time the `authorization_id` field will be empty. It allows optional (like described in [RFC 4954](http://www.ietf.org/rfc/rfc4954.txt)) to define an _authorization role_ which will be used, when the _authentication id_ has successfully entered. So the `authorization_id` is a request to become a role after authentication. In case that the `authorization_id` is empty it is supposed to be the same as the `authentication_id`.
+
+We suggest you to return the `authentication_id` on a successful auth event if you do not have special interests on other usage.
+
+
+## Authentication status in mixed mode
+
+If you have enabled optional authentication like described before, you may access helpers and values from context `ctx` while processing events to check the status of currents session authentication.
+
+```ruby
+def on_rcpt_to_event(ctx, rcpt_to_data)
+  # check if this session was authenticated already
+  if authenticated?(ctx)
+    # yes
+    puts "Proceed with authorized id: #{ctx[:server][:authorization_id]}"
+    puts "and authentication id: #{ctx[:server][:authentication_id]}"
+  else
+    # no
+    puts "Proceed with anonymoous credentials"
+  end
+end
+```
+
+
 ## Responding with errors on special conditions
 
 If you return from event class without an exception, the server will respond to client with the appropriate success code, otherwise the client will be noticed about an error.
@@ -165,14 +226,14 @@ So you can build SPAM protection, when raising exception while getting `RCPT TO`
 
 ```ruby
   # get each address send in RCPT TO:
-  def on_rcpt_to_event(rcpt_to_data, ctx)
+  def on_rcpt_to_event(ctx, rcpt_to_data)
     raise MidiSmtpServer::Smtpd550Exception if rcpt_to_data == "not.name@domain.con"
   end
 ```
 
 You are able to use exceptions on any level of events, so for an example you could raise an exception on `on_message_data_event` if you checked attachments for a pdf-document and fail or so on. If you use the defined `MidiSmtpServer::Smtpd???Exception` classes the remote client get's correct SMTP Server results. For logging purpose the default Exception.message is written to log.
 
-Please check RFC821 for correct response dialog sequences:
+Please check RFC821 and additional for correct response dialog sequences:
 
 ```
 COMMAND-REPLY SEQUENCES
@@ -213,6 +274,10 @@ NOOP
 QUIT
    S: 221
    E: 500
+AUTH
+   S: 235
+   F: 530, 534, 535, 454
+   E: 500, 421
 ```
 
 
@@ -236,6 +301,13 @@ You can access some important client and server values by using the `ctx` array 
 
   # connection timestampe
   ctx[:server][:connected]
+
+  # authentification infos
+  ctx[:server][:authorization_id]
+  ctx[:server][:authentication_id]
+
+  # successful authentication timestamp
+  ctx[:server][:authenticated]
   
   # envelope mail from
   ctx[:envelope][:from]
@@ -266,12 +338,22 @@ We created a SMTP-Server e.g. to receive messages vie SMTP and store them to Rab
 ```
 
 
+## MidiSmtpServer::Smtpd Class documentation
+
+You will find a detailed description of class methods and parameters at [RubyDoc](http://www.rubydoc.info/gems/midi-smtp-server/MidiSmtpServer/Smtpd)
+
+
 ## New to version 2.x
 
 1. Modulelized  
 2. Removed dependency to GServer  
 3. Additional events to interact with
 4. Use logger to log several messages from severity :debug up to :fatal 
+
+## New to version 2.1
+
+1. Authentication PLAIN, LOGIN
+2. Safe `join` will catch and rescue `Interrupt`
 
 
 ## From version 1.x to 2.x
@@ -363,6 +445,8 @@ If you are already using MidiSmtpServer at a release 1.x it might be only some s
 ## Package
 
 You can find, use and download the gem package from [RubyGems.org](http://rubygems.org/gems/midi-smtp-server)
+
+You can find the full documentation on [RubyDoc.info](http://www.rubydoc.info/gems/midi-smtp-server/MidiSmtpServer)
 
 [![Gem Version](https://badge.fury.io/rb/midi-smtp-server.svg)](http://badge.fury.io/rb/midi-smtp-server)
 

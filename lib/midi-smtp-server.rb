@@ -22,9 +22,6 @@ module MidiSmtpServer
     @@servicesMutex = Mutex.new
 
     # Stop the server running on the given port, bound to the given host
-    #
-    # +port+:: port, as a Fixnum, of the server to stop
-    # +host+:: host on which to find the server to stop
     def Smtpd.stop(port = DEFAULT_SMTPD_PORT, host = DEFAULT_SMTPD_HOST)
       @@servicesMutex.synchronize {
         @@services[host][port].stop
@@ -32,10 +29,6 @@ module MidiSmtpServer
     end
 
     # Check if a server is running on the given port and host
-    #
-    # +port+:: port, as a Fixnum, of the server to check
-    # +host+:: host on which to find the server to check
-    #
     # Returns true if a server is running on that port and host.
     def Smtpd.in_service?(port = DEFAULT_SMTPD_PORT, host = DEFAULT_SMTPD_HOST)
       @@services.has_key?(host) and
@@ -67,8 +60,20 @@ module MidiSmtpServer
     end
 
     # Join with the server thread
-    def join
-      @tcpServerThread.join if @tcpServerThread
+    # before joining the server wait a few seconds to let the service come up
+    def join(sleep_seconds_before_join = 1)
+      # check already started server
+      if @tcpServerThread
+        begin
+          # wait a second
+          sleep sleep_seconds_before_join
+          # join
+          @tcpServerThread.join
+
+        # catch ctrl-c to stop service
+        rescue Interrupt
+        end
+      end
     end
 
     # Port on which to listen, as a Fixnum
@@ -86,10 +91,11 @@ module MidiSmtpServer
     # Initialize SMTP Server class
     # 
     # +port+:: port to listen on
-    # +host+:: interface ip to listen on
+    # +host+:: interface ip to listen on or blank to listen on all interfaces
     # +max_connections+:: maximum number of simultaneous connections
     # +opts+:: optional settings
     # +opts.do_dns_reverse_lookup+:: flag if this smtp server should do reverse lookups on incoming connections
+    # +opts.auth_mode+:: enable builtin authentication support (:AUTH_FORBIDDEN, :AUTH_OPTIONAL, :AUTH_REQUIRED) 
     # +opts.logger+:: own logger class, otherwise default logger is created
     def initialize(port = DEFAULT_SMTPD_PORT, host = DEFAULT_SMTPD_HOST, max_connections = DEFAULT_SMTPD_MAX_CONNECTIONS, opts = {})
       # logging
@@ -132,7 +138,7 @@ module MidiSmtpServer
     def on_helo_event(ctx, helo_data)
     end
 
-    # check the authentification
+    # check the authentification on AUTH:
     # if any value returned, that will be used for ongoing processing
     # otherwise the original value will be used for authorization_id
     def on_auth_event(ctx, authorization_id, authentication_id, authentication)
@@ -140,6 +146,11 @@ module MidiSmtpServer
       # and implement your own user management.
       # otherwise all authentifications are blocked per default
       raise Smtpd535Exception
+    end
+
+    # check the status of authentication for a given context
+    def authenticated?(ctx)
+      ctx[:server][:authenticated] && !ctx[:server][:authenticated].to_s.empty?
     end
 
     # get address send in MAIL FROM:
@@ -301,7 +312,7 @@ module MidiSmtpServer
           # check valid command sequence
           raise Smtpd503Exception if Thread.current[:cmd_sequence] != :CMD_RSET
           # check that not already authenticated
-          raise Smtpd503Exception if Thread.current[:ctx][:server][:authenticated] != ""
+          raise Smtpd503Exception if authenticated?(Thread.current[:ctx])
           # handle command line
           @auth_data = line.gsub(/^AUTH\ /i, '').strip.gsub(/\s+/, ' ').split(' ')
           # handle auth command
@@ -385,7 +396,7 @@ module MidiSmtpServer
           # check valid command sequence
           raise Smtpd503Exception if Thread.current[:cmd_sequence] != :CMD_RSET
           # check that authentication is enabled
-          raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && Thread.current[:ctx][:server][:authenticated] == ""
+          raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(Thread.current[:ctx])
           # handle command
           @cmd_data = line.gsub(/^MAIL FROM\:/i, '').strip
           # call event to handle data
@@ -420,7 +431,7 @@ module MidiSmtpServer
           # check valid command sequence
           raise Smtpd503Exception if ![ :CMD_MAIL, :CMD_RCPT ].include?(Thread.current[:cmd_sequence])
           # check that authentication is enabled
-          raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && Thread.current[:ctx][:server][:authenticated] == ""
+          raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(Thread.current[:ctx])
           # handle command
           @cmd_data = line.gsub(/^RCPT TO\:/i, '').strip
           # call event to handle data
@@ -451,7 +462,7 @@ module MidiSmtpServer
           # check valid command sequence
           raise Smtpd503Exception if Thread.current[:cmd_sequence] != :CMD_RCPT
           # check that authentication is enabled
-          raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && Thread.current[:ctx][:server][:authenticated] == ""
+          raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(Thread.current[:ctx])
           # handle command
           # set sequence state
           Thread.current[:cmd_sequence] = :CMD_DATA
@@ -567,7 +578,7 @@ module MidiSmtpServer
             @auth_values[0] = return_value
           end
           # save authentication information to ctx
-          Thread.current[:ctx][:server][:authorization_id] = (@auth_values[0] == "") ? @auth_values[1] : @auth_values[0]
+          Thread.current[:ctx][:server][:authorization_id] = @auth_values[0].to_s.empty? ? @auth_values[1] : @auth_values[0]
           Thread.current[:ctx][:server][:authentication_id] = @auth_values[1]
           Thread.current[:ctx][:server][:authenticated] = Time.now.utc
           # response code
@@ -607,7 +618,7 @@ module MidiSmtpServer
           @auth_values[0] = return_value
         end
         # save authentication information to ctx
-        Thread.current[:ctx][:server][:authorization_id] = (@auth_values[0] == "") ? @auth_values[1] : @auth_values[0]
+        Thread.current[:ctx][:server][:authorization_id] = @auth_values[0].to_s.empty? ? @auth_values[1] : @auth_values[0]
         Thread.current[:ctx][:server][:authentication_id] = @auth_values[1]
         Thread.current[:ctx][:server][:authenticated] = Time.now.utc
         # response code
