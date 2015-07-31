@@ -585,7 +585,7 @@ module MidiSmtpServer
 
     def process_auth_login_user(encoded_auth_response)
       # save challenged auth_id
-      Thread.current[:auth_challenge][:authorization_id] = Base64.decode64(encoded_auth_response)
+      Thread.current[:auth_challenge][:authorization_id] = ""
       Thread.current[:auth_challenge][:authentication_id] = Base64.decode64(encoded_auth_response)
       # set sequence for next command input
       Thread.current[:cmd_sequence] = :CMD_AUTH_LOGIN_PASS
@@ -607,7 +607,7 @@ module MidiSmtpServer
           @auth_values[0] = return_value
         end
         # save authentication information to ctx
-        Thread.current[:ctx][:server][:authorization_id] = @auth_values[0]
+        Thread.current[:ctx][:server][:authorization_id] = (@auth_values[0] == "") ? @auth_values[1] : @auth_values[0]
         Thread.current[:ctx][:server][:authentication_id] = @auth_values[1]
         Thread.current[:ctx][:server][:authenticated] = Time.now.utc
         # response code
