@@ -293,8 +293,16 @@ module MidiSmtpServer
           Thread.current[:ctx][:server][:helo] = @cmd_data
           # set sequence state as RSET
           Thread.current[:cmd_sequence] = :CMD_RSET
-          # reply ok
-          return "250 OK"
+          # check whether to answer as HELO or EHLO
+          if line =~ /^EHLO/i
+            # reply supported extensions
+            return "250-8BITMIME\r\n" + 
+                   (@auth_mode != :AUTH_FORBIDDEN ? "250-AUTH LOGIN PLAIN\r\n" : "") +
+                   "250 OK"
+          else
+            # reply ok only
+            return "250 OK"
+          end
 
         when (/^AUTH(\s+)((LOGIN|PLAIN)(\s+[A-Z0-9=]+)?|CRAM-MD5)\s*$/i)
           # AUTH
