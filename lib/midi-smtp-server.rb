@@ -355,7 +355,10 @@ module MidiSmtpServer
               end
 
             when (/CRAM-MD5/i)
-              # not yet supported
+              # not supported in case of also unencrypted data delivery
+              # instead of supporting password encryption only, we will
+              # provide optional SMTPS service instead
+              # read discussion on https://github.com/4commerce-technologies-AG/midi-smtp-server/issues/3#issuecomment-126898711
               raise Smtpd500Exception
 
             else
