@@ -493,7 +493,7 @@ module MidiSmtpServer
         # are being told to exit data mode
         if (line.chomp =~ /^\.$/)
           # append last chars to message data
-          Thread.current[:ctx][:message][:data] += line
+          Thread.current[:ctx][:message][:data] << line
           # remove ending line .
           Thread.current[:ctx][:message][:data].gsub!(/\r\n\Z/, '').gsub!(/\.\Z/, '')
           # save delivered time
@@ -524,7 +524,7 @@ module MidiSmtpServer
         else
           # If we are in date mode then we need to add
           # the new data to the message
-          Thread.current[:ctx][:message][:data] += line
+          Thread.current[:ctx][:message][:data] << line
           return ""
           # command sequence state will stay on :CMD_DATA
 

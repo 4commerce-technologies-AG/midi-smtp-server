@@ -2,7 +2,7 @@
 
 MidiSmtpServer is a small and highly customizable ruby SMTP-Server inspired from the work and code written by [Aaron Gough](https://github.com/aarongough) and [Peter Cooper](http://peterc.org/). As a library it is mainly designed to be integrated into your projects as serving a SMTP-Server service. The lib will do nothing with your mail and you have to create your own event functions to handle and operate on incoming mails. We are using this in conjunction with [Mikel Lindsaar](https://github.com/mikel) great Mail component (https://github.com/mikel/mail). Time to run your own SMTP-Server service.
 
-With version 2.0 the library got a lot of improvements. I suggest everybody using MidiSmtpServer 1.x to switch to 2.x. You may follow the guide (see appendix) how to change your existing code to be compatible with the new release.
+With version 2.0 the library got a lot of improvements and on version 2.1.1 a significant speed improvement. I suggest everybody using MidiSmtpServer 1.x or 2.x to switch at least to 2.1.1. For upgrades from version 1.x you may follow the guide (see appendix) how to change your existing code to be compatible with the new release.
 
 
 ## Using the library
