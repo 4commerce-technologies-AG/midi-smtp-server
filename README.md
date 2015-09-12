@@ -95,7 +95,7 @@ MidiSmtpServer can be easy customized via subclassing. Simply subclass the `Midi
   def on_disconnect_event(ctx)
   end
 
-  # get event on HELO:
+  # get event on HELO/EHLO:
   def on_helo_event(ctx, helo_data)
   end
 
@@ -299,14 +299,14 @@ You can access some important client and server values by using the `ctx` array 
   ctx[:server][:remote_host]
   ctx[:server][:remote_port]
 
-  # connection timestampe
+  # connection timestamp (utc)
   ctx[:server][:connected]
 
   # authentification infos
   ctx[:server][:authorization_id]
   ctx[:server][:authentication_id]
 
-  # successful authentication timestamp
+  # successful authentication timestamp (utc)
   ctx[:server][:authenticated]
   
   # envelope mail from
@@ -315,9 +315,11 @@ You can access some important client and server values by using the `ctx` array 
   # envelope rcpt_to array
   ctx[:envelope][:to][0]
 
-  # access message in on_message_data_event
+  # timestamp (utc) when message data was completly received
   ctx[:message][:delivered]
-  ctx[:message][:bytesite]
+
+  # access message in on_message_data_event
+  ctx[:message][:bytesize]
   ctx[:message][:data]
 
 ```
@@ -343,17 +345,23 @@ We created a SMTP-Server e.g. to receive messages vie SMTP and store them to Rab
 You will find a detailed description of class methods and parameters at [RubyDoc](http://www.rubydoc.info/gems/midi-smtp-server/MidiSmtpServer/Smtpd)
 
 
+## New to version 2.1.1
+
+1. Huge speed improvement on receiving large message data (1.000+ faster)
+
+
+## New to version 2.1
+
+1. Authentication PLAIN, LOGIN
+2. Safe `join` will catch and rescue `Interrupt`
+
+
 ## New to version 2.x
 
 1. Modulelized  
 2. Removed dependency to GServer  
 3. Additional events to interact with
 4. Use logger to log several messages from severity :debug up to :fatal 
-
-## New to version 2.1
-
-1. Authentication PLAIN, LOGIN
-2. Safe `join` will catch and rescue `Interrupt`
 
 
 ## From version 1.x to 2.x

@@ -134,7 +134,7 @@ module MidiSmtpServer
       logger.debug("Client disconnect from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]}")
     end
 
-    # get event on HELO:
+    # get event on HELO/EHLO:
     def on_helo_event(ctx, helo_data)
     end
 
