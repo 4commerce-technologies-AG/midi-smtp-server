@@ -446,7 +446,7 @@ If you are already using MidiSmtpServer at a release 1.x it might be only some s
 ##### 2.x
 
 ```ruby
-  # not available anymore, is now controlled vy Logger
+  # not available anymore, is now controlled by Logger
 ```
 
 
@@ -465,4 +465,4 @@ Author: [Tom Freudenberg](http://about.me/tom.freudenberg)
 
 [MidiSmtpServer Class](https://github.com/4commerce-technologies-AG/midi-smtp-server/) is inspired from [MiniSmtpServer Class](https://github.com/aarongough/mini-smtp-server) and code originally written by [Aaron Gough](https://github.com/aarongough) and [Peter Cooper](http://peterc.org/)
 
-Copyright (c) 2014-2015 [Tom Freudenberg](http://www.4commerce.de/), [4commerce technologies AG](http://www.4commerce.de/), released under the MIT license
+Copyright (c) 2014-2018 [Tom Freudenberg](http://www.4commerce.de/), [4commerce technologies AG](http://www.4commerce.de/), released under the MIT license
