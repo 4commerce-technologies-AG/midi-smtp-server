@@ -243,7 +243,13 @@ module MidiSmtpServer
           # log error info if logging
           logger.error("#{e}")
           # power down connection
-          io.print "#{Smtpd421Exception.new.smtpd_result}\r\n" unless io.closed?
+          # ignore errors if connection was already dropped by client when sending final SMTP 421
+          begin
+            io.print "#{Smtpd421Exception.new.smtpd_result}\r\n" unless io.closed?
+          rescue
+            # re-raise error if not caused by closed io
+            raise unless io.closed?
+          end
         end
 
       ensure
