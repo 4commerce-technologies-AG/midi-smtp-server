@@ -212,7 +212,7 @@ module MidiSmtpServer
                 output = "#{e.smtpd_result}"
 
               # Unknown general Exception during processing
-              rescue Exception => e
+              rescue => e
                 # log error info if logging
                 logger.error("#{e}")
                 # set default smtp server dialog error
@@ -239,7 +239,7 @@ module MidiSmtpServer
           # log info but only while debugging otherwise ignore message
           logger.debug("EOFError - Connection lost due abort by client!")
 
-        rescue Exception => e
+        rescue => e
           # log error info if logging
           logger.error("#{e}")
           # power down connection
@@ -511,7 +511,7 @@ module MidiSmtpServer
             raise
           
           # test all other Exceptions
-          rescue Exception => e
+          rescue => e
             # send correct aborted message to smtp dialog
             raise Smtpd451Exception.new("#{e}")
 
