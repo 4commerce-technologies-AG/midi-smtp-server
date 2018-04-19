@@ -189,7 +189,7 @@ module MidiSmtpServer
       # handle connection
       begin
         # reply welcome
-        io.print "220 #{Thread.current[:ctx][:server][:local_host]} says welcome!\r\n"
+        io.print "220 #{Thread.current[:ctx][:server][:local_host]} says welcome!\r\n" unless io.closed?
         # while data handle communication
         begin
           loop do
@@ -224,7 +224,7 @@ module MidiSmtpServer
                 # log smtp dialog // message data is stored separate
                 logger.debug(">>> #{output}")
                 # smtp dialog response
-                io.print("#{output}\r\n")
+                io.print("#{output}\r\n") unless io.closed?
               end
 
             end
