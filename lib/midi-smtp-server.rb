@@ -243,12 +243,11 @@ module MidiSmtpServer
           # log error info if logging
           logger.error("#{e}")
           # power down connection
-          # ignore errors if connection was already dropped by client when sending final SMTP 421
+          # ignore IOErrors when sending final smtp abort return code 421
           begin
             io.print "#{Smtpd421Exception.new.smtpd_result}\r\n" unless io.closed?
           rescue
-            # re-raise error if not caused by closed io
-            raise unless io.closed?
+            logger.debug("IOError - Can't send 421 abort code!")
           end
         end
 
