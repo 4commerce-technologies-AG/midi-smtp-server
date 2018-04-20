@@ -188,10 +188,11 @@ module MidiSmtpServer
       on_connect_event(Thread.current[:ctx])
       # handle connection
       begin
-        # reply welcome
-        io.print "220 #{Thread.current[:ctx][:server][:local_host]} says welcome!\r\n" unless io.closed?
-        # while data handle communication
         begin
+          # reply welcome
+          io.print "220 #{Thread.current[:ctx][:server][:local_host]} says welcome!\r\n" unless io.closed?
+
+          # while data handle communication
           loop do
             if IO.select([io], nil, nil, 0.1)
 
