@@ -10,7 +10,7 @@ module MidiSmtpServer
   DEFAULT_SMTPD_MAX_CONNECTIONS = 4
 
   # Authentification modes
-  AUTH_MODES = [ :AUTH_FORBIDDEN, :AUTH_OPTIONAL, :AUTH_REQUIRED ].freeze
+  AUTH_MODES = [:AUTH_FORBIDDEN, :AUTH_OPTIONAL, :AUTH_REQUIRED].freeze
 
   # class for SmtpServer
   class Smtpd
@@ -342,7 +342,7 @@ module MidiSmtpServer
                   return '334 '
                 else
                   # handle authentication with given auth_id and password
-                  process_auth_plain( (@auth_data.length == 2) ? @auth_data[1] : [] )
+                  process_auth_plain((@auth_data.length == 2) ? @auth_data[1] : [])
                 end
 
               when (/LOGIN/i)
@@ -447,7 +447,7 @@ module MidiSmtpServer
             # 553 Requested action not taken: mailbox name not allowed
             # ---------
             # check valid command sequence
-            raise Smtpd503Exception if ![ :CMD_MAIL, :CMD_RCPT ].include?(Thread.current[:cmd_sequence])
+            raise Smtpd503Exception if ![:CMD_MAIL, :CMD_RCPT].include?(Thread.current[:cmd_sequence])
             # check that authentication is enabled
             raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(Thread.current[:ctx])
             # handle command
@@ -661,10 +661,10 @@ module MidiSmtpServer
       raise 'Smtpd instance was already started' if !stopped?
       @shutdown = false
       @@servicesMutex.synchronize {
-        if Smtpd.in_service?(@port,@host)
+        if Smtpd.in_service?(@port, @host)
           raise "Port already in use: #{host}:#{@port}!"
         end
-        @tcpServer = TCPServer.new(@host,@port)
+        @tcpServer = TCPServer.new(@host, @port)
         @port = @tcpServer.addr[1]
         @@services[@host] = {} unless @@services.has_key?(@host)
         @@services[@host][@port] = self;
