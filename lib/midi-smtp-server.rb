@@ -15,7 +15,7 @@ module MidiSmtpServer
   # class for SmtpServer
   class Smtpd
 
-  public
+    public
 
     # connection management
     # Hash of opened ports, i.e. services
@@ -170,7 +170,7 @@ module MidiSmtpServer
     def on_message_data_event(ctx)
     end
 
-  private
+    private
 
     # handle connection
     def serve(io)
@@ -281,218 +281,218 @@ module MidiSmtpServer
         # Handle specific messages from the client
         case line
 
-        when (/^(HELO|EHLO)(\s+.*)?$/i)
-          # HELO/EHLO
-          # 250 Requested mail action okay, completed
-          # 421 <domain> Service not available, closing transmission channel
-          # 500 Syntax error, command unrecognised
-          # 501 Syntax error in parameters or arguments
-          # 504 Command parameter not implemented
-          # 521 <domain> does not accept mail [rfc1846]
-          # ---------
-          # check valid command sequence
-          raise Smtpd503Exception if Thread.current[:cmd_sequence] != :CMD_HELO
-          # handle command
-          @cmd_data = line.gsub(/^(HELO|EHLO)\ /i, '').strip
-          # call event to handle data
-          on_helo_event(Thread.current[:ctx], @cmd_data)
-          # if no error raised, append to message hash
-          Thread.current[:ctx][:server][:helo] = @cmd_data
-          # set sequence state as RSET
-          Thread.current[:cmd_sequence] = :CMD_RSET
-          # check whether to answer as HELO or EHLO
-          if line =~ /^EHLO/i
-            # reply supported extensions
-            return "250-8BITMIME\r\n" +
-                   (@auth_mode != :AUTH_FORBIDDEN ? "250-AUTH LOGIN PLAIN\r\n" : '') +
-                   '250 OK'
-          else
-            # reply ok only
-            return '250 OK'
-          end
-
-        when (/^AUTH(\s+)((LOGIN|PLAIN)(\s+[A-Z0-9=]+)?|CRAM-MD5)\s*$/i)
-          # AUTH
-          # 235 Authentication Succeeded
-          # 432 A password transition is needed
-          # 454 Temporary authentication failure
-          # 500 Authentication Exchange line is too long
-          # 530 Authentication required
-          # 534 Authentication mechanism is too weak
-          # 535 Authentication credentials invalid
-          # 538 Encryption required for requested authentication mechanism
-          # ---------
-          # check that authentication is enabled
-          raise Smtpd503Exception if @auth_mode == :AUTH_FORBIDDEN
-          # check valid command sequence
-          raise Smtpd503Exception if Thread.current[:cmd_sequence] != :CMD_RSET
-          # check that not already authenticated
-          raise Smtpd503Exception if authenticated?(Thread.current[:ctx])
-          # handle command line
-          @auth_data = line.gsub(/^AUTH\ /i, '').strip.gsub(/\s+/, ' ').split(' ')
-          # handle auth command
-          case @auth_data[0]
-
-            when (/PLAIN/i)
-              # check if only command was given
-              if @auth_data.length == 1
-                # set sequence for next command input
-                Thread.current[:cmd_sequence] = :CMD_AUTH_PLAIN_VALUES
-                # response code include post ending with a space
-                return '334 '
-              else
-                # handle authentication with given auth_id and password
-                process_auth_plain( (@auth_data.length == 2) ? @auth_data[1] : [] )
-              end
-
-            when (/LOGIN/i)
-              # check if auth_id was sent too
-              if @auth_data.length == 1
-                # reset auth_challenge
-                Thread.current[:auth_challenge] = {}
-                # set sequence for next command input
-                Thread.current[:cmd_sequence] = :CMD_AUTH_LOGIN_USER
-                # response code with request for Username
-                return '334 ' + Base64.strict_encode64('Username:')
-              elsif @auth_data.length == 2
-                # handle next sequence
-                process_auth_login_user(@auth_data[1])
-              else
-                raise Smtpd500Exception
-              end
-
-            when (/CRAM-MD5/i)
-              # not supported in case of also unencrypted data delivery
-              # instead of supporting password encryption only, we will
-              # provide optional SMTPS service instead
-              # read discussion on https://github.com/4commerce-technologies-AG/midi-smtp-server/issues/3#issuecomment-126898711
-              raise Smtpd500Exception
-
+          when (/^(HELO|EHLO)(\s+.*)?$/i)
+            # HELO/EHLO
+            # 250 Requested mail action okay, completed
+            # 421 <domain> Service not available, closing transmission channel
+            # 500 Syntax error, command unrecognised
+            # 501 Syntax error in parameters or arguments
+            # 504 Command parameter not implemented
+            # 521 <domain> does not accept mail [rfc1846]
+            # ---------
+            # check valid command sequence
+            raise Smtpd503Exception if Thread.current[:cmd_sequence] != :CMD_HELO
+            # handle command
+            @cmd_data = line.gsub(/^(HELO|EHLO)\ /i, '').strip
+            # call event to handle data
+            on_helo_event(Thread.current[:ctx], @cmd_data)
+            # if no error raised, append to message hash
+            Thread.current[:ctx][:server][:helo] = @cmd_data
+            # set sequence state as RSET
+            Thread.current[:cmd_sequence] = :CMD_RSET
+            # check whether to answer as HELO or EHLO
+            if line =~ /^EHLO/i
+              # reply supported extensions
+              return "250-8BITMIME\r\n" +
+                     (@auth_mode != :AUTH_FORBIDDEN ? "250-AUTH LOGIN PLAIN\r\n" : '') +
+                     '250 OK'
             else
-              # unknown auth method
-              raise Smtpd500Exception
+              # reply ok only
+              return '250 OK'
+            end
 
-          end
+          when (/^AUTH(\s+)((LOGIN|PLAIN)(\s+[A-Z0-9=]+)?|CRAM-MD5)\s*$/i)
+            # AUTH
+            # 235 Authentication Succeeded
+            # 432 A password transition is needed
+            # 454 Temporary authentication failure
+            # 500 Authentication Exchange line is too long
+            # 530 Authentication required
+            # 534 Authentication mechanism is too weak
+            # 535 Authentication credentials invalid
+            # 538 Encryption required for requested authentication mechanism
+            # ---------
+            # check that authentication is enabled
+            raise Smtpd503Exception if @auth_mode == :AUTH_FORBIDDEN
+            # check valid command sequence
+            raise Smtpd503Exception if Thread.current[:cmd_sequence] != :CMD_RSET
+            # check that not already authenticated
+            raise Smtpd503Exception if authenticated?(Thread.current[:ctx])
+            # handle command line
+            @auth_data = line.gsub(/^AUTH\ /i, '').strip.gsub(/\s+/, ' ').split(' ')
+            # handle auth command
+            case @auth_data[0]
 
-        when (/^NOOP\s*$/i)
-          # NOOP
-          # 250 Requested mail action okay, completed
-          # 421 <domain> Service not available, closing transmission channel
-          # 500 Syntax error, command unrecognised
-          return '250 OK'
+              when (/PLAIN/i)
+                # check if only command was given
+                if @auth_data.length == 1
+                  # set sequence for next command input
+                  Thread.current[:cmd_sequence] = :CMD_AUTH_PLAIN_VALUES
+                  # response code include post ending with a space
+                  return '334 '
+                else
+                  # handle authentication with given auth_id and password
+                  process_auth_plain( (@auth_data.length == 2) ? @auth_data[1] : [] )
+                end
 
-        when (/^RSET\s*$/i)
-          # RSET
-          # 250 Requested mail action okay, completed
-          # 421 <domain> Service not available, closing transmission channel
-          # 500 Syntax error, command unrecognised
-          # 501 Syntax error in parameters or arguments
-          # ---------
-          # check valid command sequence
-          raise Smtpd503Exception if Thread.current[:cmd_sequence] == :CMD_HELO
-          # handle command
-          reset_ctx
-          return '250 OK'
+              when (/LOGIN/i)
+                # check if auth_id was sent too
+                if @auth_data.length == 1
+                  # reset auth_challenge
+                  Thread.current[:auth_challenge] = {}
+                  # set sequence for next command input
+                  Thread.current[:cmd_sequence] = :CMD_AUTH_LOGIN_USER
+                  # response code with request for Username
+                  return '334 ' + Base64.strict_encode64('Username:')
+                elsif @auth_data.length == 2
+                  # handle next sequence
+                  process_auth_login_user(@auth_data[1])
+                else
+                  raise Smtpd500Exception
+                end
 
-        when (/^QUIT\s*$/i)
-          # QUIT
-          # 221 <domain> Service closing transmission channel
-          # 500 Syntax error, command unrecognised
-          Thread.current[:cmd_sequence] = :CMD_QUIT
-          return ''
+              when (/CRAM-MD5/i)
+                # not supported in case of also unencrypted data delivery
+                # instead of supporting password encryption only, we will
+                # provide optional SMTPS service instead
+                # read discussion on https://github.com/4commerce-technologies-AG/midi-smtp-server/issues/3#issuecomment-126898711
+                raise Smtpd500Exception
 
-        when (/^MAIL FROM\:/i)
-          # MAIL
-          # 250 Requested mail action okay, completed
-          # 421 <domain> Service not available, closing transmission channel
-          # 451 Requested action aborted: local error in processing
-          # 452 Requested action not taken: insufficient system storage
-          # 500 Syntax error, command unrecognised
-          # 501 Syntax error in parameters or arguments
-          # 552 Requested mail action aborted: exceeded storage allocation
-          # ---------
-          # check valid command sequence
-          raise Smtpd503Exception if Thread.current[:cmd_sequence] != :CMD_RSET
-          # check that authentication is enabled
-          raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(Thread.current[:ctx])
-          # handle command
-          @cmd_data = line.gsub(/^MAIL FROM\:/i, '').strip
-          # call event to handle data
-          if return_value = on_mail_from_event(Thread.current[:ctx], @cmd_data)
-            # overwrite data with returned value
-            @cmd_data = return_value
-          end
-          # if no error raised, append to message hash
-          Thread.current[:ctx][:envelope][:from] = @cmd_data
-          # set sequence state
-          Thread.current[:cmd_sequence] = :CMD_MAIL
-          # reply ok
-          return '250 OK'
+              else
+                # unknown auth method
+                raise Smtpd500Exception
 
-        when (/^RCPT TO\:/i)
-          # RCPT
-          # 250 Requested mail action okay, completed
-          # 251 User not local; will forward to <forward-path>
-          # 421 <domain> Service not available, closing transmission channel
-          # 450 Requested mail action not taken: mailbox unavailable
-          # 451 Requested action aborted: local error in processing
-          # 452 Requested action not taken: insufficient system storage
-          # 500 Syntax error, command unrecognised
-          # 501 Syntax error in parameters or arguments
-          # 503 Bad sequence of commands
-          # 521 <domain> does not accept mail [rfc1846]
-          # 550 Requested action not taken: mailbox unavailable
-          # 551 User not local; please try <forward-path>
-          # 552 Requested mail action aborted: exceeded storage allocation
-          # 553 Requested action not taken: mailbox name not allowed
-          # ---------
-          # check valid command sequence
-          raise Smtpd503Exception if ![ :CMD_MAIL, :CMD_RCPT ].include?(Thread.current[:cmd_sequence])
-          # check that authentication is enabled
-          raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(Thread.current[:ctx])
-          # handle command
-          @cmd_data = line.gsub(/^RCPT TO\:/i, '').strip
-          # call event to handle data
-          if return_value = on_rcpt_to_event(Thread.current[:ctx], @cmd_data)
-            # overwrite data with returned value
-            @cmd_data = return_value
-          end
-          # if no error raised, append to message hash
-          Thread.current[:ctx][:envelope][:to] << @cmd_data
-          # set sequence state
-          Thread.current[:cmd_sequence] = :CMD_RCPT
-          # reply ok
-          return '250 OK'
+            end
 
-        when (/^DATA\s*$/i)
-          # DATA
-          # 354 Start mail input; end with <CRLF>.<CRLF>
-          # 250 Requested mail action okay, completed
-          # 421 <domain> Service not available, closing transmission channel received data
-          # 451 Requested action aborted: local error in processing
-          # 452 Requested action not taken: insufficient system storage
-          # 500 Syntax error, command unrecognised
-          # 501 Syntax error in parameters or arguments
-          # 503 Bad sequence of commands
-          # 552 Requested mail action aborted: exceeded storage allocation
-          # 554 Transaction failed
-          # ---------
-          # check valid command sequence
-          raise Smtpd503Exception if Thread.current[:cmd_sequence] != :CMD_RCPT
-          # check that authentication is enabled
-          raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(Thread.current[:ctx])
-          # handle command
-          # set sequence state
-          Thread.current[:cmd_sequence] = :CMD_DATA
-          # reply ok / proceed with message data
-          return '354 Enter message, ending with "." on a line by itself'
+          when (/^NOOP\s*$/i)
+            # NOOP
+            # 250 Requested mail action okay, completed
+            # 421 <domain> Service not available, closing transmission channel
+            # 500 Syntax error, command unrecognised
+            return '250 OK'
 
-        else
-          # If we somehow get to this point then
-          # we have encountered an error
-          raise Smtpd500Exception
+          when (/^RSET\s*$/i)
+            # RSET
+            # 250 Requested mail action okay, completed
+            # 421 <domain> Service not available, closing transmission channel
+            # 500 Syntax error, command unrecognised
+            # 501 Syntax error in parameters or arguments
+            # ---------
+            # check valid command sequence
+            raise Smtpd503Exception if Thread.current[:cmd_sequence] == :CMD_HELO
+            # handle command
+            reset_ctx
+            return '250 OK'
 
-      end
+          when (/^QUIT\s*$/i)
+            # QUIT
+            # 221 <domain> Service closing transmission channel
+            # 500 Syntax error, command unrecognised
+            Thread.current[:cmd_sequence] = :CMD_QUIT
+            return ''
+
+          when (/^MAIL FROM\:/i)
+            # MAIL
+            # 250 Requested mail action okay, completed
+            # 421 <domain> Service not available, closing transmission channel
+            # 451 Requested action aborted: local error in processing
+            # 452 Requested action not taken: insufficient system storage
+            # 500 Syntax error, command unrecognised
+            # 501 Syntax error in parameters or arguments
+            # 552 Requested mail action aborted: exceeded storage allocation
+            # ---------
+            # check valid command sequence
+            raise Smtpd503Exception if Thread.current[:cmd_sequence] != :CMD_RSET
+            # check that authentication is enabled
+            raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(Thread.current[:ctx])
+            # handle command
+            @cmd_data = line.gsub(/^MAIL FROM\:/i, '').strip
+            # call event to handle data
+            if return_value = on_mail_from_event(Thread.current[:ctx], @cmd_data)
+              # overwrite data with returned value
+              @cmd_data = return_value
+            end
+            # if no error raised, append to message hash
+            Thread.current[:ctx][:envelope][:from] = @cmd_data
+            # set sequence state
+            Thread.current[:cmd_sequence] = :CMD_MAIL
+            # reply ok
+            return '250 OK'
+
+          when (/^RCPT TO\:/i)
+            # RCPT
+            # 250 Requested mail action okay, completed
+            # 251 User not local; will forward to <forward-path>
+            # 421 <domain> Service not available, closing transmission channel
+            # 450 Requested mail action not taken: mailbox unavailable
+            # 451 Requested action aborted: local error in processing
+            # 452 Requested action not taken: insufficient system storage
+            # 500 Syntax error, command unrecognised
+            # 501 Syntax error in parameters or arguments
+            # 503 Bad sequence of commands
+            # 521 <domain> does not accept mail [rfc1846]
+            # 550 Requested action not taken: mailbox unavailable
+            # 551 User not local; please try <forward-path>
+            # 552 Requested mail action aborted: exceeded storage allocation
+            # 553 Requested action not taken: mailbox name not allowed
+            # ---------
+            # check valid command sequence
+            raise Smtpd503Exception if ![ :CMD_MAIL, :CMD_RCPT ].include?(Thread.current[:cmd_sequence])
+            # check that authentication is enabled
+            raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(Thread.current[:ctx])
+            # handle command
+            @cmd_data = line.gsub(/^RCPT TO\:/i, '').strip
+            # call event to handle data
+            if return_value = on_rcpt_to_event(Thread.current[:ctx], @cmd_data)
+              # overwrite data with returned value
+              @cmd_data = return_value
+            end
+            # if no error raised, append to message hash
+            Thread.current[:ctx][:envelope][:to] << @cmd_data
+            # set sequence state
+            Thread.current[:cmd_sequence] = :CMD_RCPT
+            # reply ok
+            return '250 OK'
+
+          when (/^DATA\s*$/i)
+            # DATA
+            # 354 Start mail input; end with <CRLF>.<CRLF>
+            # 250 Requested mail action okay, completed
+            # 421 <domain> Service not available, closing transmission channel received data
+            # 451 Requested action aborted: local error in processing
+            # 452 Requested action not taken: insufficient system storage
+            # 500 Syntax error, command unrecognised
+            # 501 Syntax error in parameters or arguments
+            # 503 Bad sequence of commands
+            # 552 Requested mail action aborted: exceeded storage allocation
+            # 554 Transaction failed
+            # ---------
+            # check valid command sequence
+            raise Smtpd503Exception if Thread.current[:cmd_sequence] != :CMD_RCPT
+            # check that authentication is enabled
+            raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(Thread.current[:ctx])
+            # handle command
+            # set sequence state
+            Thread.current[:cmd_sequence] = :CMD_DATA
+            # reply ok / proceed with message data
+            return '354 Enter message, ending with "." on a line by itself'
+
+          else
+            # If we somehow get to this point then
+            # we have encountered an error
+            raise Smtpd500Exception
+
+        end
 
       else
         # If we are in data mode and the entire message consists
@@ -551,37 +551,43 @@ module MidiSmtpServer
       # reset server values (only on connection start)
       if connection_initialize
         # create or rebuild :ctx hash
-        Thread.current[:ctx].merge!({
-          :server => {
-            :local_host => '',
-            :local_ip => '',
-            :local_port => '',
-            :remote_host => '',
-            :remote_ip => '',
-            :remote_port => '',
-            :helo => '',
-            :connected => '',
-            :authorization_id => '',
-            :authentication_id => '',
-            :authenticated => ''
+        Thread.current[:ctx].merge!(
+          {
+            :server => {
+              :local_host => '',
+              :local_ip => '',
+              :local_port => '',
+              :remote_host => '',
+              :remote_ip => '',
+              :remote_port => '',
+              :helo => '',
+              :connected => '',
+              :authorization_id => '',
+              :authentication_id => '',
+              :authenticated => ''
+            }
           }
-        })
+        )
       end
       # reset envelope values
-      Thread.current[:ctx].merge!({
-        :envelope => {
-          :from => '',
-          :to => []
+      Thread.current[:ctx].merge!(
+        {
+          :envelope => {
+            :from => '',
+            :to => []
+          }
         }
-      })
+      )
       # reset message data
-      Thread.current[:ctx].merge!({
-        :message => {
-          :delivered => -1,
-          :bytesize => -1,
-          :data => ''
+      Thread.current[:ctx].merge!(
+        {
+          :message => {
+            :delivered => -1,
+            :bytesize => -1,
+            :data => ''
+          }
         }
-      })
+      )
     end
 
     # handle plain authentification
@@ -667,9 +673,9 @@ module MidiSmtpServer
         begin
           while !@shutdown
             @connectionsMutex.synchronize {
-               while @connections.size >= @maxConnections
-                 @connectionsCV.wait(@connectionsMutex)
-               end
+              while @connections.size >= @maxConnections
+                @connectionsCV.wait(@connectionsMutex)
+              end
             }
             client = @tcpServer.accept
             Thread.new(client) { |myClient|
@@ -702,9 +708,9 @@ module MidiSmtpServer
           end
           if @shutdown
             @connectionsMutex.synchronize {
-               while @connections.size > 0
-                 @connectionsCV.wait(@connectionsMutex)
-               end
+              while @connections.size > 0
+                @connectionsCV.wait(@connectionsMutex)
+              end
             }
           else
             @connections.each { |c| c.raise 'stop' }
