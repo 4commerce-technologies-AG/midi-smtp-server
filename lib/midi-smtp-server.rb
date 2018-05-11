@@ -18,7 +18,8 @@ module MidiSmtpServer
   public
 
     # connection management
-    @@services = {}   # Hash of opened ports, i.e. services
+    # Hash of opened ports, i.e. services
+    @@services = {}
     @@servicesMutex = Mutex.new
 
     # Stop the server running on the given port, bound to the given host
@@ -37,7 +38,7 @@ module MidiSmtpServer
 
     # Stop the server
     def stop
-      @connectionsMutex.synchronize  {
+      @connectionsMutex.synchronize {
         if @tcpServerThread
           @tcpServerThread.raise 'stop'
         end
@@ -653,7 +654,7 @@ module MidiSmtpServer
     def start
       raise 'Smtpd instance was already started' if !stopped?
       @shutdown = false
-      @@servicesMutex.synchronize  {
+      @@servicesMutex.synchronize {
         if Smtpd.in_service?(@port,@host)
           raise "Port already in use: #{host}:#{@port}!"
         end
@@ -665,13 +666,13 @@ module MidiSmtpServer
       @tcpServerThread = Thread.new {
         begin
           while !@shutdown
-            @connectionsMutex.synchronize  {
+            @connectionsMutex.synchronize {
                while @connections.size >= @maxConnections
                  @connectionsCV.wait(@connectionsMutex)
                end
             }
             client = @tcpServer.accept
-            Thread.new(client)  { |myClient|
+            Thread.new(client) { |myClient|
               @connections << Thread.current
               begin
                 serve(myClient)
@@ -700,7 +701,7 @@ module MidiSmtpServer
           rescue
           end
           if @shutdown
-            @connectionsMutex.synchronize  {
+            @connectionsMutex.synchronize {
                while @connections.size > 0
                  @connectionsCV.wait(@connectionsMutex)
                end
@@ -709,7 +710,7 @@ module MidiSmtpServer
             @connections.each { |c| c.raise 'stop' }
           end
           @tcpServerThread = nil
-          @@servicesMutex.synchronize  {
+          @@servicesMutex.synchronize {
             @@services[@host].delete(@port)
           }
         end
