@@ -5,7 +5,7 @@ require 'base64'
 module MidiSmtpServer
 
   # default values
-  DEFAULT_SMTPD_HOST = "127.0.0.1"
+  DEFAULT_SMTPD_HOST = '127.0.0.1'
   DEFAULT_SMTPD_PORT = 2525
   DEFAULT_SMTPD_MAX_CONNECTIONS = 4
 
@@ -39,7 +39,7 @@ module MidiSmtpServer
     def stop
       @connectionsMutex.synchronize  {
         if @tcpServerThread
-          @tcpServerThread.raise "stop"
+          @tcpServerThread.raise 'stop'
         end
       }
     end
@@ -89,13 +89,13 @@ module MidiSmtpServer
     attr_reader :logger
 
     # Initialize SMTP Server class
-    # 
+    #
     # +port+:: port to listen on
     # +host+:: interface ip to listen on or blank to listen on all interfaces
     # +max_connections+:: maximum number of simultaneous connections
     # +opts+:: optional settings
     # +opts.do_dns_reverse_lookup+:: flag if this smtp server should do reverse lookups on incoming connections
-    # +opts.auth_mode+:: enable builtin authentication support (:AUTH_FORBIDDEN, :AUTH_OPTIONAL, :AUTH_REQUIRED) 
+    # +opts.auth_mode+:: enable builtin authentication support (:AUTH_FORBIDDEN, :AUTH_OPTIONAL, :AUTH_REQUIRED)
     # +opts.logger+:: own logger class, otherwise default logger is created
     def initialize(port = DEFAULT_SMTPD_PORT, host = DEFAULT_SMTPD_HOST, max_connections = DEFAULT_SMTPD_MAX_CONNECTIONS, opts = {})
       # logging
@@ -123,7 +123,7 @@ module MidiSmtpServer
       @auth_mode = opts.include?(:auth_mode) ? opts[:auth_mode] : :AUTH_FORBIDDEN
       raise "Unknown authentification mode #{@auth_mode} was given by opts!" unless AUTH_MODES.include?(@auth_mode)
     end
-    
+
     # get event on CONNECTION
     def on_connect_event(ctx)
       logger.debug("Client connect from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]}")
@@ -155,13 +155,13 @@ module MidiSmtpServer
 
     # get address send in MAIL FROM:
     # if any value returned, that will be used for ongoing processing
-    # otherwise the original value will be used 
+    # otherwise the original value will be used
     def on_mail_from_event(ctx, mail_from_data)
     end
 
     # get each address send in RCPT TO:
     # if any value returned, that will be used for ongoing processing
-    # otherwise the original value will be used 
+    # otherwise the original value will be used
     def on_rcpt_to_event(ctx, rcpt_to_data)
     end
 
@@ -199,7 +199,7 @@ module MidiSmtpServer
               # read and handle input
               data = io.readline
               # log data, verbosity based on log severity and data type
-              logger.debug("<<< " + data) if Thread.current[:cmd_sequence] != :CMD_DATA
+              logger.debug('<<< ' + data) if Thread.current[:cmd_sequence] != :CMD_DATA
 
               # process commands and handle special SmtpdExceptions
               begin
@@ -223,7 +223,7 @@ module MidiSmtpServer
               # check result
               if not output.empty?
                 # log smtp dialog // message data is stored separate
-                logger.debug(">>> #{output}")
+                logger.debug('>>> ' + output)
                 # smtp dialog response
                 io.print("#{output}\r\n") unless io.closed?
               end
@@ -238,7 +238,7 @@ module MidiSmtpServer
         # connection was simply closed / aborted by remote closing socket
         rescue EOFError
           # log info but only while debugging otherwise ignore message
-          logger.debug("EOFError - Connection lost due abort by client!")
+          logger.debug('EOFError - Connection lost due abort by client!')
 
         rescue => e
           # log error info if logging
@@ -248,7 +248,7 @@ module MidiSmtpServer
           begin
             io.print "#{Smtpd421Exception.new.smtpd_result}\r\n" unless io.closed?
           rescue
-            logger.debug("IOError - Can't send 421 abort code!")
+            logger.debug('IOError - Can\'t send 421 abort code!')
           end
         end
 
@@ -263,12 +263,12 @@ module MidiSmtpServer
       if Thread.current[:cmd_sequence] == :CMD_AUTH_PLAIN_VALUES
         # handle authentication
         process_auth_plain(line)
-      
+
       # check whether in auth challenge modes
       elsif Thread.current[:cmd_sequence] == :CMD_AUTH_LOGIN_USER
         # handle authentication
         process_auth_login_user(line)
-      
+
       # check whether in auth challenge modes
       elsif Thread.current[:cmd_sequence] == :CMD_AUTH_LOGIN_PASS
         # handle authentication
@@ -279,7 +279,7 @@ module MidiSmtpServer
 
         # Handle specific messages from the client
         case line
-        
+
         when (/^(HELO|EHLO)(\s+.*)?$/i)
           # HELO/EHLO
           # 250 Requested mail action okay, completed
@@ -302,12 +302,12 @@ module MidiSmtpServer
           # check whether to answer as HELO or EHLO
           if line =~ /^EHLO/i
             # reply supported extensions
-            return "250-8BITMIME\r\n" + 
-                   (@auth_mode != :AUTH_FORBIDDEN ? "250-AUTH LOGIN PLAIN\r\n" : "") +
-                   "250 OK"
+            return "250-8BITMIME\r\n" +
+                   (@auth_mode != :AUTH_FORBIDDEN ? "250-AUTH LOGIN PLAIN\r\n" : '') +
+                   '250 OK'
           else
             # reply ok only
-            return "250 OK"
+            return '250 OK'
           end
 
         when (/^AUTH(\s+)((LOGIN|PLAIN)(\s+[A-Z0-9=]+)?|CRAM-MD5)\s*$/i)
@@ -338,7 +338,7 @@ module MidiSmtpServer
                 # set sequence for next command input
                 Thread.current[:cmd_sequence] = :CMD_AUTH_PLAIN_VALUES
                 # response code include post ending with a space
-                return "334 "
+                return '334 '
               else
                 # handle authentication with given auth_id and password
                 process_auth_plain( (@auth_data.length == 2) ? @auth_data[1] : [] )
@@ -352,7 +352,7 @@ module MidiSmtpServer
                 # set sequence for next command input
                 Thread.current[:cmd_sequence] = :CMD_AUTH_LOGIN_USER
                 # response code with request for Username
-                return "334 " + Base64.strict_encode64("Username:")
+                return '334 ' + Base64.strict_encode64('Username:')
               elsif @auth_data.length == 2
                 # handle next sequence
                 process_auth_login_user(@auth_data[1])
@@ -378,8 +378,8 @@ module MidiSmtpServer
           # 250 Requested mail action okay, completed
           # 421 <domain> Service not available, closing transmission channel
           # 500 Syntax error, command unrecognised
-          return "250 OK"
-        
+          return '250 OK'
+
         when (/^RSET\s*$/i)
           # RSET
           # 250 Requested mail action okay, completed
@@ -391,15 +391,15 @@ module MidiSmtpServer
           raise Smtpd503Exception if Thread.current[:cmd_sequence] == :CMD_HELO
           # handle command
           reset_ctx
-          return "250 OK"
-        
+          return '250 OK'
+
         when (/^QUIT\s*$/i)
           # QUIT
           # 221 <domain> Service closing transmission channel
           # 500 Syntax error, command unrecognised
           Thread.current[:cmd_sequence] = :CMD_QUIT
-          return ""
-        
+          return ''
+
         when (/^MAIL FROM\:/i)
           # MAIL
           # 250 Requested mail action okay, completed
@@ -426,8 +426,8 @@ module MidiSmtpServer
           # set sequence state
           Thread.current[:cmd_sequence] = :CMD_MAIL
           # reply ok
-          return "250 OK"
-        
+          return '250 OK'
+
         when (/^RCPT TO\:/i)
           # RCPT
           # 250 Requested mail action okay, completed
@@ -461,8 +461,8 @@ module MidiSmtpServer
           # set sequence state
           Thread.current[:cmd_sequence] = :CMD_RCPT
           # reply ok
-          return "250 OK"
-        
+          return '250 OK'
+
         when (/^DATA\s*$/i)
           # DATA
           # 354 Start mail input; end with <CRLF>.<CRLF>
@@ -484,15 +484,15 @@ module MidiSmtpServer
           # set sequence state
           Thread.current[:cmd_sequence] = :CMD_DATA
           # reply ok / proceed with message data
-          return "354 Enter message, ending with \".\" on a line by itself"
-        
+          return '354 Enter message, ending with "." on a line by itself'
+
         else
           # If we somehow get to this point then
           # we have encountered an error
           raise Smtpd500Exception
 
       end
-        
+
       else
         # If we are in data mode and the entire message consists
         # solely of a period on a line by itself then we
@@ -509,13 +509,13 @@ module MidiSmtpServer
           # call event
           begin
             on_message_data_event(Thread.current[:ctx])
-            return "250 Requested mail action okay, completed"
-          
-          # test for SmtpdException 
+            return '250 Requested mail action okay, completed'
+
+          # test for SmtpdException
           rescue SmtpdException
             # just re-raise exception set by app
             raise
-          
+
           # test all other Exceptions
           rescue => e
             # send correct aborted message to smtp dialog
@@ -526,12 +526,12 @@ module MidiSmtpServer
             # and rset command sequence
             reset_ctx
           end
-        
+
         else
           # If we are in date mode then we need to add
           # the new data to the message
           Thread.current[:ctx][:message][:data] << line
-          return ""
+          return ''
           # command sequence state will stay on :CMD_DATA
 
         end
@@ -552,24 +552,24 @@ module MidiSmtpServer
         # create or rebuild :ctx hash
         Thread.current[:ctx].merge!({
           :server => {
-            :local_host => "",
-            :local_ip => "",
-            :local_port => "",
-            :remote_host => "",
-            :remote_ip => "",
-            :remote_port => "",
-            :helo => "",
-            :connected => "",
-            :authorization_id => "",
-            :authentication_id => "",
-            :authenticated => ""
+            :local_host => '',
+            :local_ip => '',
+            :local_port => '',
+            :remote_host => '',
+            :remote_ip => '',
+            :remote_port => '',
+            :helo => '',
+            :connected => '',
+            :authorization_id => '',
+            :authentication_id => '',
+            :authenticated => ''
           }
         })
       end
       # reset envelope values
-      Thread.current[:ctx].merge!({ 
+      Thread.current[:ctx].merge!({
         :envelope => {
-          :from => "", 
+          :from => '',
           :to => []
         }
       })
@@ -578,7 +578,7 @@ module MidiSmtpServer
         :message => {
           :delivered => -1,
           :bytesize => -1,
-          :data => ""
+          :data => ''
         }
       })
     end
@@ -599,7 +599,7 @@ module MidiSmtpServer
           Thread.current[:ctx][:server][:authentication_id] = @auth_values[1]
           Thread.current[:ctx][:server][:authenticated] = Time.now.utc
           # response code
-          return "235 OK"
+          return '235 OK'
         else
           # return error
           raise Smtpd500Exception
@@ -613,12 +613,12 @@ module MidiSmtpServer
 
     def process_auth_login_user(encoded_auth_response)
       # save challenged auth_id
-      Thread.current[:auth_challenge][:authorization_id] = ""
+      Thread.current[:auth_challenge][:authorization_id] = ''
       Thread.current[:auth_challenge][:authentication_id] = Base64.decode64(encoded_auth_response)
       # set sequence for next command input
       Thread.current[:cmd_sequence] = :CMD_AUTH_LOGIN_PASS
       # response code with request for Password
-      return "334 " + Base64.strict_encode64("Password:")
+      return '334 ' + Base64.strict_encode64('Password:')
     end
 
     def process_auth_login_pass(encoded_auth_response)
@@ -639,7 +639,7 @@ module MidiSmtpServer
         Thread.current[:ctx][:server][:authentication_id] = @auth_values[1]
         Thread.current[:ctx][:server][:authenticated] = Time.now.utc
         # response code
-        return "235 OK"
+        return '235 OK'
 
       ensure
         # whatever happens in this check, reset next sequence
@@ -651,7 +651,7 @@ module MidiSmtpServer
 
     # Start the server if it isn't already running
     def start
-      raise "Smtpd instance was already started" if !stopped?
+      raise 'Smtpd instance was already started' if !stopped?
       @shutdown = false
       @@servicesMutex.synchronize  {
         if Smtpd.in_service?(@port,@host)
@@ -706,7 +706,7 @@ module MidiSmtpServer
                end
             }
           else
-            @connections.each { |c| c.raise "stop" }
+            @connections.each { |c| c.raise 'stop' }
           end
           @tcpServerThread = nil
           @@servicesMutex.synchronize  {
@@ -720,7 +720,7 @@ module MidiSmtpServer
   end
 
   # generic smtp server exception class
-  class SmtpdException < Exception
+  class SmtpdException < RuntimeError
 
     attr_reader :smtpd_return_code
     attr_reader :smtpd_return_text
@@ -736,172 +736,212 @@ module MidiSmtpServer
     def smtpd_result
       return "#{@smtpd_return_code} #{@smtpd_return_text}"
     end
-    
+
   end
 
   # 421 <domain> Service not available, closing transmission channel
   class Smtpd421Exception < SmtpdException
+
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 421, "Service not available, closing transmission channel"
+      super msg, 421, 'Service not available, closing transmission channel'
     end
+
   end
 
   # 450 Requested mail action not taken: mailbox unavailable
   #     e.g. mailbox busy
   class Smtpd450Exception < SmtpdException
+
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 450, "Requested mail action not taken: mailbox unavailable"
+      super msg, 450, 'Requested mail action not taken: mailbox unavailable'
     end
+
   end
 
   # 451 Requested action aborted: local error in processing
   class Smtpd451Exception < SmtpdException
+
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 451, "Requested action aborted: local error in processing"
+      super msg, 451, 'Requested action aborted: local error in processing'
     end
+
   end
 
   # 452 Requested action not taken: insufficient system storage
   class Smtpd452Exception < SmtpdException
+
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 452, "Requested action not taken: insufficient system storage"
+      super msg, 452, 'Requested action not taken: insufficient system storage'
     end
+
   end
 
   # 500 Syntax error, command unrecognised or error in parameters or arguments.
   #     This may include errors such as command line too long
   class Smtpd500Exception < SmtpdException
+
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 500, "Syntax error, command unrecognised or error in parameters or arguments"
+      super msg, 500, 'Syntax error, command unrecognised or error in parameters or arguments'
     end
+
   end
 
   # 501 Syntax error in parameters or arguments
   class Smtpd501Exception < SmtpdException
+
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 501, "Syntax error in parameters or arguments"
+      super msg, 501, 'Syntax error in parameters or arguments'
     end
+
   end
 
   # 502 Command not implemented
   class Smtpd502Exception < SmtpdException
+
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 502, "Command not implemented"
+      super msg, 502, 'Command not implemented'
     end
+
   end
 
   # 503 Bad sequence of commands
   class Smtpd503Exception < SmtpdException
+
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 503, "Bad sequence of commands"
+      super msg, 503, 'Bad sequence of commands'
     end
+
   end
 
   # 504 Command parameter not implemented
   class Smtpd504Exception < SmtpdException
+
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 504, "Command parameter not implemented"
+      super msg, 504, 'Command parameter not implemented'
     end
+
   end
 
   # 521 <domain> does not accept mail [rfc1846]
   class Smtpd521Exception < SmtpdException
+
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 521, "Service does not accept mail"
+      super msg, 521, 'Service does not accept mail'
     end
+
   end
 
   # 550 Requested action not taken: mailbox unavailable
   #     e.g. mailbox not found, no access
   class Smtpd550Exception < SmtpdException
+
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 550, "Requested action not taken: mailbox unavailable"
+      super msg, 550, 'Requested action not taken: mailbox unavailable'
     end
+
   end
 
   # 552 Requested mail action aborted: exceeded storage allocation
   class Smtpd552Exception < SmtpdException
+
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 552, "Requested mail action aborted: exceeded storage allocation"
+      super msg, 552, 'Requested mail action aborted: exceeded storage allocation'
     end
+
   end
 
   # 553 Requested action not taken: mailbox name not allowed
   class Smtpd553Exception < SmtpdException
+
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 553, "Requested action not taken: mailbox name not allowed"
+      super msg, 553, 'Requested action not taken: mailbox name not allowed'
     end
+
   end
 
-  # 554 Transaction failed        
+  # 554 Transaction failed
   class Smtpd554Exception < SmtpdException
+
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 554, "Transaction failed"
+      super msg, 554, 'Transaction failed'
     end
+
   end
 
   # Status when using authentication
 
-  # 432 Password transition is needed        
+  # 432 Password transition is needed
   class Smtpd432Exception < SmtpdException
+
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 432, "Password transition is needed"
+      super msg, 432, 'Password transition is needed'
     end
+
   end
 
-  # 454 Temporary authentication failure       
+  # 454 Temporary authentication failure
   class Smtpd454Exception < SmtpdException
+
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 454, "Temporary authentication failure"
+      super msg, 454, 'Temporary authentication failure'
     end
+
   end
 
-  # 530 Authentication required       
+  # 530 Authentication required
   class Smtpd530Exception < SmtpdException
+
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 530, "Authentication required"
+      super msg, 530, 'Authentication required'
     end
+
   end
 
-  # 534 Authentication mechanism is too weak       
+  # 534 Authentication mechanism is too weak
   class Smtpd534Exception < SmtpdException
+
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 534, "Authentication mechanism is too weak"
+      super msg, 534, 'Authentication mechanism is too weak'
     end
+
   end
 
-  # 535 Authentication credentials invalid       
+  # 535 Authentication credentials invalid
   class Smtpd535Exception < SmtpdException
+
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 535, "Authentication credentials invalid"
+      super msg, 535, 'Authentication credentials invalid'
     end
+
   end
 
-  # 538 Encryption required for requested authentication mechanism       
+  # 538 Encryption required for requested authentication mechanism
   class Smtpd538Exception < SmtpdException
+
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 538, "Encryption required for requested authentication mechanism"
+      super msg, 538, 'Encryption required for requested authentication mechanism'
     end
+
   end
 
 end
