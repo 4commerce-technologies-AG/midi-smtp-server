@@ -20,11 +20,11 @@ module MidiSmtpServer
     # connection management
     # Hash of opened ports, i.e. services
     @@services = {}
-    @@servicesMutex = Mutex.new
+    @@services_mutex = Mutex.new
 
     # Stop the server running on the given port, bound to the given host
     def Smtpd.stop(port = DEFAULT_SMTPD_PORT, host = DEFAULT_SMTPD_HOST)
-      @@servicesMutex.synchronize {
+      @@services_mutex.synchronize {
         @@services[host][port].stop
       }
     end
@@ -38,16 +38,16 @@ module MidiSmtpServer
 
     # Stop the server
     def stop
-      @connectionsMutex.synchronize {
-        if @tcpServerThread
-          @tcpServerThread.raise 'stop'
+      @connections_mutex.synchronize {
+        if @tcp_server_thread
+          @tcp_server_thread.raise 'stop'
         end
       }
     end
 
     # Returns true if the server has stopped.
     def stopped?
-      @tcpServerThread == nil
+      @tcp_server_thread == nil
     end
 
     # Schedule a shutdown for the server
@@ -64,12 +64,12 @@ module MidiSmtpServer
     # before joining the server wait a few seconds to let the service come up
     def join(sleep_seconds_before_join = 1)
       # check already started server
-      if @tcpServerThread
+      if @tcp_server_thread
         begin
           # wait a second
           sleep sleep_seconds_before_join
           # join
-          @tcpServerThread.join
+          @tcp_server_thread.join
 
         # catch ctrl-c to stop service
         rescue Interrupt
@@ -82,7 +82,7 @@ module MidiSmtpServer
     # Host on which to bind, as a String
     attr_reader :host
     # Maximum number of connections to accept at a time, as a Fixnum
-    attr_reader :maxConnections
+    attr_reader :max_connections
     # Authentification mode
     attr_reader :auth_mode
 
@@ -109,13 +109,13 @@ module MidiSmtpServer
         @logger.formatter = proc { |severity, datetime, progname, msg| "#{datetime}: [#{severity}] #{msg.chomp}\n" }
       end
       # initialize class
-      @tcpServerThread = nil
+      @tcp_server_thread = nil
       @port = port
       @host = host
-      @maxConnections = max_connections
+      @max_connections = max_connections
       @connections = []
-      @connectionsMutex = Mutex.new
-      @connectionsCV = ConditionVariable.new
+      @connections_mutex = Mutex.new
+      @connections_cv = ConditionVariable.new
       # next should prevent (if wished) to auto resolve hostnames and create a delay on connection
       BasicSocket.do_not_reverse_lookup = true
       # save flag if this smtp server should do reverse lookups
@@ -660,40 +660,40 @@ module MidiSmtpServer
     def start
       raise 'Smtpd instance was already started' if !stopped?
       @shutdown = false
-      @@servicesMutex.synchronize {
+      @@services_mutex.synchronize {
         if Smtpd.in_service?(@port, @host)
           raise "Port already in use: #{host}:#{@port}!"
         end
-        @tcpServer = TCPServer.new(@host, @port)
-        @port = @tcpServer.addr[1]
+        @tcp_server = TCPServer.new(@host, @port)
+        @port = @tcp_server.addr[1]
         @@services[@host] = {} unless @@services.has_key?(@host)
         @@services[@host][@port] = self;
       }
-      @tcpServerThread = Thread.new {
+      @tcp_server_thread = Thread.new {
         begin
           while !@shutdown
-            @connectionsMutex.synchronize {
-              while @connections.size >= @maxConnections
-                @connectionsCV.wait(@connectionsMutex)
+            @connections_mutex.synchronize {
+              while @connections.size >= @max_connections
+                @connections_cv.wait(@connections_mutex)
               end
             }
-            client = @tcpServer.accept
-            Thread.new(client) { |myClient|
+            client = @tcp_server.accept
+            Thread.new(client) { |client|
               @connections << Thread.current
               begin
-                serve(myClient)
+                serve(client)
               rescue => detail
                 # log fatal error while handling connection
                 logger.fatal(detail.backtrace.join("\n"))
               ensure
                 begin
                   # always gracefully shutdown connection
-                  myClient.close
+                  client.close
                 rescue
                 end
-                @connectionsMutex.synchronize {
+                @connections_mutex.synchronize {
                   @connections.delete(Thread.current)
-                  @connectionsCV.signal
+                  @connections_cv.signal
                 }
               end
             }
@@ -703,20 +703,20 @@ module MidiSmtpServer
           logger.fatal(detail.backtrace.join("\n"))
         ensure
           begin
-            @tcpServer.close
+            @tcp_server.close
           rescue
           end
           if @shutdown
-            @connectionsMutex.synchronize {
+            @connections_mutex.synchronize {
               while @connections.size > 0
-                @connectionsCV.wait(@connectionsMutex)
+                @connections_cv.wait(@connections_mutex)
               end
             }
           else
             @connections.each { |c| c.raise 'stop' }
           end
-          @tcpServerThread = nil
-          @@servicesMutex.synchronize {
+          @tcp_server_thread = nil
+          @@services_mutex.synchronize {
             @@services[@host].delete(@port)
           }
         end
