@@ -32,8 +32,8 @@ module MidiSmtpServer
     # Check if a server is running on the given port and host
     # Returns true if a server is running on that port and host.
     def Smtpd.in_service?(port = DEFAULT_SMTPD_PORT, host = DEFAULT_SMTPD_HOST)
-      @@services.has_key?(host) and
-        @@services[host].has_key?(port)
+      @@services.key?(host) and
+        @@services[host].key?(port)
     end
 
     # Stop the server
@@ -552,40 +552,34 @@ module MidiSmtpServer
       if connection_initialize
         # create or rebuild :ctx hash
         Thread.current[:ctx].merge!(
-          {
-            :server => {
-              :local_host => '',
-              :local_ip => '',
-              :local_port => '',
-              :remote_host => '',
-              :remote_ip => '',
-              :remote_port => '',
-              :helo => '',
-              :connected => '',
-              :authorization_id => '',
-              :authentication_id => '',
-              :authenticated => ''
-            }
+          server: {
+            local_host: '',
+            local_ip: '',
+            local_port: '',
+            remote_host: '',
+            remote_ip: '',
+            remote_port: '',
+            helo: '',
+            connected: '',
+            authorization_id: '',
+            authentication_id: '',
+            authenticated: ''
           }
         )
       end
       # reset envelope values
       Thread.current[:ctx].merge!(
-        {
-          :envelope => {
-            :from => '',
-            :to => []
-          }
+        envelope: {
+          from: '',
+          to: []
         }
       )
       # reset message data
       Thread.current[:ctx].merge!(
-        {
-          :message => {
-            :delivered => -1,
-            :bytesize => -1,
-            :data => ''
-          }
+        message: {
+          delivered: -1,
+          bytesize: -1,
+          data: ''
         }
       )
     end
@@ -666,7 +660,7 @@ module MidiSmtpServer
         end
         @tcp_server = TCPServer.new(@host, @port)
         @port = @tcp_server.addr[1]
-        @@services[@host] = {} unless @@services.has_key?(@host)
+        @@services[@host] = {} unless @@services.key?(@host)
         @@services[@host][@port] = self;
       }
       @tcp_server_thread = Thread.new {
