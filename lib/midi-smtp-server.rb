@@ -423,7 +423,8 @@ module MidiSmtpServer
             # handle command
             @cmd_data = line.gsub(/^MAIL FROM\:/i, '').strip
             # call event to handle data
-            if return_value = on_mail_from_event(Thread.current[:ctx], @cmd_data)
+            return_value = on_mail_from_event(Thread.current[:ctx], @cmd_data)
+            if return_value
               # overwrite data with returned value
               @cmd_data = return_value
             end
@@ -458,7 +459,8 @@ module MidiSmtpServer
             # handle command
             @cmd_data = line.gsub(/^RCPT TO\:/i, '').strip
             # call event to handle data
-            if return_value = on_rcpt_to_event(Thread.current[:ctx], @cmd_data)
+            return_value = on_rcpt_to_event(Thread.current[:ctx], @cmd_data)
+            if return_value
               # overwrite data with returned value
               @cmd_data = return_value
             end
@@ -596,7 +598,8 @@ module MidiSmtpServer
         @auth_values = Base64.decode64(encoded_auth_response).split("\x00")
         # check for valid credentials
         if @auth_values.length == 3
-          if return_value = on_auth_event(Thread.current[:ctx], @auth_values[0], @auth_values[1], @auth_values[2])
+          return_value = on_auth_event(Thread.current[:ctx], @auth_values[0], @auth_values[1], @auth_values[2])
+          if return_value
             # overwrite data with returned value as authorization id
             @auth_values[0] = return_value
           end
@@ -636,7 +639,8 @@ module MidiSmtpServer
           Base64.decode64(encoded_auth_response)
         ]
         # check for valid credentials
-        if return_value = on_auth_event(Thread.current[:ctx], @auth_values[0], @auth_values[1], @auth_values[2])
+        return_value = on_auth_event(Thread.current[:ctx], @auth_values[0], @auth_values[1], @auth_values[2])
+        if return_value
           # overwrite data with returned value as authorization id
           @auth_values[0] = return_value
         end
@@ -677,17 +681,17 @@ module MidiSmtpServer
               end
             }
             client = @tcp_server.accept
-            Thread.new(client) { |client|
+            Thread.new(client) { |io|
               @connections << Thread.current
               begin
-                serve(client)
+                serve(io)
               rescue StandardError => e
                 # log fatal error while handling connection
                 logger.fatal(e.backtrace.join("\n"))
               ensure
                 begin
                   # always gracefully shutdown connection
-                  client.close
+                  io.close
                 rescue StandardError
                 end
                 @connections_mutex.synchronize {
