@@ -5,7 +5,7 @@ require 'base64'
 module MidiSmtpServer
 
   # default values
-  DEFAULT_SMTPD_HOST = '127.0.0.1'
+  DEFAULT_SMTPD_HOST = '127.0.0.1'.freeze
   DEFAULT_SMTPD_PORT = 2525
   DEFAULT_SMTPD_MAX_CONNECTIONS = 4
 
@@ -24,9 +24,9 @@ module MidiSmtpServer
 
     # Stop the server running on the given port, bound to the given host
     def Smtpd.stop(port = DEFAULT_SMTPD_PORT, host = DEFAULT_SMTPD_HOST)
-      @@services_mutex.synchronize {
+      @@services_mutex.synchronize do
         @@services[host][port].stop
-      }
+      end
     end
 
     # Check if a server is running on the given port and host
@@ -38,11 +38,11 @@ module MidiSmtpServer
 
     # Stop the server
     def stop
-      @connections_mutex.synchronize {
+      @connections_mutex.synchronize do
         if @tcp_server_thread
           @tcp_server_thread.raise 'stop'
         end
-      }
+      end
     end
 
     # Returns true if the server has stopped.
@@ -136,9 +136,7 @@ module MidiSmtpServer
     end
 
     # get event on HELO/EHLO:
-    def on_helo_event(ctx, helo_data)
-      logger.debug("Event helo from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} with payload #{helo_data}")
-    end
+    def on_helo_event(ctx, helo_data) end
 
     # check the authentification on AUTH:
     # if any value returned, that will be used for ongoing processing
@@ -147,7 +145,7 @@ module MidiSmtpServer
       # if authentification is used, override this event
       # and implement your own user management.
       # otherwise all authentifications are blocked per default
-      logger.debug("Event auth from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} for #{authorization_id} (#{authentication_id}) with #{authentication}")
+      logger.debug("Deny access from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} for #{authentication_id}" + (authorization_id == '' ? '' : "/#{authorization_id}") + " with #{authentication}")
       raise Smtpd535Exception
     end
 
@@ -159,21 +157,15 @@ module MidiSmtpServer
     # get address send in MAIL FROM:
     # if any value returned, that will be used for ongoing processing
     # otherwise the original value will be used
-    def on_mail_from_event(ctx, mail_from_data)
-      logger.debug("Event mail_from from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} for #{mail_from_data}")
-    end
+    def on_mail_from_event(ctx, mail_from_data) end
 
     # get each address send in RCPT TO:
     # if any value returned, that will be used for ongoing processing
     # otherwise the original value will be used
-    def on_rcpt_to_event(ctx, rcpt_to_data)
-      logger.debug("Event rcpt_to from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} with #{rcpt_to_data}")
-    end
+    def on_rcpt_to_event(ctx, rcpt_to_data) end
 
     # get each message after DATA <message> .
-    def on_message_data_event(ctx)
-      logger.debug("Event message_data from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} size #{ctx[:message][:data].length}")
-    end
+    def on_message_data_event(ctx) end
 
     private
 
@@ -663,7 +655,7 @@ module MidiSmtpServer
     def start
       raise 'Smtpd instance was already started' if !stopped?
       @shutdown = false
-      @@services_mutex.synchronize {
+      @@services_mutex.synchronize do
         if Smtpd.in_service?(@port, @host)
           raise "Port already in use: #{host}:#{@port}!"
         end
@@ -671,17 +663,17 @@ module MidiSmtpServer
         @port = @tcp_server.addr[1]
         @@services[@host] = {} unless @@services.key?(@host)
         @@services[@host][@port] = self;
-      }
-      @tcp_server_thread = Thread.new {
+      end
+      @tcp_server_thread = Thread.new do
         begin
           while !@shutdown
-            @connections_mutex.synchronize {
+            @connections_mutex.synchronize do
               while @connections.size >= @max_connections
                 @connections_cv.wait(@connections_mutex)
               end
-            }
+            end
             client = @tcp_server.accept
-            Thread.new(client) { |io|
+            Thread.new(client) do |io|
               @connections << Thread.current
               begin
                 serve(io)
@@ -694,12 +686,12 @@ module MidiSmtpServer
                   io.close
                 rescue StandardError
                 end
-                @connections_mutex.synchronize {
+                @connections_mutex.synchronize do
                   @connections.delete(Thread.current)
                   @connections_cv.signal
-                }
+                end
               end
-            }
+            end
           end
         rescue StandardError => e
           # log fatal error while starting new thread
@@ -710,20 +702,20 @@ module MidiSmtpServer
           rescue StandardError
           end
           if @shutdown
-            @connections_mutex.synchronize {
+            @connections_mutex.synchronize do
               while @connections.size > 0
                 @connections_cv.wait(@connections_mutex)
               end
-            }
+            end
           else
             @connections.each { |c| c.raise 'stop' }
           end
           @tcp_server_thread = nil
-          @@services_mutex.synchronize {
+          @@services_mutex.synchronize do
             @@services[@host].delete(@port)
-          }
+          end
         end
-      }
+      end
       self
     end
 
