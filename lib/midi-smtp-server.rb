@@ -219,7 +219,7 @@ module MidiSmtpServer
                 output = "#{e.smtpd_result}"
 
               # Unknown general Exception during processing
-              rescue => e
+              rescue StandardError => e
                 # log error info if logging
                 logger.error("#{e}")
                 # set default smtp server dialog error
@@ -246,14 +246,14 @@ module MidiSmtpServer
           # log info but only while debugging otherwise ignore message
           logger.debug('EOFError - Connection lost due abort by client!')
 
-        rescue => e
+        rescue StandardError => e
           # log error info if logging
           logger.error("#{e}")
           # power down connection
           # ignore IOErrors when sending final smtp abort return code 421
           begin
             io.print "#{Smtpd421Exception.new.smtpd_result}\r\n" unless io.closed?
-          rescue
+          rescue StandardError
             logger.debug('IOError - Can\'t send 421 abort code!')
           end
         end
@@ -523,7 +523,7 @@ module MidiSmtpServer
             raise
 
           # test all other Exceptions
-          rescue => e
+          rescue StandardError => e
             # send correct aborted message to smtp dialog
             raise Smtpd451Exception.new("#{e}")
 
@@ -681,14 +681,14 @@ module MidiSmtpServer
               @connections << Thread.current
               begin
                 serve(client)
-              rescue => detail
+              rescue StandardError => e
                 # log fatal error while handling connection
-                logger.fatal(detail.backtrace.join("\n"))
+                logger.fatal(e.backtrace.join("\n"))
               ensure
                 begin
                   # always gracefully shutdown connection
                   client.close
-                rescue
+                rescue StandardError
                 end
                 @connections_mutex.synchronize {
                   @connections.delete(Thread.current)
@@ -697,13 +697,13 @@ module MidiSmtpServer
               end
             }
           end
-        rescue => detail
+        rescue StandardError => e
           # log fatal error while starting new thread
-          logger.fatal(detail.backtrace.join("\n"))
+          logger.fatal(e.backtrace.join("\n"))
         ensure
           begin
             @tcp_server.close
-          rescue
+          rescue StandardError
           end
           if @shutdown
             @connections_mutex.synchronize {
