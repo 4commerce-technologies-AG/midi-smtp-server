@@ -106,7 +106,7 @@ module MidiSmtpServer
         require 'logger'
         @logger = Logger.new(STDOUT)
         @logger.datetime_format = '%Y-%m-%d %H:%M:%S'
-        @logger.formatter = proc { |severity, datetime, progname, msg| "#{datetime}: [#{severity}] #{msg.chomp}\n" }
+        @logger.formatter = proc { |severity, datetime, _progname, msg| "#{datetime}: [#{severity}] #{msg.chomp}\n" }
       end
       # initialize class
       @tcp_server_thread = nil
@@ -137,6 +137,7 @@ module MidiSmtpServer
 
     # get event on HELO/EHLO:
     def on_helo_event(ctx, helo_data)
+      logger.debug("Event helo from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} with payload #{helo_data}")
     end
 
     # check the authentification on AUTH:
@@ -146,6 +147,7 @@ module MidiSmtpServer
       # if authentification is used, override this event
       # and implement your own user management.
       # otherwise all authentifications are blocked per default
+      logger.debug("Event auth from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} for #{authorization_id} (#{authentication_id}) with #{authentication}")
       raise Smtpd535Exception
     end
 
@@ -158,16 +160,19 @@ module MidiSmtpServer
     # if any value returned, that will be used for ongoing processing
     # otherwise the original value will be used
     def on_mail_from_event(ctx, mail_from_data)
+      logger.debug("Event mail_from from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} for #{mail_from_data}")
     end
 
     # get each address send in RCPT TO:
     # if any value returned, that will be used for ongoing processing
     # otherwise the original value will be used
     def on_rcpt_to_event(ctx, rcpt_to_data)
+      logger.debug("Event rcpt_to from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} with #{rcpt_to_data}")
     end
 
     # get each message after DATA <message> .
     def on_message_data_event(ctx)
+      logger.debug("Event message_data from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} size #{ctx[:message][:data].length}")
     end
 
     private
