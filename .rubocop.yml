@@ -1,0 +1,49 @@
+Layout/EmptyLinesAroundModuleBody:
+  EnforcedStyle: empty_lines
+
+Layout/EmptyLinesAroundClassBody:
+  EnforcedStyle: empty_lines
+
+Layout/CaseIndentation:
+  IndentOneStep: true
+
+Layout/EmptyLinesAroundExceptionHandlingKeywords:
+  Enabled: no
+
+Lint/HandleExceptions:
+  Enabled: no
+
+Lint/UselessAccessModifier:
+  Enabled: no
+
+Style/RedundantBegin:
+  Enabled: no
+
+Style/RedundantReturn:
+  Enabled: no
+
+Style/RedundantParentheses:
+  Enabled: no
+
+Style/RescueStandardError:
+  Enabled: yes
+  EnforcedStyle: explicit
+
+Style/SymbolArray:
+  Enabled: yes
+  EnforcedStyle: brackets
+
+Style/UnneededInterpolation:
+  Enabled: no
+
+Metrics:
+  Enabled: no
+
+Performance/RedundantMerge:
+  Enabled: no
+
+Naming/FileName:
+  Regex: !ruby/regexp /^[0-9a-z][-_0-9a-z]+$/
+
+Lint/Void:
+  CheckForMethodsWithNoSideEffects: true
