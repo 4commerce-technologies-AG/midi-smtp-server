@@ -1,3 +1,6 @@
+AllCops:
+  TargetRubyVersion: 2.1
+
 Layout/EmptyLinesAroundModuleBody:
   EnforcedStyle: empty_lines
 
