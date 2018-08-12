@@ -1,12 +1,12 @@
-require "midi-smtp-server"
-require "mail"
+require 'midi-smtp-server'
+require 'mail'
 
 # Server class
 class MySmtpd < MidiSmtpServer::Smtpd
 
   def start
     # initialize and do your own initailizations
-    
+
     # call inherited class method
     super
   end
@@ -16,16 +16,18 @@ class MySmtpd < MidiSmtpServer::Smtpd
   # otherwise the original value will be used for authorization_id
   def on_auth_event(ctx, authorization_id, authentication_id, authentication)
     # to proceed this test use commands ...
-    #   auth plain
-    #>  AGFkbWluaXN0cmF0b3IAcGFzc3dvcmQ=
+    # auth plain
+    # > AGFkbWluaXN0cmF0b3IAcGFzc3dvcmQ=
     # auth login
-    #>  YWRtaW5pc3RyYXRvcg==
-    #>  cGFzc3dvcmQ=
-    if authorization_id == "" && authentication_id == "administrator" && authentication == "password"
-      return "supervisor"
-    else
-      raise MidiSmtpServer::Smtpd535Exception
+    # > YWRtaW5pc3RyYXRvcg==
+    # > cGFzc3dvcmQ=
+    if authorization_id == '' && authentication_id == 'administrator' && authentication == 'password'
+      # yes
+      puts "Authenticated id: #{authentication_id} with authentication: #{authentication} from: #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]}"
+      return 'supervisor'
     end
+    # otherwise exit with authentification exception
+    raise MidiSmtpServer::Smtpd535Exception
   end
 
   # get address send in MAIL FROM:
@@ -37,8 +39,10 @@ class MySmtpd < MidiSmtpServer::Smtpd
       puts "and authentication id: #{ctx[:server][:authentication_id]}"
     else
       # no
-      puts "Proceed with anonymoous credentials"
+      puts 'Proceed with anonymoous credentials'
     end
+    # return the tested mail_from_data as mail to proceed
+    mail_from_data
   end
 
   # get each message after DATA <message> .
@@ -56,35 +60,33 @@ class MySmtpd < MidiSmtpServer::Smtpd
 end
 
 # try to gracefully shutdown on Ctrl-C
-trap("INT") {
-  puts "Interrupted, exit now..."
+trap('INT') do
+  puts 'Interrupted, exit now...'
   exit 0
-}
+end
 
 # Output for debug
 puts "#{Time.now}: Starting MySmtpd..."
 
 # Create a new server instance listening at localhost interfaces 127.0.0.1:2525
 # and accepting a maximum of 4 simultaneous connections
-server = MySmtpd.new(MidiSmtpServer::DEFAULT_SMTPD_PORT, MidiSmtpServer::DEFAULT_SMTPD_HOST, MidiSmtpServer::DEFAULT_SMTPD_MAX_CONNECTIONS, { auth_mode: :AUTH_OPTIONAL }) 
+server = MySmtpd.new(MidiSmtpServer::DEFAULT_SMTPD_PORT, MidiSmtpServer::DEFAULT_SMTPD_HOST, MidiSmtpServer::DEFAULT_SMTPD_MAX_CONNECTIONS, auth_mode: :AUTH_OPTIONAL)
+
+# setup exit code
+at_exit do
+  # check to shutdown connection
+  if server
+    # Output for debug
+    puts "#{Time.now}: Shutdown MySmtpd..."
+    # stop all threads and connections gracefully
+    server.stop
+  end
+  # Output for debug
+  puts "#{Time.now}: MySmtpd down!\n"
+end
 
 # Start the server
 server.start
 
 # Run on server forever
 server.join
-
-# setup exit code
-BEGIN {
-  at_exit {
-    # check to shutdown connection
-    if server
-      # Output for debug
-      puts "#{Time.now}: Shutdown MySmtpd..."
-      # stop all threads and connections gracefully
-      server.stop
-    end
-    # Output for debug
-    puts "#{Time.now}: MySmtpd down!\n"
-  }
-}

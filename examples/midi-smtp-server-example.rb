@@ -1,12 +1,12 @@
-require "midi-smtp-server"
-require "mail"
+require 'midi-smtp-server'
+require 'mail'
 
 # Server class
 class MySmtpd < MidiSmtpServer::Smtpd
 
   def start
     # initialize and do your own initailizations
-    
+
     # call inherited class method
     super
   end
@@ -26,10 +26,10 @@ class MySmtpd < MidiSmtpServer::Smtpd
 end
 
 # try to gracefully shutdown on Ctrl-C
-trap("INT") {
-  puts "Interrupted, exit now..."
+trap('INT') do
+  puts 'Interrupted, exit now...'
   exit 0
-}
+end
 
 # Output for debug
 puts "#{Time.now}: Starting MySmtpd..."
@@ -38,23 +38,21 @@ puts "#{Time.now}: Starting MySmtpd..."
 # and accepting a maximum of 4 simultaneous connections
 server = MySmtpd.new
 
+# setup exit code
+at_exit do
+  # check to shutdown connection
+  if server
+    # Output for debug
+    puts "#{Time.now}: Shutdown MySmtpd..."
+    # stop all threads and connections gracefully
+    server.stop
+  end
+  # Output for debug
+  puts "#{Time.now}: MySmtpd down!\n"
+end
+
 # Start the server
 server.start
 
 # Run on server forever
 server.join
-
-# setup exit code
-BEGIN {
-  at_exit {
-    # check to shutdown connection
-    if server
-      # Output for debug
-      puts "#{Time.now}: Shutdown MySmtpd..."
-      # stop all threads and connections gracefully
-      server.stop
-    end
-    # Output for debug
-    puts "#{Time.now}: MySmtpd down!\n"
-  }
-}
