@@ -23,7 +23,7 @@ module MidiSmtpServer
     @@services_mutex = Mutex.new
 
     # Stop the server running on the given port, bound to the given host
-    def Smtpd.stop(port = DEFAULT_SMTPD_PORT, host = DEFAULT_SMTPD_HOST)
+    def self.stop(port = DEFAULT_SMTPD_PORT, host = DEFAULT_SMTPD_HOST)
       @@services_mutex.synchronize do
         @@services[host][port].stop
       end
@@ -31,23 +31,20 @@ module MidiSmtpServer
 
     # Check if a server is running on the given port and host
     # Returns true if a server is running on that port and host.
-    def Smtpd.in_service?(port = DEFAULT_SMTPD_PORT, host = DEFAULT_SMTPD_HOST)
-      @@services.key?(host) and
-        @@services[host].key?(port)
+    def self.in_service?(port = DEFAULT_SMTPD_PORT, host = DEFAULT_SMTPD_HOST)
+      @@services.key?(host) && @@services[host].key?(port)
     end
 
     # Stop the server
     def stop
       @connections_mutex.synchronize do
-        if @tcp_server_thread
-          @tcp_server_thread.raise 'stop'
-        end
+        @tcp_server_thread.raise 'stop' if @tcp_server_thread
       end
     end
 
     # Returns true if the server has stopped.
     def stopped?
-      @tcp_server_thread == nil
+      @tcp_server_thread.nil?
     end
 
     # Schedule a shutdown for the server
@@ -64,16 +61,16 @@ module MidiSmtpServer
     # before joining the server wait a few seconds to let the service come up
     def join(sleep_seconds_before_join = 1)
       # check already started server
-      if @tcp_server_thread
-        begin
-          # wait a second
-          sleep sleep_seconds_before_join
-          # join
-          @tcp_server_thread.join
+      return unless @tcp_server_thread
+      # otherwise try to join
+      begin
+        # wait a second
+        sleep sleep_seconds_before_join
+        # join
+        @tcp_server_thread.join
 
-        # catch ctrl-c to stop service
-        rescue Interrupt
-        end
+      # catch ctrl-c to stop service
+      rescue Interrupt
       end
     end
 
@@ -219,7 +216,7 @@ module MidiSmtpServer
               end
 
               # check result
-              if not output.empty?
+              unless output.empty?
                 # log smtp dialog // message data is stored separate
                 logger.debug('>>> ' + output)
                 # smtp dialog response
@@ -298,14 +295,15 @@ module MidiSmtpServer
             # set sequence state as RSET
             Thread.current[:cmd_sequence] = :CMD_RSET
             # check whether to answer as HELO or EHLO
-            if line =~ /^EHLO/i
-              # reply supported extensions
-              return "250-8BITMIME\r\n" +
-                     (@auth_mode != :AUTH_FORBIDDEN ? "250-AUTH LOGIN PLAIN\r\n" : '') +
-                     '250 OK'
-            else
-              # reply ok only
-              return '250 OK'
+            case line
+              when (/^EHLO/i)
+                # reply supported extensions
+                return "250-8BITMIME\r\n" +
+                       (@auth_mode != :AUTH_FORBIDDEN ? "250-AUTH LOGIN PLAIN\r\n" : '') +
+                       '250 OK'
+              else
+                # reply ok only
+                return '250 OK'
             end
 
           when (/^AUTH(\s+)((LOGIN|PLAIN)(\s+[A-Z0-9=]+)?|CRAM-MD5)\s*$/i)
@@ -339,7 +337,7 @@ module MidiSmtpServer
                   return '334 '
                 else
                   # handle authentication with given auth_id and password
-                  process_auth_plain((@auth_data.length == 2) ? @auth_data[1] : [])
+                  process_auth_plain(@auth_data.length == 2 ? @auth_data[1] : [])
                 end
 
               when (/LOGIN/i)
@@ -445,7 +443,7 @@ module MidiSmtpServer
             # 553 Requested action not taken: mailbox name not allowed
             # ---------
             # check valid command sequence
-            raise Smtpd503Exception if ![:CMD_MAIL, :CMD_RCPT].include?(Thread.current[:cmd_sequence])
+            raise Smtpd503Exception unless [:CMD_MAIL, :CMD_RCPT].include?(Thread.current[:cmd_sequence])
             # check that authentication is enabled
             raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(Thread.current[:ctx])
             # handle command
@@ -494,46 +492,46 @@ module MidiSmtpServer
         end
 
       else
-        # If we are in data mode and the entire message consists
-        # solely of a period on a line by itself then we
-        # are being told to exit data mode
-        if (line.chomp =~ /^\.$/)
-          # append last chars to message data
-          Thread.current[:ctx][:message][:data] << line
-          # remove ending line .
-          Thread.current[:ctx][:message][:data].gsub!(/\r\n\Z/, '').gsub!(/\.\Z/, '')
-          # save delivered time
-          Thread.current[:ctx][:message][:delivered] = Time.now.utc
-          # save bytesize of message data
-          Thread.current[:ctx][:message][:bytesize] = Thread.current[:ctx][:message][:data].bytesize
-          # call event
-          begin
-            on_message_data_event(Thread.current[:ctx])
-            return '250 Requested mail action okay, completed'
+        # If we are in date mode then ...
 
-          # test for SmtpdException
-          rescue SmtpdException
-            # just re-raise exception set by app
-            raise
+        # ... we need to add always the new message data (line) to the message
+        Thread.current[:ctx][:message][:data] << line
 
-          # test all other Exceptions
-          rescue StandardError => e
-            # send correct aborted message to smtp dialog
-            raise Smtpd451Exception.new("#{e}")
+        # ... and the entire new message data (line) does NOT consists
+        # solely of a period (.) on a line by itself then we are being
+        # told to continue data mode and the command sequence state
+        # will stay on :CMD_DATA
+        return '' unless line.chomp =~ /^\.$/
 
-          ensure
-            # always start with empty values after finishing incoming message
-            # and rset command sequence
-            reset_ctx
-          end
+        # otherwise the entire new message data (line) consists
+        # solely of a period on a line by itself then we are being
+        # told to finish data mode
 
-        else
-          # If we are in date mode then we need to add
-          # the new data to the message
-          Thread.current[:ctx][:message][:data] << line
-          return ''
-          # command sequence state will stay on :CMD_DATA
+        # remove ending line period (.)
+        Thread.current[:ctx][:message][:data].gsub!(/\r\n\Z/, '').gsub!(/\.\Z/, '')
+        # save delivered UTC time
+        Thread.current[:ctx][:message][:delivered] = Time.now.utc
+        # save bytesize of message data
+        Thread.current[:ctx][:message][:bytesize] = Thread.current[:ctx][:message][:data].bytesize
+        # call event to process message
+        begin
+          on_message_data_event(Thread.current[:ctx])
+          return '250 Requested mail action okay, completed'
 
+        # test for SmtpdException
+        rescue SmtpdException
+          # just re-raise exception set by app
+          raise
+
+        # test all other Exceptions
+        rescue StandardError => e
+          # send correct aborted message to smtp dialog
+          raise Smtpd451Exception, e
+
+        ensure
+          # always start with empty values after finishing incoming message
+          # and rset command sequence
+          reset_ctx
         end
 
       end
@@ -588,23 +586,20 @@ module MidiSmtpServer
       begin
         # extract auth id (and password)
         @auth_values = Base64.decode64(encoded_auth_response).split("\x00")
-        # check for valid credentials
-        if @auth_values.length == 3
-          return_value = on_auth_event(Thread.current[:ctx], @auth_values[0], @auth_values[1], @auth_values[2])
-          if return_value
-            # overwrite data with returned value as authorization id
-            @auth_values[0] = return_value
-          end
-          # save authentication information to ctx
-          Thread.current[:ctx][:server][:authorization_id] = @auth_values[0].to_s.empty? ? @auth_values[1] : @auth_values[0]
-          Thread.current[:ctx][:server][:authentication_id] = @auth_values[1]
-          Thread.current[:ctx][:server][:authenticated] = Time.now.utc
-          # response code
-          return '235 OK'
-        else
-          # return error
-          raise Smtpd500Exception
+        # check for valid credentials parameters
+        raise Smtpd500Exception unless @auth_values.length == 3
+        # call event function to test credentials
+        return_value = on_auth_event(Thread.current[:ctx], @auth_values[0], @auth_values[1], @auth_values[2])
+        if return_value
+          # overwrite data with returned value as authorization id
+          @auth_values[0] = return_value
         end
+        # save authentication information to ctx
+        Thread.current[:ctx][:server][:authorization_id] = @auth_values[0].to_s.empty? ? @auth_values[1] : @auth_values[0]
+        Thread.current[:ctx][:server][:authentication_id] = @auth_values[1]
+        Thread.current[:ctx][:server][:authenticated] = Time.now.utc
+        # response code
+        return '235 OK'
 
       ensure
         # whatever happens in this check, reset next sequence
@@ -653,7 +648,7 @@ module MidiSmtpServer
 
     # Start the server if it isn't already running
     def start
-      raise 'Smtpd instance was already started' if !stopped?
+      raise 'Smtpd instance was already started' unless stopped?
       @shutdown = false
       @@services_mutex.synchronize do
         if Smtpd.in_service?(@port, @host)
@@ -662,11 +657,11 @@ module MidiSmtpServer
         @tcp_server = TCPServer.new(@host, @port)
         @port = @tcp_server.addr[1]
         @@services[@host] = {} unless @@services.key?(@host)
-        @@services[@host][@port] = self;
+        @@services[@host][@port] = self
       end
       @tcp_server_thread = Thread.new do
         begin
-          while !@shutdown
+          until @shutdown
             @connections_mutex.synchronize do
               while @connections.size >= @max_connections
                 @connections_cv.wait(@connections_mutex)
@@ -703,9 +698,7 @@ module MidiSmtpServer
           end
           if @shutdown
             @connections_mutex.synchronize do
-              while @connections.size > 0
-                @connections_cv.wait(@connections_mutex)
-              end
+              @connections_cv.wait(@connections_mutex) until @connections.empty?
             end
           else
             @connections.each { |c| c.raise 'stop' }
@@ -727,7 +720,7 @@ module MidiSmtpServer
     attr_reader :smtpd_return_code
     attr_reader :smtpd_return_text
 
-    def initialize(msg = nil, smtpd_return_code, smtpd_return_text)
+    def initialize(msg, smtpd_return_code, smtpd_return_text)
       # save reference for smtp dialog
       @smtpd_return_code = smtpd_return_code
       @smtpd_return_text = smtpd_return_text
