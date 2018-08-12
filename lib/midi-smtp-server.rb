@@ -2,6 +2,7 @@ require 'socket'
 require 'thread'
 require 'base64'
 
+# A small and highly customizable ruby SMTP-Server.
 module MidiSmtpServer
 
   # default values
@@ -17,29 +18,23 @@ module MidiSmtpServer
 
     public
 
-    # connection management
-    # Hash of opened ports, i.e. services
-    @@services = {}
-    @@services_mutex = Mutex.new
-
-    # Stop the server running on the given port, bound to the given host
-    def self.stop(port = DEFAULT_SMTPD_PORT, host = DEFAULT_SMTPD_HOST)
-      @@services_mutex.synchronize do
-        @@services[host][port].stop
-      end
-    end
-
-    # Check if a server is running on the given port and host
-    # Returns true if a server is running on that port and host.
-    def self.in_service?(port = DEFAULT_SMTPD_PORT, host = DEFAULT_SMTPD_HOST)
-      @@services.key?(host) && @@services[host].key?(port)
+    # Start the server
+    def start
+      serve_service
     end
 
     # Stop the server
-    def stop
+    def stop(wait_seconds_before_close = 2, gracefully = true)
+      # always signal shutdown
+      shutdown if gracefully
+      # wait if some connection(s) need(s) more time to handle shutdown
+      sleep wait_seconds_before_close if connections?
+      # drop tcp_server while raising SmtpdStopServiceException
       @connections_mutex.synchronize do
-        @tcp_server_thread.raise 'stop' if @tcp_server_thread
+        @tcp_server_thread.raise SmtpdStopServiceException if @tcp_server_thread
       end
+      # wait if some connection(s) still need(s) more time to come down
+      sleep wait_seconds_before_close if connections?
     end
 
     # Returns true if the server has stopped.
@@ -52,9 +47,19 @@ module MidiSmtpServer
       @shutdown = true
     end
 
+    # test for shutdown state
+    def shutdown?
+      @shutdown
+    end
+
     # Return the current number of connected clients
     def connections
       @connections.size
+    end
+
+    # Return if has connected clients
+    def connections?
+      @connections.any?
     end
 
     # Join with the server thread
@@ -164,15 +169,75 @@ module MidiSmtpServer
     # get each message after DATA <message> .
     def on_message_data_event(ctx) end
 
-    private
+    protected
+
+    # Start the server if it isn't already running
+    def serve_service
+      raise 'Smtpd instance was already started' unless stopped?
+
+      @shutdown = false
+      @tcp_server = TCPServer.new(@host, @port)
+
+      @tcp_server_thread = Thread.new do
+        begin
+          until shutdown?
+            @connections_mutex.synchronize do
+              while @connections.size >= @max_connections
+                @connections_cv.wait(@connections_mutex)
+              end
+            end
+            client = @tcp_server.accept
+            Thread.new(client) do |io|
+              @connections << Thread.current
+              begin
+                serve_client(io)
+              rescue SmtpdStopConnectionException
+                # ignore this exception due to service shutdown
+              rescue StandardError => e
+                # log fatal error while handling connection
+                logger.fatal(e.backtrace.join("\n"))
+              ensure
+                begin
+                  # always gracefully shutdown connection
+                  io.close
+                rescue StandardError
+                end
+                @connections_mutex.synchronize do
+                  @connections.delete(Thread.current)
+                  @connections_cv.signal
+                end
+              end
+            end
+          end
+        rescue SmtpdStopServiceException
+          # ignore this exception due to service shutdown
+        rescue StandardError => e
+          # log fatal error while starting new thread
+          logger.fatal(e.backtrace.join("\n"))
+        ensure
+          begin
+            @tcp_server.close
+          rescue StandardError
+          end
+          if shutdown?
+            @connections_mutex.synchronize do
+              @connections_cv.wait(@connections_mutex) until @connections.empty?
+            end
+          else
+            @connections.each { |c| c.raise SmtpdStopConnectionException }
+          end
+          @tcp_server_thread = nil
+        end
+      end
+    end
 
     # handle connection
-    def serve(io)
+    def serve_client(io)
       # ON CONNECTION
       # 220 <domain> Service ready
       # 421 <domain> Service not available, closing transmission channel
       # Reset and initialize message
-      reset_ctx(true)
+      process_reset_ctx(true)
       # get local address info
       _, Thread.current[:ctx][:server][:local_port], Thread.current[:ctx][:server][:local_host], Thread.current[:ctx][:server][:local_ip] = @do_smtp_server_reverse_lookup ? io.addr(:hostname) : io.addr(:numeric)
       # get remote partner hostname and address
@@ -225,10 +290,10 @@ module MidiSmtpServer
 
             end
             # check for valid quit or broken communication
-            break if (Thread.current[:cmd_sequence] == :CMD_QUIT) || io.closed?
+            break if (Thread.current[:cmd_sequence] == :CMD_QUIT) || io.closed? || shutdown?
           end
           # graceful end of connection
-          io.print "221 Service closing transmission channel\r\n" unless io.closed?
+          io.print "221 Service closing transmission channel\r\n" unless io.closed? || shutdown?
 
         # connection was simply closed / aborted by remote closing socket
         rescue EOFError
@@ -386,7 +451,7 @@ module MidiSmtpServer
             # check valid command sequence
             raise Smtpd503Exception if Thread.current[:cmd_sequence] == :CMD_HELO
             # handle command
-            reset_ctx
+            process_reset_ctx
             return '250 OK'
 
           when (/^QUIT\s*$/i)
@@ -531,14 +596,14 @@ module MidiSmtpServer
         ensure
           # always start with empty values after finishing incoming message
           # and rset command sequence
-          reset_ctx
+          process_reset_ctx
         end
 
       end
     end
 
     # reset the context of current smtpd dialog
-    def reset_ctx(connection_initialize = false)
+    def process_reset_ctx(connection_initialize = false)
       # set active command sequence info
       Thread.current[:cmd_sequence] = connection_initialize ? :CMD_HELO : :CMD_RSET
       # drop any auth challenge
@@ -646,73 +711,19 @@ module MidiSmtpServer
       end
     end
 
-    # Start the server if it isn't already running
-    def start
-      raise 'Smtpd instance was already started' unless stopped?
-      @shutdown = false
-      @@services_mutex.synchronize do
-        if Smtpd.in_service?(@port, @host)
-          raise "Port already in use: #{host}:#{@port}!"
-        end
-        @tcp_server = TCPServer.new(@host, @port)
-        @port = @tcp_server.addr[1]
-        @@services[@host] = {} unless @@services.key?(@host)
-        @@services[@host][@port] = self
-      end
-      @tcp_server_thread = Thread.new do
-        begin
-          until @shutdown
-            @connections_mutex.synchronize do
-              while @connections.size >= @max_connections
-                @connections_cv.wait(@connections_mutex)
-              end
-            end
-            client = @tcp_server.accept
-            Thread.new(client) do |io|
-              @connections << Thread.current
-              begin
-                serve(io)
-              rescue StandardError => e
-                # log fatal error while handling connection
-                logger.fatal(e.backtrace.join("\n"))
-              ensure
-                begin
-                  # always gracefully shutdown connection
-                  io.close
-                rescue StandardError
-                end
-                @connections_mutex.synchronize do
-                  @connections.delete(Thread.current)
-                  @connections_cv.signal
-                end
-              end
-            end
-          end
-        rescue StandardError => e
-          # log fatal error while starting new thread
-          logger.fatal(e.backtrace.join("\n"))
-        ensure
-          begin
-            @tcp_server.close
-          rescue StandardError
-          end
-          if @shutdown
-            @connections_mutex.synchronize do
-              @connections_cv.wait(@connections_mutex) until @connections.empty?
-            end
-          else
-            @connections.each { |c| c.raise 'stop' }
-          end
-          @tcp_server_thread = nil
-          @@services_mutex.synchronize do
-            @@services[@host].delete(@port)
-          end
-        end
-      end
-      self
-    end
-
   end
+
+  # special internal exception to signal service stop
+  # without creating a fatal error message
+  class SmtpdStopServiceException < RuntimeError
+  end
+
+  # special internal exception to signal connection stop while
+  # server shutdown without creating a fatal error message
+  class SmtpdStopConnectionException < RuntimeError
+  end
+
+  public
 
   # generic smtp server exception class
   class SmtpdException < RuntimeError
