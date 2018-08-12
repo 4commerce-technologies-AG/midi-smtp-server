@@ -2,7 +2,7 @@
 
 MidiSmtpServer is a small and highly customizable ruby SMTP-Server inspired from the work and code written by [Aaron Gough](https://github.com/aarongough) and [Peter Cooper](http://peterc.org/). As a library it is mainly designed to be integrated into your projects as serving a SMTP-Server service. The lib will do nothing with your mail and you have to create your own event functions to handle and operate on incoming mails. We are using this in conjunction with [Mikel Lindsaar](https://github.com/mikel) great Mail component (https://github.com/mikel/mail). Time to run your own SMTP-Server service.
 
-With version 2.0 the library got a lot of improvements and on version 2.1.1 a significant speed improvement. I suggest everybody using MidiSmtpServer 1.x or 2.x to switch at least to 2.1.1. For upgrades from version 1.x you may follow the guide (see appendix) how to change your existing code to be compatible with the new release.
+With version 2.0 the library got a lot of improvements and on version 2.1.1 a significant speed improvement. We suggest everybody using MidiSmtpServer 1.x or 2.x to switch at least to 2.2.1. For upgrades from version 1.x you may follow the guide (see appendix) how to change your existing code to be compatible with the new release.
 
 
 ## Using the library
@@ -10,8 +10,8 @@ With version 2.0 the library got a lot of improvements and on version 2.1.1 a si
 To create your own SMTP-Server service simply do by:
 
 ```ruby
-require "midi-smtp-server"
-require "mail"
+require 'midi-smtp-server'
+require 'mail'
 
 # Server class
 class MySmtpd < MidiSmtpServer::Smtpd
@@ -37,6 +37,12 @@ class MySmtpd < MidiSmtpServer::Smtpd
 
 end
 
+# try to gracefully shutdown on Ctrl-C
+trap('INT') do
+  puts 'Interrupted, exit now...'
+  exit 0
+end
+
 # Output for debug
 puts "#{Time.now}: Starting MySmtpd..."
 
@@ -44,30 +50,25 @@ puts "#{Time.now}: Starting MySmtpd..."
 # and accepting a maximum of 4 simultaneous connections
 server = MySmtpd.new
 
+# setup exit code
+at_exit do
+  # check to shutdown connection
+  if server
+    # Output for debug
+    puts "#{Time.now}: Shutdown MySmtpd..."
+    # stop all threads and connections gracefully
+    server.stop
+  end
+  # Output for debug
+  puts "#{Time.now}: MySmtpd down!\n"
+end
+
 # Start the server
 server.start
 
 # Run on server forever
 server.join
 
-# setup exit code
-BEGIN {
-  at_exit {
-    # check to shutdown connection
-    if server
-      # Output for debug
-      puts "#{Time.now}: Shutdown MySmtpd..."
-      # gracefully connections down
-      server.shutdown
-      # check once if some connection(s) need(s) more time
-      sleep 2 unless server.connections == 0 
-      # stop all threads and connections
-      server.stop
-    end
-    # Output for debug
-    puts "#{Time.now}: MySmtpd down!"
-  }
-}
 ```
 
 
@@ -174,7 +175,7 @@ opts = { auth_mode: AUTH_REQUIRED }
 You may initialize your server class like:
 
 ```ruby
-server = MySmtpd.new(2525, '127.0.0.1', 4, { auth_mode: :AUTH_REQUIRED })
+server = MySmtpd.new(2525, '127.0.0.1', 4, auth_mode: :AUTH_REQUIRED)
 ```
 
 If you have enabled authentication you should provide your own user and access methods to grant access to your server. The default event method will deny all access per default.
@@ -343,6 +344,14 @@ We created a SMTP-Server e.g. to receive messages vie SMTP and store them to Rab
 ## MidiSmtpServer::Smtpd Class documentation
 
 You will find a detailed description of class methods and parameters at [RubyDoc](http://www.rubydoc.info/gems/midi-smtp-server/MidiSmtpServer/Smtpd)
+
+
+## New to version 2.2.x
+
+1. Rubocop configuration and passed source code verification
+2. Modified examples for a simple midi-smtp-server with and without auth
+3. Enhanced `serve_service` (previously `start`)
+4. Optionally gracefully shutdown when service `stop` (default gracefully)
 
 
 ## New to version 2.1.1
