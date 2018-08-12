@@ -15,10 +15,16 @@ class MySmtpd < MidiSmtpServer::Smtpd
   # if any value returned, that will be used for ongoing processing
   # otherwise the original value will be used for authorization_id
   def on_auth_event(ctx, authorization_id, authentication_id, authentication)
-    if authentication_id == "test" && authentication == "demo"
-      return authentication_id
+    # to proceed this test use commands ...
+    #   auth plain
+    #>  AGFkbWluaXN0cmF0b3IAcGFzc3dvcmQ=
+    # auth login
+    #>  YWRtaW5pc3RyYXRvcg==
+    #>  cGFzc3dvcmQ=
+    if authorization_id == "" && authentication_id == "administrator" && authentication == "password"
+      return "supervisor"
     else
-      raise Smtpd535Exception
+      raise MidiSmtpServer::Smtpd535Exception
     end
   end
 
@@ -31,7 +37,7 @@ class MySmtpd < MidiSmtpServer::Smtpd
       puts "and authentication id: #{ctx[:server][:authentication_id]}"
     else
       # no
-      puts "Procedd with anonymoous credentials"
+      puts "Proceed with anonymoous credentials"
     end
   end
 
@@ -48,6 +54,12 @@ class MySmtpd < MidiSmtpServer::Smtpd
   end
 
 end
+
+# try to gracefully shutdown on Ctrl-C
+trap("INT") {
+  puts "Interrupted, exit now..."
+  exit 0
+}
 
 # Output for debug
 puts "#{Time.now}: Starting MySmtpd..."
@@ -69,14 +81,10 @@ BEGIN {
     if server
       # Output for debug
       puts "#{Time.now}: Shutdown MySmtpd..."
-      # gracefully connections down
-      server.shutdown
-      # check once if some connection(s) need(s) more time
-      sleep 2 unless server.connections == 0 
-      # stop all threads and connections
+      # stop all threads and connections gracefully
       server.stop
     end
     # Output for debug
-    puts "#{Time.now}: MySmtpd down!"
+    puts "#{Time.now}: MySmtpd down!\n"
   }
 }
