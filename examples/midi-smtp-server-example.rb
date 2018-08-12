@@ -25,6 +25,12 @@ class MySmtpd < MidiSmtpServer::Smtpd
 
 end
 
+# try to gracefully shutdown on Ctrl-C
+trap("INT") {
+  puts "Interrupted, exit now..."
+  exit 0
+}
+
 # Output for debug
 puts "#{Time.now}: Starting MySmtpd..."
 
@@ -45,14 +51,10 @@ BEGIN {
     if server
       # Output for debug
       puts "#{Time.now}: Shutdown MySmtpd..."
-      # gracefully connections down
-      server.shutdown
-      # check once if some connection(s) need(s) more time
-      sleep 2 unless server.connections == 0 
-      # stop all threads and connections
+      # stop all threads and connections gracefully
       server.stop
     end
     # Output for debug
-    puts "#{Time.now}: MySmtpd down!"
+    puts "#{Time.now}: MySmtpd down!\n"
   }
 }
