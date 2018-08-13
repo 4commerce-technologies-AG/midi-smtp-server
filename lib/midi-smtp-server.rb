@@ -13,6 +13,42 @@ module MidiSmtpServer
   # Authentification modes
   AUTH_MODES = [:AUTH_FORBIDDEN, :AUTH_OPTIONAL, :AUTH_REQUIRED].freeze
 
+  # class for TlsTransport
+  class TlsTransport
+
+    def initialize(cert_path, key_path, ciphers, methods)
+      # save references
+      @cert_path = cert_path
+      @key_path = key_path
+      # create SSL context
+      @ctx = OpenSSL::SSL::SSLContext.new(methods && methods != '' ? methods : 'TLSv1_2')
+      @ctx.ciphers = ciphers && ciphers != '' ? ciphers : 'ECDSA:RSA'
+      # test loading certificate and key files
+      # otherwise initialize example certificate and key
+      @ctx.key = OpenSSL::PKey::RSA.new 4096
+      @ctx.cert = OpenSSL::X509::Certificate.new
+      @ctx.cert.subject = OpenSSL::X509::Name.new [['CN', 'localhost']]
+      @ctx.cert.issuer = @ctx.cert.subject
+      @ctx.cert.public_key = @ctx.key
+      @ctx.cert.not_before = Time.now
+      @ctx.cert.not_after = Time.now + 60 * 60 * 24
+      @ctx.cert.sign @ctx.key, OpenSSL::Digest::SHA1.new
+    end
+
+    # start ssl connection over existing tcpserver socket
+    def start(io)
+      # start SSL negotiation
+      ssl = OpenSSL::SSL::SSLSocket.new(io, @ctx)
+      # connect to server socket
+      ssl.accept
+      # make sure to close also the underlying io
+      ssl.sync_close = true
+      # return as new io socket
+      return ssl
+    end
+
+  end
+
   # class for SmtpServer
   class Smtpd
 
@@ -99,6 +135,11 @@ module MidiSmtpServer
     # +opts+:: optional settings
     # +opts.do_dns_reverse_lookup+:: flag if this smtp server should do reverse lookups on incoming connections
     # +opts.auth_mode+:: enable builtin authentication support (:AUTH_FORBIDDEN, :AUTH_OPTIONAL, :AUTH_REQUIRED)
+    # +opts.tls+:: enable STARTTLS support
+    # +opts.tls_cert_path+:: path to tls cerificate chain file
+    # +opts.tls_key_path+:: path to tls key file
+    # +opts.tls_ciphers+:: use ciphers
+    # +opts.tls_methods+:: use methods
     # +opts.logger+:: own logger class, otherwise default logger is created
     def initialize(port = DEFAULT_SMTPD_PORT, host = DEFAULT_SMTPD_HOST, max_connections = DEFAULT_SMTPD_MAX_CONNECTIONS, opts = {})
       # logging
@@ -125,6 +166,13 @@ module MidiSmtpServer
       # check for authentification
       @auth_mode = opts.include?(:auth_mode) ? opts[:auth_mode] : :AUTH_FORBIDDEN
       raise "Unknown authentification mode #{@auth_mode} was given by opts!" unless AUTH_MODES.include?(@auth_mode)
+      # check for tls
+      if opts.include?(:tls) && opts[:tls]
+        require 'openssl'
+        @tls = TlsTransport.new(opts[:tls_cert_path], opts[:tls_key_path], opts[:tls_ciphers], opts[:tls_methods])
+      else
+        @tls = nil
+      end
     end
 
     # get event on CONNECTION
@@ -190,7 +238,8 @@ module MidiSmtpServer
             Thread.new(client) do |io|
               @connections << Thread.current
               begin
-                serve_client(io)
+                # save returned io due maybe established ssl io socket
+                io = serve_client(io)
               rescue SmtpdStopConnectionException
                 # ignore this exception due to service shutdown
               rescue StandardError => e
@@ -254,8 +303,18 @@ module MidiSmtpServer
 
           # while data handle communication
           loop do
-            if IO.select([io], nil, nil, 0.1)
+            # test if STARTTLS sequence
+            if Thread.current[:cmd_sequence] == :CMD_STARTTLS
+              # start ssl tunnel
+              io = @tls.start(io)
+              # save enabled tls
+              Thread.current[:ctx][:server][:tls] = true
+              # set sequence back to HELO/EHLO
+              Thread.current[:cmd_sequence] = :CMD_HELO
+            end
 
+            # test for available IO data
+            if IO.select([io], nil, nil, 0.1)
               # read and handle input
               data = io.readline
               # log data, verbosity based on log severity and data type
@@ -284,8 +343,10 @@ module MidiSmtpServer
               unless output.empty?
                 # log smtp dialog // message data is stored separate
                 logger.debug('>>> ' + output)
+                # append line feed
+                output << "\r\n"
                 # smtp dialog response
-                io.print("#{output}\r\n") unless io.closed?
+                io.print(output) unless io.closed? || shutdown?
               end
 
             end
@@ -293,7 +354,9 @@ module MidiSmtpServer
             break if (Thread.current[:cmd_sequence] == :CMD_QUIT) || io.closed? || shutdown?
           end
           # graceful end of connection
-          io.print "221 Service closing transmission channel\r\n" unless io.closed? || shutdown?
+          output = "221 Service closing transmission channel\r\n"
+          # smtp dialog response
+          io.print(output) unless io.closed?
 
         # connection was simply closed / aborted by remote closing socket
         rescue EOFError
@@ -306,7 +369,9 @@ module MidiSmtpServer
           # power down connection
           # ignore IOErrors when sending final smtp abort return code 421
           begin
-            io.print "#{Smtpd421Exception.new.smtpd_result}\r\n" unless io.closed?
+            output = "#{Smtpd421Exception.new.smtpd_result}\r\n"
+            # smtp dialog response
+            io.print(output) unless io.closed?
           rescue StandardError
             logger.debug('IOError - Can\'t send 421 abort code!')
           end
@@ -315,7 +380,10 @@ module MidiSmtpServer
       ensure
         # event for cleanup at end of communication
         on_disconnect_event(Thread.current[:ctx])
+        # return socket handler, maybe replaced with ssl
+        return io
       end
+
     end
 
     def process_line(line)
@@ -364,7 +432,10 @@ module MidiSmtpServer
               when (/^EHLO/i)
                 # reply supported extensions
                 return "250-8BITMIME\r\n" +
+                       # respond with AUTH extensions if enabled
                        (@auth_mode != :AUTH_FORBIDDEN ? "250-AUTH LOGIN PLAIN\r\n" : '') +
+                       # respond with STARTTLS if available and not already enabled
+                       (@tls && !Thread.current[:ctx][:server][:tls] ? "250-STARTTLS\r\n" : '') +
                        '250 OK'
               else
                 # reply ok only
@@ -433,6 +504,23 @@ module MidiSmtpServer
                 raise Smtpd500Exception
 
             end
+
+          when /^STARTTLS\s*$/i
+            # STARTTLS
+            # 220 Ready to start TLS
+            # 454 TLS not available
+            # 501 Syntax error (no parameters allowed)
+            # ---------
+            # check valid command sequence
+            raise Smtpd503Exception if Thread.current[:cmd_sequence] == :CMD_HELO
+            # check initialized TlsTransport object
+            raise Smtpd454Exception unless @tls
+            # check valid command sequence
+            raise Smtpd503Exception if Thread.current[:ctx][:server][:tls]
+            # set sequence for next command input
+            Thread.current[:cmd_sequence] = :CMD_STARTTLS
+            # return with new service ready message
+            return '220 Ready to start TLS'
 
           when (/^NOOP\s*$/i)
             # NOOP
@@ -572,8 +660,10 @@ module MidiSmtpServer
         # solely of a period on a line by itself then we are being
         # told to finish data mode
 
+        # remove empty line
+        Thread.current[:ctx][:message][:data].gsub!(/\r\n\Z/, '')
         # remove ending line period (.)
-        Thread.current[:ctx][:message][:data].gsub!(/\r\n\Z/, '').gsub!(/\.\Z/, '')
+        Thread.current[:ctx][:message][:data].gsub!(/\.\Z/, '')
         # save delivered UTC time
         Thread.current[:ctx][:message][:delivered] = Time.now.utc
         # save bytesize of message data
@@ -625,7 +715,8 @@ module MidiSmtpServer
             connected: '',
             authorization_id: '',
             authentication_id: '',
-            authenticated: ''
+            authenticated: '',
+            tls: false
           }
         )
       end
@@ -782,6 +873,16 @@ module MidiSmtpServer
     def initialize(msg = nil)
       # call inherited constructor
       super msg, 452, 'Requested action not taken: insufficient system storage'
+    end
+
+  end
+
+  # 454 TLS not available
+  class Smtpd454Exception < SmtpdException
+
+    def initialize(msg = nil)
+      # call inherited constructor
+      super msg, 454, 'TLS not available'
     end
 
   end
