@@ -219,18 +219,6 @@ end
 ```
 
 
-## Extending smtp service
-
-You may add additional smtp commands to your server by using the `on_process_line_event`. Always when not in DATA or AUTH mode the event is called when an unknown input was given. The event should at least call the `super` method when input is also not known by extension.
-
-```ruby
-def on_process_line_event(line)
-  # can't interprete command
-  super
-end
-```
-
-
 ## Responding with errors on special conditions
 
 If you return from event class without an exception, the server will respond to client with the appropriate success code, otherwise the client will be noticed about an error.
@@ -364,7 +352,6 @@ You will find a detailed description of class methods and parameters at [RubyDoc
 2. Modified examples for a simple midi-smtp-server with and without auth
 3. Enhanced `serve_service` (previously `start`)
 4. Optionally gracefully shutdown when service `stop` (default gracefully)
-5. Additional `on_process_line_event` to extend smtp service
 
 
 ## New to version 2.1.1

@@ -169,14 +169,6 @@ module MidiSmtpServer
     # get each message after DATA <message> .
     def on_message_data_event(ctx) end
 
-    private
-
-    # extend smtp service and enable additional commands
-    def on_process_line_event(line)
-      # can't interprete command, encounter error
-      raise Smtpd500Exception
-    end
-
     protected
 
     # Start the server if it isn't already running
@@ -558,8 +550,9 @@ module MidiSmtpServer
             return '354 Enter message, ending with "." on a line by itself'
 
           else
-            # call extendable handler for line processing
-            on_process_line_event(line)
+            # If we somehow get to this point then
+            # we have encountered an error
+            raise Smtpd500Exception
 
         end
 
