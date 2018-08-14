@@ -18,7 +18,7 @@ class MySmtpd < MidiSmtpServer::Smtpd
 
   def start
     # initialize and do your own initailizations
-    
+
     # call inherited class method
     super
   end
@@ -102,13 +102,13 @@ MidiSmtpServer can be easy customized via subclassing. Simply subclass the `Midi
 
   # get address send in MAIL FROM:
   # if any value returned, that will be used for ongoing processing
-  # otherwise the original value will be used 
+  # otherwise the original value will be used
   def on_mail_from_event(ctx, mail_from_data)
   end
 
   # get each address send in RCPT TO:
   # if any value returned, that will be used for ongoing processing
-  # otherwise the original value will be used 
+  # otherwise the original value will be used
   def on_rcpt_to_event(ctx, rcpt_to_data)
   end
 
@@ -148,74 +148,10 @@ To make it easier for processing addresses, you are able to normalize them like:
     # we believe in downcased addresses
     rcpt_to_data.downcase!
     # Output for debug
-    puts "Normalized to: [#{rcpt_to_data}]..." 
+    puts "Normalized to: [#{rcpt_to_data}]..."
     # return address
     return rcpt_to_data
   end
-```
-
-
-## Authentication support
-
-There is built-in authentication support for `AUTH LOGIN` and `AUTH PLAIN` since release `2.1.0`. If you want to enable authentication you have to set the appropriate value to `auth_mode` opts.
-
-Allowed values are:
-
-```ruby
-# no authentication is allowed (mostly for internal services)
-opts = { auth_mode: AUTH_FORBIDDEN }
-
-# authentication is optional (you may grant higher possibilities if authenticated)
-opts = { auth_mode: AUTH_OPTIONAL }
-
-# session must be authenticated before service may be used for mail transport
-opts = { auth_mode: AUTH_REQUIRED }
-```
-
-You may initialize your server class like:
-
-```ruby
-server = MySmtpd.new(2525, '127.0.0.1', 4, auth_mode: :AUTH_REQUIRED)
-```
-
-If you have enabled authentication you should provide your own user and access methods to grant access to your server. The default event method will deny all access per default.
-
-Your own server class should implement the `on_auth_event`:
-
-```ruby
-# check the authentification
-# if any value returned, that will be used for ongoing processing
-# otherwise the original value will be used for authorization_id
-def on_auth_event(ctx, authorization_id, authentication_id, authentication)
-  if authentication_id == "test" && authentication == "demo"
-    return authentication_id
-  else
-    raise Smtpd535Exception
-  end
-end
-```
-
-Most of the time the `authorization_id` field will be empty. It allows optional (like described in [RFC 4954](http://www.ietf.org/rfc/rfc4954.txt)) to define an _authorization role_ which will be used, when the _authentication id_ has successfully entered. So the `authorization_id` is a request to become a role after authentication. In case that the `authorization_id` is empty it is supposed to be the same as the `authentication_id`.
-
-We suggest you to return the `authentication_id` on a successful auth event if you do not have special interests on other usage.
-
-
-## Authentication status in mixed mode
-
-If you have enabled optional authentication like described before, you may access helpers and values from context `ctx` while processing events to check the status of currents session authentication.
-
-```ruby
-def on_rcpt_to_event(ctx, rcpt_to_data)
-  # check if this session was authenticated already
-  if authenticated?(ctx)
-    # yes
-    puts "Proceed with authorized id: #{ctx[:server][:authorization_id]}"
-    puts "and authentication id: #{ctx[:server][:authentication_id]}"
-  else
-    # no
-    puts "Proceed with anonymoous credentials"
-  end
-end
 ```
 
 
@@ -309,10 +245,13 @@ You can access some important client and server values by using the `ctx` array 
 
   # successful authentication timestamp (utc)
   ctx[:server][:authenticated]
-  
+
+  # status of encryption
+  ctx[:server][:encrypted]
+
   # envelope mail from
   ctx[:envelope][:from]
-  
+
   # envelope rcpt_to array
   ctx[:envelope][:to][0]
 
@@ -326,9 +265,165 @@ You can access some important client and server values by using the `ctx` array 
 ```
 
 
-## Endless possibilities
+## Authentication support
 
-We created a SMTP-Server e.g. to receive messages vie SMTP and store them to RabbitMQ Message-Queue-Server:
+There is built-in authentication support for `AUTH LOGIN` and `AUTH PLAIN` since release `2.1.0`. If you want to enable authentication you have to set the appropriate value to `auth_mode` opts.
+
+Allowed values are:
+
+```ruby
+# no authentication is allowed (mostly for internal services)
+opts = { auth_mode: :AUTH_FORBIDDEN }
+
+# authentication is optional (you may grant higher possibilities if authenticated)
+opts = { auth_mode: :AUTH_OPTIONAL }
+
+# session must be authenticated before service may be used for mail transport
+opts = { auth_mode: :AUTH_REQUIRED }
+```
+
+You may initialize your server class like:
+
+```ruby
+server = MySmtpd.new(2525, '127.0.0.1', 4, auth_mode: :AUTH_REQUIRED)
+```
+
+If you have enabled authentication you should provide your own user and access methods to grant access to your server. The default event method will deny all access per default.
+
+Your own server class should implement the `on_auth_event`:
+
+```ruby
+# check the authentification
+# if any value returned, that will be used for ongoing processing
+# otherwise the original value will be used for authorization_id
+def on_auth_event(ctx, authorization_id, authentication_id, authentication)
+  if authentication_id == "test" && authentication == "demo"
+    return authentication_id
+  else
+    raise Smtpd535Exception
+  end
+end
+```
+
+Most of the time the `authorization_id` field will be empty. It allows optional (like described in [RFC 4954](http://www.ietf.org/rfc/rfc4954.txt)) to define an _authorization role_ which will be used, when the _authentication id_ has successfully entered. So the `authorization_id` is a request to become a role after authentication. In case that the `authorization_id` is empty it is supposed to be the same as the `authentication_id`.
+
+We suggest you to return the `authentication_id` on a successful auth event if you do not have special interests on other usage.
+
+
+## Authentication status in mixed mode
+
+If you have enabled optional authentication like described before, you may access helpers and values from context `ctx` while processing events to check the status of currents session authentication.
+
+```ruby
+def on_rcpt_to_event(ctx, rcpt_to_data)
+  # check if this session was authenticated already
+  if authenticated?(ctx)
+    # yes
+    puts "Proceed with authorized id: #{ctx[:server][:authorization_id]}"
+    puts "and authentication id: #{ctx[:server][:authentication_id]}"
+  else
+    # no
+    puts "Proceed with anonymoous credentials"
+  end
+end
+```
+
+
+## Encryption
+
+Since release `2.2.1` the SMTP-Server supports STARTTLS by using `openssl` gem.
+If you want to enable encryption you have to set the appropriate value to `tls_mode` opts.
+
+Allowed values are:
+
+```ruby
+# no encryption is allowed (mostly for internal services)
+opts = { tls_mode: :TLS_FORBIDDEN }
+
+# encryption is optional
+opts = { tls_mode: :TLS_OPTIONAL }
+
+# client must initialize encryption before service may be used for mail exchange
+opts = { tls_mode: :TLS_REQUIRED }
+```
+
+You may enable TLS on your server class like:
+
+```ruby
+server = MySmtpd.new(2525, '127.0.0.1', 4, tls_mode: :TLS_OPTIONAL)
+```
+
+When using `tls_mode: :TLS_REQUIRED` your server will enforce the client to always use STARTTLS before accepting transmission of data like described in [RFC 3207](https://tools.ietf.org/html/rfc3207).
+
+For security reasons check the "Table of the ciphers (and their priorities)" on [OWASP Foundation](https://www.owasp.org/index.php/TLS_Cipher_String_Cheat_Sheet). Per default the `Advanced+ (A+)` cipher-string will be used as well as `TLSv1.2 only`.
+
+You may change ciphers and methods on your server class like:
+
+```ruby
+server = MySmtpd.new(2525, '127.0.0.1', 4, { tls_mode: :TLS_OPTIONAL, tls_ciphers: TLS_CIPHERS_ADVANCED_PLUS, tls_methods: TLS_METHODS_ADVANCED })
+```
+
+Predefined ciphers and methods strings are available as CONSTs:
+
+```ruby
+# Advanced+ (A+) _Default_
+opts = { tls_ciphers: TLS_CIPHERS_ADVANCED_PLUS, tls_methods: TLS_METHODS_ADVANCED }
+
+# Advanced (A)
+opts = { tls_ciphers: TLS_CIPHERS_ADVANCED, tls_methods: TLS_METHODS_ADVANCED }
+
+# Broad Compatibility (B)
+opts = { tls_ciphers: TLS_CIPHERS_BROAD, tls_methods: TLS_METHODS_ADVANCED }
+
+# Widest Compatibility (C)
+opts = { tls_ciphers: TLS_CIPHERS_WIDEST, tls_methods: TLS_METHODS_LEGACY }
+
+# Legacy (C-)
+opts = { tls_ciphers: TLS_CIPHERS_LEGACY, tls_methods: TLS_METHODS_LEGACY }
+```
+
+
+## Certificates
+
+As long as `tls_mode` is set to `:TLS:OPTIONAL` or `:TLS_REQUIRED` and no certificate or key path is given on class initialization, the internal TlsTransport class will create a certificate by itself. This should be only used for testing or debugging purposes and not in production environments. The memory only certificate is valid for 90 days from instantiating the class.
+
+You better generate a certificate by yourself or a professional trust-center like [LetsEncrypt](https://letsencrypt.org/).
+
+#### Quick guide to create a certificate
+
+If interested in detail, read the whole story at [www.thenativeweb.io](https://www.thenativeweb.io/blog/2017-12-29-11-51-the-openssl-beginners-guide-to-creating-ssl-certificates/).
+
+```bash
+# create a private key
+openssl genrsa -out key.pem 4096
+# create a certificate signing request (CSR)
+openssl req -new -key key.pem -out csr.pem
+# create a SSL certificate
+openssl x509 -in csr.pem -out cert.pem -req -signkey key.pem -days 90
+```
+
+You may use your certificate and key on your server class like:
+
+```ruby
+server = MySmtpd.new(2525, '127.0.0.1', 4, { tls_mode: :TLS_OPTIONAL, tls_cert_path: 'cert.pem', tls_key_path: 'key.pem' })
+```
+
+
+## Test encrypted communication
+
+While working with encrypted communication it is sometimes hard to test and check during development or debugging. Therefore you should look at the GNU tool `gnutls-cli`. Use this tool to connect to your running SMTP-server and proceed with encrypted communication.
+
+```bash
+# use --insecure when using self created certificates
+gnutls-cli --insecure -s -p 2525 127.0.0.1
+```
+
+After launching `gnutls-cli` start the SMTP dialog by sending `EHLO` and `STARTSSL` commands. Next press Ctrl-D on your keyboard to run the handshake for SSL communication between `gnutls-cli` and your server. When ready you may follow up with the delivery dialog for SMTP.
+
+
+## Endless operation purposes
+
+E.g. create a SMTP-Server to receive messages via SMTP and store them to RabbitMQ Message-Queue-Server:
 
 ```ruby
   # get each message after DATA <message> .
@@ -340,10 +435,18 @@ We created a SMTP-Server e.g. to receive messages vie SMTP and store them to Rab
   end
 ```
 
+E.g. create a SMTP-Server to receive messages via SMTP and forward them plain or processed to services like Slack, Trello, Redmine, ...
+
 
 ## MidiSmtpServer::Smtpd Class documentation
 
 You will find a detailed description of class methods and parameters at [RubyDoc](http://www.rubydoc.info/gems/midi-smtp-server/MidiSmtpServer/Smtpd)
+
+
+## New to version 2.2.1
+
+1. Builtin optional support of STARTTLS encryption
+2. Added examples for a simple midi-smtp-server with TLS support
 
 
 ## New to version 2.2.x
@@ -367,10 +470,10 @@ You will find a detailed description of class methods and parameters at [RubyDoc
 
 ## New to version 2.x
 
-1. Modulelized  
-2. Removed dependency to GServer  
+1. Modulelized
+2. Removed dependency to GServer
 3. Additional events to interact with
-4. Use logger to log several messages from severity :debug up to :fatal 
+4. Use logger to log several messages from severity :debug up to :fatal
 
 
 ## From version 1.x to 2.x
