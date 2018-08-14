@@ -39,7 +39,7 @@ puts "#{Time.now}: Starting MySmtpd..."
 
 # Create a new server instance listening at localhost interfaces 127.0.0.1:2525
 # and accepting a maximum of 4 simultaneous connections
-server = MySmtpd.new(MidiSmtpServer::DEFAULT_SMTPD_PORT, '', MidiSmtpServer::DEFAULT_SMTPD_MAX_CONNECTIONS, tls: true)
+server = MySmtpd.new(MidiSmtpServer::DEFAULT_SMTPD_PORT, '', MidiSmtpServer::DEFAULT_SMTPD_MAX_CONNECTIONS, tls_mode: :TLS_OPTIONAL)
 
 # setup exit code
 at_exit do
