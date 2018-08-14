@@ -13,26 +13,52 @@ module MidiSmtpServer
   # Authentification modes
   AUTH_MODES = [:AUTH_FORBIDDEN, :AUTH_OPTIONAL, :AUTH_REQUIRED].freeze
 
+  # Encryption modes
+  ENCRYPT_MODES = [:TLS_FORBIDDEN, :TLS_OPTIONAL, :TLS_REQUIRED].freeze
+
+  # Encryption ciphers and methods
+  # check https://www.owasp.org/index.php/TLS_Cipher_String_Cheat_Sheet
+  TLS_CIPHERS_ADVANCED_PLUS = 'DHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256'.freeze
+  TLS_CIPHERS_ADVANCED      = (TLS_CIPHERS_ADVANCED_PLUS + ':DHE-RSA-AES256-SHA256:DHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA256').freeze
+  TLS_CIPHERS_BROAD_COMP    = (TLS_CIPHERS_ADVANCED + ':ECDHE-RSA-AES256-SHA:ECDHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA').freeze
+  TLS_CIPHERS_WIDEST_COMP   = (TLS_CIPHERS_ADVANCED + ':ECDHE-RSA-AES256-SHA:ECDHE-RSA-AES128-SHA:AES256-GCM-SHA384:AES128-GCM-SHA256:AES256-SHA256:AES128-SHA256:AES256-SHA:AES128-SHA:DHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA').freeze
+  TLS_CIPHERS_LEGACY        = (TLS_CIPHERS_ADVANCED + ':ECDHE-RSA-AES256-SHA:ECDHE-RSA-AES128-SHA:AES256-GCM-SHA384:AES128-GCM-SHA256:AES256-SHA256:AES128-SHA256:AES256-SHA:AES128-SHA:DES-CBC3-SHA:DHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA').freeze
+  TLS_METHODS_ADVANCED      = 'TLSv1_2'.freeze
+  TLS_METHODS_LEGACY        = 'TLSv1_1'.freeze
+
   # class for TlsTransport
   class TlsTransport
 
-    def initialize(cert_path, key_path, ciphers, methods)
+    def initialize(cert_path, key_path, ciphers, methods, logger)
       # save references
-      @cert_path = cert_path
-      @key_path = key_path
+      @logger = logger
+      @cert_path = cert_path.nil? ? nil : cert_path.strip
+      @key_path = key_path.nil? ? nil : key_path.strip
       # create SSL context
-      @ctx = OpenSSL::SSL::SSLContext.new(methods && methods != '' ? methods : 'TLSv1_2')
-      @ctx.ciphers = ciphers && ciphers != '' ? ciphers : 'ECDSA:RSA'
-      # test loading certificate and key files
-      # otherwise initialize example certificate and key
-      @ctx.key = OpenSSL::PKey::RSA.new 4096
-      @ctx.cert = OpenSSL::X509::Certificate.new
-      @ctx.cert.subject = OpenSSL::X509::Name.new [['CN', 'localhost']]
-      @ctx.cert.issuer = @ctx.cert.subject
-      @ctx.cert.public_key = @ctx.key
-      @ctx.cert.not_before = Time.now
-      @ctx.cert.not_after = Time.now + 60 * 60 * 24
-      @ctx.cert.sign @ctx.key, OpenSSL::Digest::SHA1.new
+      @ctx = OpenSSL::SSL::SSLContext.new
+      @ctx.ciphers = ciphers.to_s != '' ? ciphers : TLS_CIPHERS_ADVANCED_PLUS
+      @ctx.ssl_version = methods.to_s != '' ? methods : TLS_METHODS_ADVANCED
+      # check cert_path and key_path
+      if !@cert_path.nil? || !@key_path.nil?
+        # if any is set, test the pathes
+        raise "File \”#{@cert_path}\" does not exist or is not a regular file. Could not load certificate." unless File.file?(@cert_path.to_s)
+        raise "File \”#{@key_path}\" does not exist or is not a regular file. Could not load private key." unless File.file?(@key_path.to_s)
+        # try to load certificate and key
+        @ctx.cert = OpenSSL::X509::Certificate.new(File.open(@cert_path.to_s))
+        @ctx.key = OpenSSL::PKey::RSA.new(File.open(@key_path.to_s))
+      else
+        # if none was set, create a test cert
+        # initialize self certificate and key
+        logger.debug('SSL: using self generated test certificate!')
+        @ctx.key = OpenSSL::PKey::RSA.new 4096
+        @ctx.cert = OpenSSL::X509::Certificate.new
+        @ctx.cert.subject = OpenSSL::X509::Name.new [['CN', 'localhost']]
+        @ctx.cert.issuer = @ctx.cert.subject
+        @ctx.cert.public_key = @ctx.key
+        @ctx.cert.not_before = Time.now
+        @ctx.cert.not_after = Time.now + 60 * 60 * 24 * 90
+        @ctx.cert.sign @ctx.key, OpenSSL::Digest::SHA1.new
+      end
     end
 
     # start ssl connection over existing tcpserver socket
@@ -123,6 +149,8 @@ module MidiSmtpServer
     attr_reader :max_connections
     # Authentification mode
     attr_reader :auth_mode
+    # Encryption mode
+    attr_reader :encrypt_mode
 
     # logging object, may be overrriden by special loggers like YELL or others
     attr_reader :logger
@@ -135,11 +163,11 @@ module MidiSmtpServer
     # +opts+:: optional settings
     # +opts.do_dns_reverse_lookup+:: flag if this smtp server should do reverse lookups on incoming connections
     # +opts.auth_mode+:: enable builtin authentication support (:AUTH_FORBIDDEN, :AUTH_OPTIONAL, :AUTH_REQUIRED)
-    # +opts.tls+:: enable STARTTLS support
+    # +opts.tls+:: enable builtin TLS support (:TLS_FORBIDDEN, :TLS_OPTIONAL, :TLS_REQUIRED)
     # +opts.tls_cert_path+:: path to tls cerificate chain file
     # +opts.tls_key_path+:: path to tls key file
-    # +opts.tls_ciphers+:: use ciphers
-    # +opts.tls_methods+:: use methods
+    # +opts.tls_ciphers+:: allowed ciphers for connection
+    # +opts.tls_methods+:: allowed methods for protocol
     # +opts.logger+:: own logger class, otherwise default logger is created
     def initialize(port = DEFAULT_SMTPD_PORT, host = DEFAULT_SMTPD_HOST, max_connections = DEFAULT_SMTPD_MAX_CONNECTIONS, opts = {})
       # logging
@@ -151,28 +179,38 @@ module MidiSmtpServer
         @logger.datetime_format = '%Y-%m-%d %H:%M:%S'
         @logger.formatter = proc { |severity, datetime, _progname, msg| "#{datetime}: [#{severity}] #{msg.chomp}\n" }
       end
+
       # initialize class
       @tcp_server_thread = nil
+      @tls = nil
+
+      # settings
       @port = port
       @host = host
       @max_connections = max_connections
+
+      # lists for connections and thread management
       @connections = []
       @connections_mutex = Mutex.new
       @connections_cv = ConditionVariable.new
+
+      # check for encryption
+      @encrypt_mode = opts.include?(:tls_mode) ? opts[:tls_mode] : :TLS_FORBIDDEN
+      raise "Unknown encryption mode #{@encrypt_mode} was given by opts!" unless ENCRYPT_MODES.include?(@encrypt_mode)
+      # check for tls
+      if @encrypt_mode != :TLS_FORBIDDEN
+        require 'openssl'
+        @tls = TlsTransport.new(opts[:tls_cert_path], opts[:tls_key_path], opts[:tls_ciphers], opts[:tls_methods], @logger)
+      end
+
+      # check for authentification
+      @auth_mode = opts.include?(:auth_mode) ? opts[:auth_mode] : :AUTH_FORBIDDEN
+      raise "Unknown authentification mode #{@auth_mode} was given by opts!" unless AUTH_MODES.include?(@auth_mode)
+
       # next should prevent (if wished) to auto resolve hostnames and create a delay on connection
       BasicSocket.do_not_reverse_lookup = true
       # save flag if this smtp server should do reverse lookups
       @do_dns_reverse_lookup = opts.include?(:do_dns_reverse_lookup) ? opts[:do_dns_reverse_lookup] : true
-      # check for authentification
-      @auth_mode = opts.include?(:auth_mode) ? opts[:auth_mode] : :AUTH_FORBIDDEN
-      raise "Unknown authentification mode #{@auth_mode} was given by opts!" unless AUTH_MODES.include?(@auth_mode)
-      # check for tls
-      if opts.include?(:tls) && opts[:tls]
-        require 'openssl'
-        @tls = TlsTransport.new(opts[:tls_cert_path], opts[:tls_key_path], opts[:tls_ciphers], opts[:tls_methods])
-      else
-        @tls = nil
-      end
     end
 
     # get event on CONNECTION
@@ -202,6 +240,11 @@ module MidiSmtpServer
     # check the status of authentication for a given context
     def authenticated?(ctx)
       ctx[:server][:authenticated] && !ctx[:server][:authenticated].to_s.empty?
+    end
+
+    # check the status of encryption for a given context
+    def encrypted?(ctx)
+      ctx[:server][:encrypted] && ctx[:server][:encrypted] == true
     end
 
     # get address send in MAIL FROM:
@@ -308,7 +351,7 @@ module MidiSmtpServer
               # start ssl tunnel
               io = @tls.start(io)
               # save enabled tls
-              Thread.current[:ctx][:server][:tls] = true
+              Thread.current[:ctx][:server][:encrypted] = true
               # set sequence back to HELO/EHLO
               Thread.current[:cmd_sequence] = :CMD_HELO
             end
@@ -380,10 +423,10 @@ module MidiSmtpServer
       ensure
         # event for cleanup at end of communication
         on_disconnect_event(Thread.current[:ctx])
-        # return socket handler, maybe replaced with ssl
-        return io
       end
 
+      # return socket handler, maybe replaced with ssl
+      return io
     end
 
     def process_line(line)
@@ -433,14 +476,33 @@ module MidiSmtpServer
                 # reply supported extensions
                 return "250-8BITMIME\r\n" +
                        # respond with AUTH extensions if enabled
-                       (@auth_mode != :AUTH_FORBIDDEN ? "250-AUTH LOGIN PLAIN\r\n" : '') +
+                       (@auth_mode == :AUTH_FORBIDDEN ? '' : "250-AUTH LOGIN PLAIN\r\n") +
                        # respond with STARTTLS if available and not already enabled
-                       (@tls && !Thread.current[:ctx][:server][:tls] ? "250-STARTTLS\r\n" : '') +
+                       (@encrypt_mode == :TLS_FORBIDDEN || encrypted?(Thread.current[:ctx]) ? '' : "250-STARTTLS\r\n") +
                        '250 OK'
               else
                 # reply ok only
                 return '250 OK'
             end
+
+          when /^STARTTLS\s*$/i
+            # STARTTLS
+            # 220 Ready to start TLS
+            # 454 TLS not available
+            # 501 Syntax error (no parameters allowed)
+            # ---------
+            # check that encryption is allowed
+            raise Smtpd500Exception if @encrypt_mode == :TLS_FORBIDDEN
+            # check valid command sequence
+            raise Smtpd503Exception if Thread.current[:cmd_sequence] == :CMD_HELO
+            # check initialized TlsTransport object
+            raise Tls454Exception unless @tls
+            # check valid command sequence
+            raise Smtpd503Exception if Thread.current[:ctx][:server][:encrypted]
+            # set sequence for next command input
+            Thread.current[:cmd_sequence] = :CMD_STARTTLS
+            # return with new service ready message
+            return '220 Ready to start TLS'
 
           when (/^AUTH(\s+)((LOGIN|PLAIN)(\s+[A-Z0-9=]+)?|CRAM-MD5)\s*$/i)
             # AUTH
@@ -453,10 +515,12 @@ module MidiSmtpServer
             # 535 Authentication credentials invalid
             # 538 Encryption required for requested authentication mechanism
             # ---------
-            # check that authentication is enabled
-            raise Smtpd503Exception if @auth_mode == :AUTH_FORBIDDEN
+            # check that authentication is allowed
+            raise Smtpd500Exception if @auth_mode == :AUTH_FORBIDDEN
             # check valid command sequence
             raise Smtpd503Exception if Thread.current[:cmd_sequence] != :CMD_RSET
+            # check that encryption is enabled if necessary
+            raise Tls530Exception if @encrypt_mode == :TLS_REQUIRED && !encrypted?(Thread.current[:ctx])
             # check that not already authenticated
             raise Smtpd503Exception if authenticated?(Thread.current[:ctx])
             # handle command line
@@ -505,23 +569,6 @@ module MidiSmtpServer
 
             end
 
-          when /^STARTTLS\s*$/i
-            # STARTTLS
-            # 220 Ready to start TLS
-            # 454 TLS not available
-            # 501 Syntax error (no parameters allowed)
-            # ---------
-            # check valid command sequence
-            raise Smtpd503Exception if Thread.current[:cmd_sequence] == :CMD_HELO
-            # check initialized TlsTransport object
-            raise Smtpd454Exception unless @tls
-            # check valid command sequence
-            raise Smtpd503Exception if Thread.current[:ctx][:server][:tls]
-            # set sequence for next command input
-            Thread.current[:cmd_sequence] = :CMD_STARTTLS
-            # return with new service ready message
-            return '220 Ready to start TLS'
-
           when (/^NOOP\s*$/i)
             # NOOP
             # 250 Requested mail action okay, completed
@@ -538,6 +585,8 @@ module MidiSmtpServer
             # ---------
             # check valid command sequence
             raise Smtpd503Exception if Thread.current[:cmd_sequence] == :CMD_HELO
+            # check that encryption is enabled if necessary
+            raise Tls530Exception if @encrypt_mode == :TLS_REQUIRED && !encrypted?(Thread.current[:ctx])
             # handle command
             process_reset_ctx
             return '250 OK'
@@ -561,7 +610,9 @@ module MidiSmtpServer
             # ---------
             # check valid command sequence
             raise Smtpd503Exception if Thread.current[:cmd_sequence] != :CMD_RSET
-            # check that authentication is enabled
+            # check that encryption is enabled if necessary
+            raise Tls530Exception if @encrypt_mode == :TLS_REQUIRED && !encrypted?(Thread.current[:ctx])
+            # check that authentication is enabled if necessary
             raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(Thread.current[:ctx])
             # handle command
             @cmd_data = line.gsub(/^MAIL FROM\:/i, '').strip
@@ -597,7 +648,9 @@ module MidiSmtpServer
             # ---------
             # check valid command sequence
             raise Smtpd503Exception unless [:CMD_MAIL, :CMD_RCPT].include?(Thread.current[:cmd_sequence])
-            # check that authentication is enabled
+            # check that encryption is enabled if necessary
+            raise Tls530Exception if @encrypt_mode == :TLS_REQUIRED && !encrypted?(Thread.current[:ctx])
+            # check that authentication is enabled if necessary
             raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(Thread.current[:ctx])
             # handle command
             @cmd_data = line.gsub(/^RCPT TO\:/i, '').strip
@@ -629,7 +682,9 @@ module MidiSmtpServer
             # ---------
             # check valid command sequence
             raise Smtpd503Exception if Thread.current[:cmd_sequence] != :CMD_RCPT
-            # check that authentication is enabled
+            # check that encryption is enabled if necessary
+            raise Tls530Exception if @encrypt_mode == :TLS_REQUIRED && !encrypted?(Thread.current[:ctx])
+            # check that authentication is enabled if necessary
             raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(Thread.current[:ctx])
             # handle command
             # set sequence state
@@ -716,7 +771,7 @@ module MidiSmtpServer
             authorization_id: '',
             authentication_id: '',
             authenticated: '',
-            tls: false
+            encrypted: false
           }
         )
       end
@@ -873,16 +928,6 @@ module MidiSmtpServer
     def initialize(msg = nil)
       # call inherited constructor
       super msg, 452, 'Requested action not taken: insufficient system storage'
-    end
-
-  end
-
-  # 454 TLS not available
-  class Smtpd454Exception < SmtpdException
-
-    def initialize(msg = nil)
-      # call inherited constructor
-      super msg, 454, 'TLS not available'
     end
 
   end
@@ -1047,6 +1092,28 @@ module MidiSmtpServer
     def initialize(msg = nil)
       # call inherited constructor
       super msg, 538, 'Encryption required for requested authentication mechanism'
+    end
+
+  end
+
+  # Status when using encryption
+
+  # 454 TLS not available
+  class Tls454Exception < SmtpdException
+
+    def initialize(msg = nil)
+      # call inherited constructor
+      super msg, 454, 'TLS not available'
+    end
+
+  end
+
+  # 530 Encryption required
+  class Tls530Exception < SmtpdException
+
+    def initialize(msg = nil)
+      # call inherited constructor
+      super msg, 530, 'Encryption required, must issue STARTTLS command first'
     end
 
   end
