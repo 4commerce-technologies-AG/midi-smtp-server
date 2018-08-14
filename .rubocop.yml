@@ -39,6 +39,10 @@ Style/SymbolArray:
 Style/UnneededInterpolation:
   Enabled: no
 
+Style/WordArray:
+  Enabled: yes
+  EnforcedStyle: brackets
+
 Metrics:
   Enabled: no
 
