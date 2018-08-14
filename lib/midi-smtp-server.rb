@@ -262,26 +262,38 @@ module MidiSmtpServer
 
     protected
 
-    # Start the server if it isn't already running
+    # Start the listener thread if it isn't already running
     def serve_service
-      raise 'Smtpd instance was already started' unless stopped?
+      raise 'Service was already started' unless stopped?
 
+      # set flag to signal shutdown by stop / shutdown command
       @shutdown = false
+
+      # instantiate the service for @host and @port
+      # if @host is empty all interfaces are used otherwise
+      # bind to single ip only
       @tcp_server = TCPServer.new(@host, @port)
 
+      # run thread until shutdown
       @tcp_server_thread = Thread.new do
         begin
+          # always check for shutdown request
           until shutdown?
+            # check available connections for new clients
             @connections_mutex.synchronize do
               while @connections.size >= @max_connections
                 @connections_cv.wait(@connections_mutex)
               end
             end
+            # get new client and start additional thread
+            # to handle client process
             client = @tcp_server.accept
             Thread.new(client) do |io|
+              # add to list of connections
               @connections << Thread.current
               begin
-                # save returned io due maybe established ssl io socket
+                # save returned io value due to maybe
+                # established ssl io socket
                 io = serve_client(io)
               rescue SmtpdStopConnectionException
                 # ignore this exception due to service shutdown
@@ -290,10 +302,15 @@ module MidiSmtpServer
                 logger.fatal(e.backtrace.join("\n"))
               ensure
                 begin
-                  # always gracefully shutdown connection
+                  # always gracefully shutdown connection.
+                  # if the io object was overriden by the
+                  # result from serve_client() due to ssl
+                  # io, the ssl + io socket will be closed
                   io.close
                 rescue StandardError
+                  # ignore any exception from here
                 end
+                # remove closed session from connections
                 @connections_mutex.synchronize do
                   @connections.delete(Thread.current)
                   @connections_cv.signal
@@ -308,14 +325,18 @@ module MidiSmtpServer
           logger.fatal(e.backtrace.join("\n"))
         ensure
           begin
+            # drop the service
             @tcp_server.close
           rescue StandardError
+            # ignor any error from here
           end
           if shutdown?
+            # wait for finishing opened connections
             @connections_mutex.synchronize do
               @connections_cv.wait(@connections_mutex) until @connections.empty?
             end
           else
+            # drop any open session immediately
             @connections.each { |c| c.raise SmtpdStopConnectionException }
           end
           @tcp_server_thread = nil
