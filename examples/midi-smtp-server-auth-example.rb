@@ -66,7 +66,7 @@ trap('INT') do
 end
 
 # Output for debug
-puts "#{Time.now}: Starting MySmtpd..."
+puts "#{Time.now}: Starting MySmtpd (Authentication example) ..."
 
 # Create a new server instance listening at localhost interfaces 127.0.0.1:2525
 # and accepting a maximum of 4 simultaneous connections
