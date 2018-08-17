@@ -353,6 +353,8 @@ You may enable TLS on your server class like:
 server = MySmtpd.new(2525, '127.0.0.1', 4, tls_mode: :TLS_OPTIONAL)
 ```
 
+Do not forget to also install or require the `openssl` gem if you want to enable encryption.
+
 When using `tls_mode: :TLS_REQUIRED` your server will enforce the client to always use STARTTLS before accepting transmission of data like described in [RFC 3207](https://tools.ietf.org/html/rfc3207).
 
 For security reasons check the "Table of the ciphers (and their priorities)" on [OWASP Foundation](https://www.owasp.org/index.php/TLS_Cipher_String_Cheat_Sheet). Per default the `Advanced+ (A+)` cipher-string will be used as well as `TLSv1.2 only`.
@@ -387,7 +389,7 @@ opts = { tls_ciphers: TLS_CIPHERS_LEGACY, tls_methods: TLS_METHODS_LEGACY }
 
 As long as `tls_mode` is set to `:TLS:OPTIONAL` or `:TLS_REQUIRED` and no certificate or key path is given on class initialization, the internal TlsTransport class will create a certificate by itself. This should be only used for testing or debugging purposes and not in production environments. The memory only certificate is valid for 90 days from instantiating the class.
 
-You better generate a certificate by yourself or a professional trust-center like [LetsEncrypt](https://letsencrypt.org/).
+You better should generate a certificate by yourself or use a professional trust-center like [LetsEncrypt](https://letsencrypt.org/).
 
 #### Quick guide to create a certificate
 

@@ -163,7 +163,7 @@ module MidiSmtpServer
     # +opts+:: optional settings
     # +opts.do_dns_reverse_lookup+:: flag if this smtp server should do reverse lookups on incoming connections
     # +opts.auth_mode+:: enable builtin authentication support (:AUTH_FORBIDDEN, :AUTH_OPTIONAL, :AUTH_REQUIRED)
-    # +opts.tls+:: enable builtin TLS support (:TLS_FORBIDDEN, :TLS_OPTIONAL, :TLS_REQUIRED)
+    # +opts.tls_mode+:: enable builtin TLS support (:TLS_FORBIDDEN, :TLS_OPTIONAL, :TLS_REQUIRED)
     # +opts.tls_cert_path+:: path to tls cerificate chain file
     # +opts.tls_key_path+:: path to tls key file
     # +opts.tls_ciphers+:: allowed ciphers for connection
