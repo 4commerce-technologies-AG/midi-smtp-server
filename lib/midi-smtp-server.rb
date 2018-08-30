@@ -52,7 +52,7 @@ module MidiSmtpServer
         logger.debug('SSL: using self generated test certificate!')
         @ctx.key = OpenSSL::PKey::RSA.new 4096
         @ctx.cert = OpenSSL::X509::Certificate.new
-        @ctx.cert.subject = OpenSSL::X509::Name.new [['CN', 'localhost']]
+        @ctx.cert.subject = OpenSSL::X509::Name.new [['CN', 'localhost.local']]
         @ctx.cert.issuer = @ctx.cert.subject
         @ctx.cert.public_key = @ctx.key
         @ctx.cert.not_before = Time.now
