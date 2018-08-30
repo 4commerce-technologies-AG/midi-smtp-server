@@ -10,6 +10,11 @@ module MidiSmtpServer
   DEFAULT_SMTPD_PORT = 2525
   DEFAULT_SMTPD_MAX_CONNECTIONS = 4
 
+  # default values for IO operations
+  DEFAULT_IO_CMD_TIMEOUT = 30
+  DEFAULT_IO_BUFFER_CHUNK_SIZE = 4 * 1024
+  DEFAULT_IO_BUFFER_MAX_SIZE = 1 * 1024 * 1024
+
   # Authentification modes
   AUTH_MODES = [:AUTH_FORBIDDEN, :AUTH_OPTIONAL, :AUTH_REQUIRED].freeze
 
@@ -147,6 +152,12 @@ module MidiSmtpServer
     attr_reader :host
     # Maximum number of connections to accept at a time, as a Fixnum
     attr_reader :max_connections
+    # Maximum time in seconds to wait for a complete incoming data line, as a FixNum
+    attr_reader :io_cmd_timeout
+    # Bytes to read non-blocking from socket into buffer, as a FixNum
+    attr_reader :io_buffer_chunk_size
+    # Maximum bytes to read as buffer before expecting completet incoming data line, as a FixNum
+    attr_reader :io_buffer_max_size
     # Authentification mode
     attr_reader :auth_mode
     # Encryption mode
@@ -162,6 +173,9 @@ module MidiSmtpServer
     # +max_connections+:: maximum number of simultaneous connections
     # +opts+:: optional settings
     # +opts.do_dns_reverse_lookup+:: flag if this smtp server should do reverse lookups on incoming connections
+    # +opts.io_cmd_timeout+:: time in seconds to wait until complete line of data is expected (DEFAULT_IO_CMD_TIMEOUT, nil => disabled test)
+    # +opts.io_buffer_chunk_size+:: size of chunks (bytes) to read non-blocking from socket (DEFAULT_IO_BUFFER_CHUNK_SIZE)
+    # +opts.io_buffer_max_size+:: max size of buffer (max line length) until \lf ist expected (DEFAULT_IO_BUFFER_MAX_SIZE, nil => disabled test)
     # +opts.auth_mode+:: enable builtin authentication support (:AUTH_FORBIDDEN, :AUTH_OPTIONAL, :AUTH_REQUIRED)
     # +opts.tls_mode+:: enable builtin TLS support (:TLS_FORBIDDEN, :TLS_OPTIONAL, :TLS_REQUIRED)
     # +opts.tls_cert_path+:: path to tls cerificate chain file
@@ -188,6 +202,11 @@ module MidiSmtpServer
       @port = port
       @host = host
       @max_connections = max_connections
+
+      # io and buffer settings
+      @io_cmd_timeout = opts.include?(:io_cmd_timeout) ? opts[:io_cmd_timeout] : DEFAULT_IO_CMD_TIMEOUT
+      @io_buffer_chunk_size = opts.include?(:io_buffer_chunk_size) ? opts[:io_buffer_chunk_size] : DEFAULT_IO_BUFFER_CHUNK_SIZE
+      @io_buffer_max_size = opts.include?(:io_buffer_max_size) ? opts[:io_buffer_max_size] : DEFAULT_IO_BUFFER_MAX_SIZE
 
       # lists for connections and thread management
       @connections = []
@@ -256,6 +275,9 @@ module MidiSmtpServer
     # if any value returned, that will be used for ongoing processing
     # otherwise the original value will be used
     def on_rcpt_to_event(ctx, rcpt_to_data) end
+
+    # get event while message data buffer get filled
+    def on_message_data_receiving_event(ctx) end
 
     # get each message after DATA <message> .
     def on_message_data_event(ctx) end
@@ -365,7 +387,16 @@ module MidiSmtpServer
           # reply welcome
           io.print "220 #{Thread.current[:ctx][:server][:local_host]} says welcome!\r\n" unless io.closed?
 
-          # while data handle communication
+          # initialize io_buffer for input data
+          io_buffer = ''
+
+          # initialize io_buffer_line_lf index
+          io_buffer_line_lf = nil
+
+          # initialze timeout timestamp
+          timestamp_timeout = Time.now.to_i
+
+          # while input data handle communication
           loop do
             # test if STARTTLS sequence
             if Thread.current[:cmd_sequence] == :CMD_STARTTLS
@@ -375,18 +406,41 @@ module MidiSmtpServer
               Thread.current[:ctx][:server][:encrypted] = true
               # set sequence back to HELO/EHLO
               Thread.current[:cmd_sequence] = :CMD_HELO
+              # reset timeout timestamp
+              timestamp_timeout = Time.now.to_i
             end
 
-            # test for available IO data
-            if IO.select([io], nil, nil, 0.1)
-              # read and handle input
-              data = io.readline
-              # log data, verbosity based on log severity and data type
-              logger.debug('<<< ' + data) if Thread.current[:cmd_sequence] != :CMD_DATA
+            # read input data from Socket / SSLSocket into io_buffer
+            # by non-blocking action until \n is found
+            begin
+              unless io_buffer_line_lf
+                # check for timeout on IO
+                raise SmtpdIOTimeoutException if @io_cmd_timeout && Time.now.to_i - timestamp_timeout > @io_cmd_timeout
+                # read chunks of input data until line-feed
+                io_buffer << io.read_nonblock(@io_buffer_chunk_size)
+                # check for buffersize
+                raise SmtpdIOBufferOverrunException if @io_buffer_max_size && io_buffer.length > @io_buffer_max_size
+                # check for lf in current io_buffer
+                io_buffer_line_lf = io_buffer.index("\n")
+              end
+
+            # ignore exception when no input data is available yet
+            rescue IO::WaitReadable
+              # but wait a few moment to slow down system utilization
+              sleep 0.1
+            end
+
+            # check if io_buffer is filled and contains already a line-feed
+            while io_buffer_line_lf
+              # extract line from io_buffer
+              line = io_buffer.slice!(0, io_buffer_line_lf + 1)
+
+              # log line, verbosity based on log severity and command sequence
+              logger.debug('<<< ' + line) if Thread.current[:cmd_sequence] != :CMD_DATA
 
               # process commands and handle special SmtpdExceptions
               begin
-                output = process_line(data)
+                output = process_line(line)
 
               # defined SmtpdException
               rescue SmtpdException => e
@@ -413,7 +467,13 @@ module MidiSmtpServer
                 io.print(output) unless io.closed? || shutdown?
               end
 
+              # check for next line-feed already in io_buffer
+              io_buffer_line_lf = io_buffer.index("\n")
+
+              # reset timeout timestamp
+              timestamp_timeout = Time.now.to_i
             end
+
             # check for valid quit or broken communication
             break if (Thread.current[:cmd_sequence] == :CMD_QUIT) || io.closed? || shutdown?
           end
@@ -730,7 +790,14 @@ module MidiSmtpServer
         # solely of a period (.) on a line by itself then we are being
         # told to continue data mode and the command sequence state
         # will stay on :CMD_DATA
-        return '' unless line.chomp =~ /^\.$/
+        unless line.chomp =~ /^\.$/
+          # call event to inspect message data while recording line by line
+          # e.g. abort while receiving too big incoming mail or
+          # create a teergrube for spammers etc.
+          on_message_data_receiving_event(Thread.current[:ctx])
+          # just return and stay on :CMD_DATA
+          return ''
+        end
 
         # otherwise the entire new message data (line) consists
         # solely of a period on a line by itself then we are being
@@ -878,6 +945,16 @@ module MidiSmtpServer
       end
     end
 
+  end
+
+  # special internal exception to signal timeout
+  # while waiting for incoming data line
+  class SmtpdIOTimeoutException < RuntimeError
+  end
+
+  # special internal exception to signal buffer size exceedance
+  # while waiting for incoming data line
+  class SmtpdIOBufferOverrunException < RuntimeError
   end
 
   # special internal exception to signal service stop
