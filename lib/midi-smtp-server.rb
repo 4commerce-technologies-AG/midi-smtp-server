@@ -804,9 +804,9 @@ module MidiSmtpServer
         # told to finish data mode
 
         # remove empty line
-        Thread.current[:ctx][:message][:data].gsub!(/\r\n\Z/, '')
+        Thread.current[:ctx][:message][:data].chomp!('')
         # remove ending line period (.)
-        Thread.current[:ctx][:message][:data].gsub!(/\.\Z/, '')
+        Thread.current[:ctx][:message][:data].chomp!('.')
         # save delivered UTC time
         Thread.current[:ctx][:message][:delivered] = Time.now.utc
         # save bytesize of message data
