@@ -174,6 +174,15 @@ So you can build SPAM protection, when raising exception while getting `RCPT TO`
 
 You are able to use exceptions on any level of events, so for an example you could raise an exception on `on_message_data_event` if you checked attachments for a pdf-document and fail or so on. If you use the defined `MidiSmtpServer::Smtpd???Exception` classes the remote client get's correct SMTP Server results. For logging purpose the default Exception.message is written to log.
 
+When using `MidiSmtpServer::Smtpd421Exception` you are able to abort the active connection to the client by replying `421 Service not available, closing transmission channel`. Be aware, that this Exception will actively close the current connection to the client. For logging purposes you may append a message to yourself, this will not be transmitted to the client.
+
+```ruby
+  # drop connection immediately on SPAM
+  def on_rcpt_to_event(ctx, rcpt_to_data)
+    raise MidiSmtpServer::Smtpd421Exception.new("421 Abort: Identified spammer!") if rcpt_to_data == "not.name@domain.con"
+  end
+```
+
 Please check RFC821 and additional for correct response dialog sequences:
 
 ```
@@ -262,7 +271,7 @@ You can access some important client and server values by using the `ctx` array 
   # timestamp (utc) when message data was completly received
   ctx[:message][:delivered]
 
-  # access message in on_message_data_event
+  # access message in on_message_data_event and on_message_data_receiving_event
   ctx[:message][:bytesize]
   ctx[:message][:data]
 
@@ -271,7 +280,7 @@ You can access some important client and server values by using the `ctx` array 
 
 ## Incoming data validation
 
-With release 2.2.3 there is extended control about incoming data before processing. New options allow to set a timeout and maximum size of io_buffer for receiving client data up to a complete data line.
+With release 2.2.3 there is an extended control about incoming data before processing. New options allow to set a timeout and maximum size of io_buffer for receiving client data up to a complete data line.
 
 ```ruby
 # timeout in seconds before a data line has to be completely sent by client or connection abort
@@ -281,7 +290,9 @@ opts = { io_cmd_timeout: DEFAULT_IO_CMD_TIMEOUT }
 opts = { io_buffer_max_size: DEFAULT_IO_BUFFER_MAX_SIZE }
 ```
 
-There is also a new event which may be used to handle the incoming transmission of message data. For example to abort when message data is going to exceed a maximum size:
+There is also a new event which may be used to handle the incoming transmission of message data.
+
+As an example: abort when message data is going to exceed a maximum size:
 
 ```ruby
   # event while receiving message DATA

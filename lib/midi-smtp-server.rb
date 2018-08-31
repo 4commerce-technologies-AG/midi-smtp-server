@@ -442,6 +442,11 @@ module MidiSmtpServer
               begin
                 output = process_line(line)
 
+              # defined abort channel exception
+              rescue Smtpd421Exception => e
+                # just re-raise this exception and exit loop and communication
+                raise
+
               # defined SmtpdException
               rescue SmtpdException => e
                 # log error info if logging
