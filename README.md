@@ -123,7 +123,8 @@ MidiSmtpServer can be easy customized via subclassing. Simply subclass the `Midi
   # event when process_line identifies an unknown command line
   # allows to abort sessions for a series of unknown activities to
   # prevent denial of service attacks etc.
-  def on_process_line_unknown_event(_ctx, _line)
+  def on_process_line_unknown_event(ctx, line)
+  end
 ```
 
 
