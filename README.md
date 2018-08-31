@@ -527,7 +527,7 @@ You will find a detailed description of class methods and parameters at [RubyDoc
 If you are already using MidiSmtpServer at a release 1.x it might be only some straight forward work to get your code work with version 2.x.
 
 <details>
-<summary>Show details</summary>
+<summary>Open / Close details</summary>
 
 #### Class
 
