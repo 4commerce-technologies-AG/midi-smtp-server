@@ -232,17 +232,17 @@ module MidiSmtpServer
       @do_dns_reverse_lookup = opts.include?(:do_dns_reverse_lookup) ? opts[:do_dns_reverse_lookup] : true
     end
 
-    # get event on CONNECTION
+    # event on CONNECTION
     def on_connect_event(ctx)
       logger.debug("Client connect from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]}")
     end
 
-    # get event before DISONNECT
+    # event before DISONNECT
     def on_disconnect_event(ctx)
       logger.debug("Client disconnect from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]}")
     end
 
-    # get event on HELO/EHLO:
+    # event on HELO/EHLO:
     def on_helo_event(ctx, helo_data) end
 
     # check the authentification on AUTH:
@@ -276,7 +276,7 @@ module MidiSmtpServer
     # otherwise the original value will be used
     def on_rcpt_to_event(ctx, rcpt_to_data) end
 
-    # get event while message data buffer get filled
+    # event while receiving message DATA
     def on_message_data_receiving_event(ctx) end
 
     # get each message after DATA <message> .

@@ -88,15 +88,15 @@ Use the component in your project sources by:
 MidiSmtpServer can be easy customized via subclassing. Simply subclass the `MidiSmtpServer` class as given in the example above and re-define event handlers:
 
 ```ruby
-  # get event on CONNECTION
+  # event on CONNECTION
   def on_connect_event(ctx)
   end
 
-  # get event before DISONNECT
+  # event before DISONNECT
   def on_disconnect_event(ctx)
   end
 
-  # get event on HELO/EHLO:
+  # event on HELO/EHLO:
   def on_helo_event(ctx, helo_data)
   end
 
@@ -110,6 +110,10 @@ MidiSmtpServer can be easy customized via subclassing. Simply subclass the `Midi
   # if any value returned, that will be used for ongoing processing
   # otherwise the original value will be used
   def on_rcpt_to_event(ctx, rcpt_to_data)
+  end
+
+  # event while receiving message DATA
+  def on_message_data_receiving_event(ctx)
   end
 
   # get each message after DATA <message> .
@@ -263,6 +267,41 @@ You can access some important client and server values by using the `ctx` array 
   ctx[:message][:data]
 
 ```
+
+
+## Incoming data validation
+
+With release 2.2.3 there is extended control about incoming data before processing. New options allow to set a timeout and maximum size of io_buffer for receiving client data up to a complete data line.
+
+```ruby
+# timeout in seconds before a data line has to be completely sent by client or connection abort
+opts = { io_cmd_timeout: DEFAULT_IO_CMD_TIMEOUT }
+
+# maximum size in bytes to read in buffer for a complete data line from client or connection abort
+opts = { io_buffer_max_size: DEFAULT_IO_BUFFER_MAX_SIZE }
+```
+
+There is also a new event which may be used to handle the incoming transmission of message data. For example to abort when message data is going to exceed a maximum size:
+
+```ruby
+  # event while receiving message DATA
+  def on_message_data_receiving_event(ctx)
+    raise MidiSmtpServer::Smtpd552Exception if ctx[:message][:data].bytesize > MAX_MSG_SIZE
+  end
+```
+
+Or to implement something like a Teergrube for spammers etc.:
+
+```ruby
+  # event while receiving message DATA
+  def on_message_data_receiving_event(ctx)
+    # don't allow the spammer to continue fast
+    # let him wait always 15 seconds before sending next data line
+    sleep 15 if ctx[:server][:helo] =~ /domain/
+  end
+```
+
+Or to check already the message headers before receiving the complete message data. And lots more.
 
 
 ## Authentication support
