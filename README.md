@@ -484,6 +484,11 @@ E.g. create a SMTP-Server to receive messages via SMTP and forward them plain or
 You will find a detailed description of class methods and parameters at [RubyDoc](http://www.rubydoc.info/gems/midi-smtp-server/MidiSmtpServer/Smtpd)
 
 
+## New to version 2.2.3
+
+1. Control and validation on incoming data [see Incoming data validation](https://github.com/4commerce-technologies-AG/midi-smtp-server#incoming-data-validation)
+
+
 ## New to version 2.2.1
 
 1. Builtin optional support of STARTTLS encryption
@@ -521,6 +526,8 @@ You will find a detailed description of class methods and parameters at [RubyDoc
 
 If you are already using MidiSmtpServer at a release 1.x it might be only some straight forward work to get your code work with version 2.x.
 
+<details>
+<summary>Show source</summary>
 #### Class
 
 ##### 1.x
@@ -601,6 +608,7 @@ If you are already using MidiSmtpServer at a release 1.x it might be only some s
 ```ruby
   # not available anymore, is now controlled by Logger
 ```
+</details>
 
 
 ## Package
