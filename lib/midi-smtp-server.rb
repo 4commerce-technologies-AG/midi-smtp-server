@@ -242,10 +242,10 @@ module MidiSmtpServer
       logger.debug("Client disconnect from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]}")
     end
 
-    # event on HELO/EHLO:
+    # event on HELO/EHLO
     def on_helo_event(ctx, helo_data) end
 
-    # check the authentification on AUTH:
+    # check the authentification on AUTH
     # if any value returned, that will be used for ongoing processing
     # otherwise the original value will be used for authorization_id
     def on_auth_event(ctx, authorization_id, authentication_id, authentication)
@@ -266,12 +266,12 @@ module MidiSmtpServer
       ctx[:server][:encrypted] && !ctx[:server][:encrypted].to_s.empty?
     end
 
-    # get address send in MAIL FROM:
+    # get address send in MAIL FROM
     # if any value returned, that will be used for ongoing processing
     # otherwise the original value will be used
     def on_mail_from_event(ctx, mail_from_data) end
 
-    # get each address send in RCPT TO:
+    # get each address send in RCPT TO
     # if any value returned, that will be used for ongoing processing
     # otherwise the original value will be used
     def on_rcpt_to_event(ctx, rcpt_to_data) end
@@ -281,6 +281,14 @@ module MidiSmtpServer
 
     # get each message after DATA <message> .
     def on_message_data_event(ctx) end
+
+    # event if process_line has identified an unknown command line
+    # allows to abort sessions for a series of unknown activities to
+    # prevent denial of service attacks etc.
+    def on_process_line_unknown_event(ctx, line)
+      # per default we encounter an error
+      raise Smtpd500Exception
+    end
 
     protected
 
@@ -449,6 +457,8 @@ module MidiSmtpServer
 
               # defined SmtpdException
               rescue SmtpdException => e
+                # inc number of detected exceptions during this session
+                Thread.current[:ctx][:server][:exceptions] += 1
                 # log error info if logging
                 logger.error("#{e}")
                 # get the given smtp dialog result
@@ -456,6 +466,8 @@ module MidiSmtpServer
 
               # Unknown general Exception during processing
               rescue StandardError => e
+                # inc number of detected exceptions during this session
+                Thread.current[:ctx][:server][:exceptions] += 1
                 # log error info if logging
                 logger.error("#{e}")
                 # set default smtp server dialog error
@@ -780,9 +792,8 @@ module MidiSmtpServer
 
           else
             # If we somehow get to this point then
-            # we have encountered an error
-            raise Smtpd500Exception
-
+            # allow handling of unknown command line
+            on_process_line_unknown_event(Thread.current[:ctx], line)
         end
 
       else
@@ -861,6 +872,7 @@ module MidiSmtpServer
             remote_port: '',
             helo: '',
             connected: '',
+            exceptions: 0,
             authorization_id: '',
             authentication_id: '',
             authenticated: '',

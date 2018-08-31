@@ -252,6 +252,9 @@ You can access some important client and server values by using the `ctx` array 
   # connection timestamp (utc)
   ctx[:server][:connected]
 
+  # counter (int) of exceptions / unknown commands
+  ctx[:server][:exceptions]
+
   # authentification infos
   ctx[:server][:authorization_id]
   ctx[:server][:authentication_id]
@@ -290,9 +293,21 @@ opts = { io_cmd_timeout: DEFAULT_IO_CMD_TIMEOUT }
 opts = { io_buffer_max_size: DEFAULT_IO_BUFFER_MAX_SIZE }
 ```
 
-There is also a new event which may be used to handle the incoming transmission of message data.
+There are new events `on_process_line_unknown_event` and `on_message_data_receiving_event` to handle the incoming transmission of unknown commands and message data.
 
-As an example: abort when message data is going to exceed a maximum size:
+As an example to abort on to many unknown commands to prevent a denial of service attack etc.:
+
+```ruby
+  # event if process_line has identified an unknown command line
+  def on_process_line_unknown_event(ctx, line)
+    # check
+    raise MidiSmtpServer::Smtpd421Exception.new("421 Abort: too many unknown commands where sent!") if ctx[:server][:exceptions] >= 5
+    # otherwise call the super method
+    super
+  end
+```
+
+As an example while receiving message data: abort when message data is going to exceed a maximum size:
 
 ```ruby
   # event while receiving message DATA
