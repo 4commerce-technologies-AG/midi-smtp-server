@@ -48,7 +48,7 @@ class MySmtpd < MidiSmtpServer::Smtpd
   # get each message after DATA <message> .
   def on_message_data_event(ctx)
     # Output for debug
-    logger.debug("[#{ctx[:envelope][:from]}] for recipient(s): [#{ctx[:envelope][:to]}]...")
+    logger.debug("mail from: [#{ctx[:envelope][:from]}] for recipient(s): [#{ctx[:envelope][:to]}]...")
 
     # Just decode message ones to make sure, that this message ist readable
     @mail = Mail.read_from_string(ctx[:message][:data])
