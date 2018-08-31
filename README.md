@@ -259,7 +259,7 @@ You can access some important client and server values by using the `ctx` array 
   # successful authentication timestamp (utc)
   ctx[:server][:authenticated]
 
-  # status of encryption
+  # timestamp (utc) when encryption was established
   ctx[:server][:encrypted]
 
   # envelope mail from

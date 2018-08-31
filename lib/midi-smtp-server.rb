@@ -263,7 +263,7 @@ module MidiSmtpServer
 
     # check the status of encryption for a given context
     def encrypted?(ctx)
-      ctx[:server][:encrypted] && ctx[:server][:encrypted] == true
+      ctx[:server][:encrypted] && !ctx[:server][:encrypted].to_s.empty?
     end
 
     # get address send in MAIL FROM:
@@ -403,7 +403,7 @@ module MidiSmtpServer
               # start ssl tunnel
               io = @tls.start(io)
               # save enabled tls
-              Thread.current[:ctx][:server][:encrypted] = true
+              Thread.current[:ctx][:server][:encrypted] = Time.now.utc
               # set sequence back to HELO/EHLO
               Thread.current[:cmd_sequence] = :CMD_HELO
               # reset timeout timestamp
@@ -584,7 +584,7 @@ module MidiSmtpServer
             # check initialized TlsTransport object
             raise Tls454Exception unless @tls
             # check valid command sequence
-            raise Smtpd503Exception if Thread.current[:ctx][:server][:encrypted]
+            raise Smtpd503Exception if encrypted?(Thread.current[:ctx])
             # set sequence for next command input
             Thread.current[:cmd_sequence] = :CMD_STARTTLS
             # return with new service ready message
@@ -864,7 +864,7 @@ module MidiSmtpServer
             authorization_id: '',
             authentication_id: '',
             authenticated: '',
-            encrypted: false
+            encrypted: ''
           }
         )
       end
