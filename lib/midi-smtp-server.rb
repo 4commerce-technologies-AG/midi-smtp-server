@@ -282,7 +282,7 @@ module MidiSmtpServer
     # get each message after DATA <message> .
     def on_message_data_event(ctx) end
 
-    # event if process_line has identified an unknown command line
+    # event when process_line identifies an unknown command line
     # allows to abort sessions for a series of unknown activities to
     # prevent denial of service attacks etc.
     def on_process_line_unknown_event(_ctx, _line)

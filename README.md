@@ -119,6 +119,11 @@ MidiSmtpServer can be easy customized via subclassing. Simply subclass the `Midi
   # get each message after DATA <message> .
   def on_message_data_event(ctx)
   end
+
+  # event when process_line identifies an unknown command line
+  # allows to abort sessions for a series of unknown activities to
+  # prevent denial of service attacks etc.
+  def on_process_line_unknown_event(_ctx, _line)
 ```
 
 
