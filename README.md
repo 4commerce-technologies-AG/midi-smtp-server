@@ -554,7 +554,7 @@ You will find a detailed description of class methods and parameters at [RubyDoc
 4. Use logger to log several messages from severity :debug up to :fatal
 
 
-## From version 1.x to 2.x
+## From MidiSmtpServer version 1.x to 2.x
 
 If you are already using MidiSmtpServer at a release 1.x it might be only some straight forward work to get your code work with version 2.x.
 
@@ -637,6 +637,82 @@ If you are already using MidiSmtpServer at a release 1.x it might be only some s
 ```
 
 ##### 2.x
+
+```ruby
+  # not available anymore, is now controlled by Logger
+```
+</details>
+
+
+## From MiniSmtpServer to MidiSmtpServer
+
+If you are already using MiniSmtpServer it might be only some straight forward work to get your code work with MidiSmtpServer version 2.x.
+
+<details>
+<summary>Open / Close details</summary>
+
+#### Class
+
+##### MiniSmtpServer
+
+```ruby
+  MiniSmtpServer.new
+```
+
+##### MidiSmtpServer
+
+```ruby
+  MidiSmtpServer::Smtpd.new
+```
+
+#### Class initialize
+
+##### MiniSmtpServer
+
+```ruby
+  def initialize(port = 2525, host = "127.0.0.1", max_connections = 4, *args)
+```
+
+##### MidiSmtpServer
+
+```ruby
+  def initialize(port = DEFAULT_SMTPD_PORT, host = DEFAULT_SMTPD_HOST, max_connections = 4, opts = {})
+  # opts may include
+  opts = { do_dns_reverse_lookup: true }
+  opts = { logger: myLoggerObject }
+```
+
+#### On_event methods
+
+##### MiniSmtpServer
+
+```ruby
+  def new_message_event(message_hash)
+  # message_hash[:from]
+  # message_hash[:to]
+  # message_hash[:data]  
+```
+
+##### MidiSmtpServer
+
+```ruby
+  def on_message_data_event(ctx)
+  ctx[:envelope][:from]
+  ctx[:envelope][:to]
+  ctx[:message][:data]
+```
+
+#### Removed elements
+
+##### MiniSmtpServer
+
+```ruby
+  # class vars from gserver
+  audit
+  debug
+```
+
+##### MidiSmtpServer
 
 ```ruby
   # not available anymore, is now controlled by Logger
