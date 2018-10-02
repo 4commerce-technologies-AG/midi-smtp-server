@@ -14,6 +14,13 @@ class MySmtpd < MidiSmtpServer::Smtpd
     super
   end
 
+  def on_process_line_unknown_event(ctx, line)
+    # check
+    raise MidiSmtpServer::Smtpd421Exception, 'Connection Abort: Too many unknown commands where sent!' if ctx[:server][:exceptions] >= 5
+    # otherwise call the super method
+    super
+  end
+
   # get each message after DATA <message> .
   def on_message_data_event(ctx)
     # Output for debug
