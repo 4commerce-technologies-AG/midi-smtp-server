@@ -159,10 +159,14 @@ module MidiSmtpServer
     # Port on which to listen, as a Fixnum
     attr_reader :port
     # Array of hosts / addresses on which to bind, set as string seperated by commata like '127.0.0.1, ::1'
-    attr_reader :hosts
-    # Deprecated method to access the old host attr
+    def hosts
+      # prevent original array from being changed
+      @hosts.dup
+    end
+    # New but deprecated method to access the old host attr for compatibility reasons
     def host
-      return hosts.join(', ')
+      logger.debug('Deprecated method host is used. Please update to hosts.join() etc.')
+      hosts.join(', ')
     end
     # Maximum number of connections to accept at a time, as a Fixnum
     attr_reader :max_connections
