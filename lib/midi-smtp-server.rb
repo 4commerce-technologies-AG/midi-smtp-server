@@ -2,6 +2,8 @@ require 'socket'
 require 'thread'
 require 'base64'
 
+require 'midi-smtp-server/version'
+
 # A small and highly customizable ruby SMTP-Server.
 module MidiSmtpServer
 
@@ -96,17 +98,19 @@ module MidiSmtpServer
       shutdown if gracefully
       # wait if some connection(s) need(s) more time to handle shutdown
       sleep wait_seconds_before_close if connections?
-      # drop tcp_server while raising SmtpdStopServiceException
+      # drop tcp_servers while raising SmtpdStopServiceException
       @connections_mutex.synchronize do
-        @tcp_server_thread.raise SmtpdStopServiceException if @tcp_server_thread
+        @tcp_server_threads.each do |tcp_server_thread|
+          tcp_server_thread.raise SmtpdStopServiceException if tcp_server_thread
+        end
       end
       # wait if some connection(s) still need(s) more time to come down
-      sleep wait_seconds_before_close if connections?
+      sleep wait_seconds_before_close if connections? || !stopped?
     end
 
     # Returns true if the server has stopped.
     def stopped?
-      @tcp_server_thread.nil?
+      @tcp_server_threads.empty? && @tcp_servers.empty?
     end
 
     # Schedule a shutdown for the server
@@ -129,17 +133,23 @@ module MidiSmtpServer
       @connections.any?
     end
 
-    # Join with the server thread
-    # before joining the server wait a few seconds to let the service come up
+    # Join with the server thread(s)
+    # before joining the server threads, check and wait optionally a few seconds
+    # to let the service(s) come up
     def join(sleep_seconds_before_join = 1)
-      # check already started server
-      return unless @tcp_server_thread
-      # otherwise try to join
+      # check already existing TCPServers
+      return if @tcp_servers.empty?
+      # wait some seconds before joininig the upcoming threads
+      # and check that all TCPServers gots one thread
+      while (@tcp_server_threads.length < @tcp_servers.length) && (sleep_seconds_before_join > 0) do
+        sleep_seconds_before_join -= 1
+        sleep 1
+      end
+      # try to join any thread
       begin
-        # wait a second
-        sleep sleep_seconds_before_join
-        # join
-        @tcp_server_thread.join
+        @tcp_server_threads.each do |tcp_server_thread|
+          tcp_server_thread.join
+        end
 
       # catch ctrl-c to stop service
       rescue Interrupt
@@ -148,8 +158,12 @@ module MidiSmtpServer
 
     # Port on which to listen, as a Fixnum
     attr_reader :port
-    # Host on which to bind, as a String
-    attr_reader :host
+    # Array of hosts / addresses on which to bind, set as string seperated by commata like '127.0.0.1, ::1'
+    attr_reader :hosts
+    # Deprecated method to access the old host attr
+    def host
+      return hosts.join(', ')
+    end
     # Maximum number of connections to accept at a time, as a Fixnum
     attr_reader :max_connections
     # Maximum time in seconds to wait for a complete incoming data line, as a FixNum
@@ -169,7 +183,7 @@ module MidiSmtpServer
     # Initialize SMTP Server class
     #
     # +port+:: port to listen on
-    # +host+:: interface ip to listen on or blank to listen on all interfaces
+    # +hosts+:: interface ip or hostname to listen on or blank to listen on all interfaces. Allows multiple addresses like "127.0.0.1, ::1"
     # +max_connections+:: maximum number of simultaneous connections
     # +opts+:: optional settings
     # +opts.do_dns_reverse_lookup+:: flag if this smtp server should do reverse lookups on incoming connections
@@ -183,7 +197,7 @@ module MidiSmtpServer
     # +opts.tls_ciphers+:: allowed ciphers for connection
     # +opts.tls_methods+:: allowed methods for protocol
     # +opts.logger+:: own logger class, otherwise default logger is created
-    def initialize(port = DEFAULT_SMTPD_PORT, host = DEFAULT_SMTPD_HOST, max_connections = DEFAULT_SMTPD_MAX_CONNECTIONS, opts = {})
+    def initialize(port = DEFAULT_SMTPD_PORT, hosts = DEFAULT_SMTPD_HOST, max_connections = DEFAULT_SMTPD_MAX_CONNECTIONS, opts = {})
       # logging
       if opts.include?(:logger)
         @logger = opts[:logger]
@@ -194,13 +208,30 @@ module MidiSmtpServer
         @logger.formatter = proc { |severity, datetime, _progname, msg| "#{datetime}: [#{severity}] #{msg.chomp}\n" }
       end
 
-      # initialize class
-      @tcp_server_thread = nil
+      # initialize class vars
+
+      # list of TCPServers
+      @tcp_servers = []
+      # list of running threads
+      @tcp_server_threads = []
+      # SSL transport layer for STARTTLS
       @tls = nil
 
       # settings
+
+      # read port
       @port = port
-      @host = host
+      # build array of hosts
+      if (hosts.strip == '')
+        # default if empty bind to (all) local host addresses
+        @hosts = ['']
+      else
+        # split string into array to instantiate multiple servers
+        @hosts = hosts.delete(' ').split(',').uniq
+        # check that not also the '' wildcard for hosts is added to the list
+        raise 'Do not use wildcard "" for hosts while specifying multiple hosts' if @hosts.include?('')
+      end
+      # read max_connections
       @max_connections = max_connections
 
       # io and buffer settings
@@ -292,20 +323,35 @@ module MidiSmtpServer
 
     protected
 
-    # Start the listener thread if it isn't already running
+    # Start the listeners for all hosts
     def serve_service
       raise 'Service was already started' unless stopped?
 
       # set flag to signal shutdown by stop / shutdown command
       @shutdown = false
 
-      # instantiate the service for @host and @port
-      # if @host is empty all interfaces are used otherwise
-      # bind to single ip only
-      @tcp_server = TCPServer.new(@host, @port)
+      # instantiate the service for alls @hosts and @port
+      @hosts.each do |host|
+        # instantiate the service for each host and port
+        # if host is empty "" wildcard (all) interfaces are used
+        # otherwise it will be bind to single host ip only
+        serve_service_on_host_and_port(host, @port)
+      end
+    end
+
+    # Start the listener thread on single host and port
+    def serve_service_on_host_and_port(host, port)
+      # log information
+      logger.info('Running service on ' + (host == '' ? '<any>' : host) + ':' + port.to_s)
+      # instantiate the service for host and port
+      # if host is empty "" wildcard (all) interfaces are used
+      # otherwise it will be bind to single host ip only
+      tcp_server = TCPServer.new(host, port)
+      # append this server to the list of TCPServers
+      @tcp_servers << tcp_server
 
       # run thread until shutdown
-      @tcp_server_thread = Thread.new do
+      @tcp_server_threads << Thread.new do
         begin
           # always check for shutdown request
           until shutdown?
@@ -317,7 +363,7 @@ module MidiSmtpServer
             end
             # get new client and start additional thread
             # to handle client process
-            client = @tcp_server.accept
+            client = tcp_server.accept
             Thread.new(client) do |io|
               # add to list of connections
               @connections << Thread.current
@@ -342,7 +388,9 @@ module MidiSmtpServer
                 end
                 # remove closed session from connections
                 @connections_mutex.synchronize do
+                  # drop this thread from served connections
                   @connections.delete(Thread.current)
+                  # signal mutex for next waiting thread
                   @connections_cv.signal
                 end
               end
@@ -356,7 +404,11 @@ module MidiSmtpServer
         ensure
           begin
             # drop the service
-            @tcp_server.close
+            tcp_server.close
+            # remove from list
+            @tcp_servers.delete(tcp_server)
+            # reset local var
+            tcp_server = nil
           rescue StandardError
             # ignor any error from here
           end
@@ -369,7 +421,8 @@ module MidiSmtpServer
             # drop any open session immediately
             @connections.each { |c| c.raise SmtpdStopConnectionException }
           end
-          @tcp_server_thread = nil
+          # remove this thread from list
+          @tcp_server_threads.delete(Thread.current)
         end
       end
     end
