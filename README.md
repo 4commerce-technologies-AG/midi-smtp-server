@@ -128,6 +128,11 @@ MidiSmtpServer can be easy customized via subclassing. Simply subclass the `Midi
 ```
 
 
+## IPv4 and IPv6 ready
+
+The underlaying ruby component [TCPServer](https://ruby-doc.org/stdlib-2.5.0/libdoc/socket/rdoc/TCPServer.html) allows support for IPv4 and IPv6 communication. If using the `DEFAULT_SMTPD_HOST` as your host option than explicitely IPv4 `127.0.0.1` will be enabled. If using the string `localhost` it depends on your _hosts_ file. If that contains a line like `::1 localhost` you might enable your server instance on IPv6 localhost only. Be aware of that when accessing your service.
+
+
 ## Modifying MAIL FROM and RCPT TO addresses
 
 Since release `1.1.4` the `on_mail_from_event` and `on_rcpt_to_event` allows to return values that should be added to the lists. This is useful if you want to e.g. normalize all incoming addresses. Format defined by RFC for `<path>` as a `MAIL FROM` or `RCPT TO` addresses is:
