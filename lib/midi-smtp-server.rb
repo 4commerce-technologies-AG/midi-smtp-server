@@ -156,8 +156,16 @@ module MidiSmtpServer
       end
     end
 
-    # Port on which to listen, as a Fixnum
-    attr_reader :port
+    # Array of ports on which to bind, set as string seperated by commata like '2525, 3535' or '2525:3535, 2525'
+    def ports
+      # prevent original array from being changed
+      @ports.dup
+    end
+    # New but deprecated method to access the old port attr for compatibility reasons
+    def port
+      logger.debug('Deprecated method port is used. Please update to ports.join() etc.')
+      ports.join(', ')
+    end
     # Array of hosts / addresses on which to bind, set as string seperated by commata like '127.0.0.1, ::1'
     def hosts
       # prevent original array from being changed
@@ -186,7 +194,7 @@ module MidiSmtpServer
 
     # Initialize SMTP Server class
     #
-    # +port+:: port to listen on
+    # +ports+:: ports to listen on. Allows multiple ports like "2525, 3535" or "2525:3535, 2525"
     # +hosts+:: interface ip or hostname to listen on or blank to listen on all interfaces. Allows multiple addresses like "127.0.0.1, ::1"
     # +max_connections+:: maximum number of simultaneous connections
     # +opts+:: optional settings
@@ -201,7 +209,7 @@ module MidiSmtpServer
     # +opts.tls_ciphers+:: allowed ciphers for connection
     # +opts.tls_methods+:: allowed methods for protocol
     # +opts.logger+:: own logger class, otherwise default logger is created
-    def initialize(port = DEFAULT_SMTPD_PORT, hosts = DEFAULT_SMTPD_HOST, max_connections = DEFAULT_SMTPD_MAX_CONNECTIONS, opts = {})
+    def initialize(ports = DEFAULT_SMTPD_PORT, hosts = DEFAULT_SMTPD_HOST, max_connections = DEFAULT_SMTPD_MAX_CONNECTIONS, opts = {})
       # logging
       if opts.include?(:logger)
         @logger = opts[:logger]
@@ -223,17 +231,21 @@ module MidiSmtpServer
 
       # settings
 
-      # read port
-      @port = port
+      # build array of ports
+      raise 'Missing port(s) to bind service(s) to!' if ports.to_s.strip == ''
+      @ports = ports.to_s.delete(' ').split(',')
+
       # build array of hosts
-      if (hosts.strip == '')
+      if hosts.to_s.strip == ''
         # default if empty bind to (all) local host addresses
         @hosts = ['']
       else
         # split string into array to instantiate multiple servers
-        @hosts = hosts.delete(' ').split(',').uniq
+        @hosts = hosts.to_s.delete(' ').split(',')
+        # check that only unique addresses were given
+        raise 'Duplicate addresses were specified for hosts!' if @hosts.length != @hosts.uniq.length
         # check that not also the '' wildcard for hosts is added to the list
-        raise 'Do not use wildcard "" for hosts while specifying multiple hosts' if @hosts.include?('')
+        raise 'Do not use wildcard "" for hosts while specifying multiple hosts!' if @hosts.include?('')
       end
       # read max_connections
       @max_connections = max_connections
@@ -334,12 +346,19 @@ module MidiSmtpServer
       # set flag to signal shutdown by stop / shutdown command
       @shutdown = false
 
-      # instantiate the service for alls @hosts and @port
-      @hosts.each do |host|
+      # instantiate the service for alls @hosts and @ports
+      @hosts.each_with_index do |host, index|
         # instantiate the service for each host and port
         # if host is empty "" wildcard (all) interfaces are used
         # otherwise it will be bind to single host ip only
-        serve_service_on_host_and_port(host, @port)
+        # if ports at index is not specified, use last item
+        # of ports array. if multiple ports specified by
+        # item like 2525:3535:4545, then all are instantiated
+        ports_for_host = (index < @ports.length ? @ports[index] : @ports.last).to_s.split(':')
+        # loop all ports for that host
+        ports_for_host.each do |port|
+          serve_service_on_host_and_port(host, port)
+        end
       end
     end
 
