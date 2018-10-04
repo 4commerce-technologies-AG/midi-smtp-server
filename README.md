@@ -534,6 +534,10 @@ You should take care of your project and the communication which it will handle.
 
 Be aware that with enabled option of [PIPELINING](https://tools.ietf.org/html/rfc2920) you can't figure out sender or recipient address injection by the SMTP server. From point of security PIPELINING should be disabled as it is per default since version 2.3.0 on this component.
 
+```ruby
+# PIPELINING ist not allewd (false) per _Default_
+opts = { pipelining_extension: DEFAULT_PIPELINING_EXTENSION }
+```
 
 ## Endless operation purposes
 
