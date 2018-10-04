@@ -272,4 +272,16 @@ module MidiSmtpServer
 
   end
 
+  # Status when disabled PIPELINING
+
+  # 500 Bad input, no PIPELINING
+  class Smtpd500PipeliningException < SmtpdException
+
+    def initialize(msg = nil)
+      # call inherited constructor
+      super msg, 500, 'Bad input, PIPELINING is not allowed'
+    end
+
+  end
+
 end

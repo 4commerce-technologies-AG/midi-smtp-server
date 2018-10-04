@@ -20,6 +20,9 @@ module MidiSmtpServer
   DEFAULT_IO_BUFFER_CHUNK_SIZE = 4 * 1024
   DEFAULT_IO_BUFFER_MAX_SIZE = 1 * 1024 * 1024
 
+  # default value for SMTPD extensions support
+  DEFAULT_PIPELINING_EXTENSION = false
+
   # Authentification modes
   AUTH_MODES = [:AUTH_FORBIDDEN, :AUTH_OPTIONAL, :AUTH_REQUIRED].freeze
 
@@ -131,6 +134,8 @@ module MidiSmtpServer
     attr_reader :auth_mode
     # Encryption mode
     attr_reader :encrypt_mode
+    # handle SMTP PIPELINING extension
+    attr_reader :pipelining_extension
 
     # logging object, may be overrriden by special loggers like YELL or others
     attr_reader :logger
@@ -145,6 +150,7 @@ module MidiSmtpServer
     # +opts.io_cmd_timeout+:: time in seconds to wait until complete line of data is expected (DEFAULT_IO_CMD_TIMEOUT, nil => disabled test)
     # +opts.io_buffer_chunk_size+:: size of chunks (bytes) to read non-blocking from socket (DEFAULT_IO_BUFFER_CHUNK_SIZE)
     # +opts.io_buffer_max_size+:: max size of buffer (max line length) until \lf ist expected (DEFAULT_IO_BUFFER_MAX_SIZE, nil => disabled test)
+    # +opts.pipelining_extension+:: set to true for support of SMTP PIPELINING extension (DEFAULT_PIPELINING_EXTENSION)
     # +opts.auth_mode+:: enable builtin authentication support (:AUTH_FORBIDDEN, :AUTH_OPTIONAL, :AUTH_REQUIRED)
     # +opts.tls_mode+:: enable builtin TLS support (:TLS_FORBIDDEN, :TLS_OPTIONAL, :TLS_REQUIRED)
     # +opts.tls_cert_path+:: path to tls cerificate chain file
@@ -197,6 +203,9 @@ module MidiSmtpServer
       @io_cmd_timeout = opts.include?(:io_cmd_timeout) ? opts[:io_cmd_timeout] : DEFAULT_IO_CMD_TIMEOUT
       @io_buffer_chunk_size = opts.include?(:io_buffer_chunk_size) ? opts[:io_buffer_chunk_size] : DEFAULT_IO_BUFFER_CHUNK_SIZE
       @io_buffer_max_size = opts.include?(:io_buffer_max_size) ? opts[:io_buffer_max_size] : DEFAULT_IO_BUFFER_MAX_SIZE
+
+      # smtp extensions
+      @pipelining_extension = opts.include?(:pipelining_extension) ? opts[:pipelining_extension] : DEFAULT_PIPELINING_EXTENSION
 
       # lists for connections and thread management
       @connections = []
@@ -465,8 +474,15 @@ module MidiSmtpServer
               # log line, verbosity based on log severity and command sequence
               logger.debug('<<< ' + line) if Thread.current[:cmd_sequence] != :CMD_DATA
 
+              # check for next line-feed already in io_buffer
+              io_buffer_line_lf = io_buffer.index("\n")
+
               # process commands and handle special SmtpdExceptions
               begin
+                # check for pipelining
+                raise Smtpd500PipeliningException unless @pipelining_extension if io_buffer_line_lf && (Thread.current[:cmd_sequence] != :CMD_DATA)
+
+                # process line
                 output = process_line(line)
 
               # defined abort channel exception
@@ -502,9 +518,6 @@ module MidiSmtpServer
                 # smtp dialog response
                 io.print(output) unless io.closed? || shutdown?
               end
-
-              # check for next line-feed already in io_buffer
-              io_buffer_line_lf = io_buffer.index("\n")
 
               # reset timeout timestamp
               timestamp_timeout = Time.now.to_i
@@ -592,6 +605,8 @@ module MidiSmtpServer
               when (/^EHLO/i)
                 # reply supported extensions
                 return "250-8BITMIME\r\n" +
+                       # respond with PIPELINING if enabled
+                       (@pipelining_extension ? "250-PIPELINING\r\n" : '') +
                        # respond with AUTH extensions if enabled
                        (@auth_mode == :AUTH_FORBIDDEN ? '' : "250-AUTH LOGIN PLAIN\r\n") +
                        # respond with STARTTLS if available and not already enabled
