@@ -44,7 +44,7 @@ trap('INT') do
 end
 
 # Output for debug
-puts "#{Time.now}: Starting MySmtpd..."
+puts "#{Time.now}: Starting MySmtpd #{MidiSmtpServer::VERSION::STRING} ..."
 
 # Create a new server instance listening at localhost interfaces 127.0.0.1:2525
 # and accepting a maximum of 4 simultaneous connections
@@ -131,6 +131,28 @@ MidiSmtpServer can be easy customized via subclassing. Simply subclass the `Midi
 ## IPv4 and IPv6 ready
 
 The underlaying ruby component [TCPServer](https://ruby-doc.org/stdlib-2.5.0/libdoc/socket/rdoc/TCPServer.html) allows support for IPv4 and IPv6 communication. If using the `DEFAULT_SMTPD_HOST` as your host option than explicitely IPv4 `127.0.0.1` will be enabled. If using the string `localhost` it depends on your _hosts_ file. If that contains a line like `::1 localhost` you might enable your server instance on IPv6 localhost only. Be aware of that when accessing your service.
+
+
+## Multiple ports and addresses
+
+Since version 2.3.0 you may define multiple hosts or ip addresses and ports at once when initializing the class. The ports and hosts arguments may be comma seperated strings with multiple ports and addresses like:
+
+``` ruby
+  # use port 2525 on all addresses
+  server = MySmtpd.new('2525', '127.0.0.1, ::1, 192.168.0.1')
+  # use ports 2525 and 3535 on all addresses
+  server = MySmtpd.new('2525:3535', '127.0.0.1, ::1, 192.168.0.1')
+  # use port 2525 on first address 127.0.0.1 and port 3535 on second address (and above)
+  server = MySmtpd.new('2525, 3535', '127.0.0.1, ::1, 192.168.0.1')
+  # use port 2525 on first address, port 3535 on second address, port 2525 on third
+  server = MySmtpd.new('2525, 3535, 2525', '127.0.0.1, ::1, 192.168.0.1')
+  # use port 2525 on first address, ports 2525 and 3535 on second address, port 2525 on third
+  server = MySmtpd.new('2525, 2525:3535, 2525', '127.0.0.1, ::1, 192.168.0.1')
+```
+
+You may write any combination of ports and addresses that should be served. That allows complex servers with optionally different services identified by different ports and addresses.
+
+There are also a `ports` and `hosts` reader for this values. Please be aware that we will drop the old attributes of `port` and `host` within the next minor release.
 
 
 ## Modifying MAIL FROM and RCPT TO addresses
@@ -467,6 +489,7 @@ As long as `tls_mode` is set to `:TLS_OPTIONAL` or `:TLS_REQUIRED` and no certif
 
 You better should generate a certificate by yourself or use a professional trust-center like [LetsEncrypt](https://letsencrypt.org/).
 
+
 #### Quick guide to create a certificate
 
 If interested in detail, read the whole story at [www.thenativeweb.io](https://www.thenativeweb.io/blog/2017-12-29-11-51-the-openssl-beginners-guide-to-creating-ssl-certificates/).
@@ -499,7 +522,7 @@ gnutls-cli --insecure -s -p 2525 127.0.0.1
 After launching `gnutls-cli` start the SMTP dialog by sending `EHLO` and `STARTSSL` commands. Next press Ctrl-D on your keyboard to run the handshake for SSL communication between `gnutls-cli` and your server. When ready you may follow up with the delivery dialog for SMTP.
 
 
-## Secure your email communication
+## Attacks on email communication
 
 You should take care of your project and the communication which it will handle. At least there are a number of attack possibilities even against email communication. It is important to know some of the attacks to write safe codes. Here are just a few interesting links about that:
 
@@ -509,7 +532,7 @@ You should take care of your project and the communication which it will handle.
 1. [Use timeouts to prevent SMTP DoS attacks](https://security.stackexchange.com/a/180267)
 1. [Check HELO/EHLO arguments](https://serverfault.com/a/667555)
 
-Be aware that with enabled option [PIPELINING](https://tools.ietf.org/html/rfc2920) you can't check sender or recipient address injection. From point of security PIPELINING should be disabled as it is per default.
+Be aware that with enabled option of [PIPELINING](https://tools.ietf.org/html/rfc2920) you can't figure out sender or recipient address injection by the SMTP server. From point of security PIPELINING should be disabled as it is per default since version 2.3.0 on this component.
 
 
 ## Endless operation purposes
@@ -532,6 +555,15 @@ E.g. create a SMTP-Server to receive messages via SMTP and forward them plain or
 ## MidiSmtpServer::Smtpd Class documentation
 
 You will find a detailed description of class methods and parameters at [RubyDoc](http://www.rubydoc.info/gems/midi-smtp-server/MidiSmtpServer/Smtpd)
+
+
+## New to version 2.3.0
+
+1. Support [IPv4 and IPv6 (documentation)](https://github.com/4commerce-technologies-AG/midi-smtp-server#ipv4-and-ipv6-ready)
+2. Support binding of [multiple ports and hosts / ip addresses](https://github.com/4commerce-technologies-AG/midi-smtp-server#multiple-ports-and-addresses)
+3. Support (optionally) SMTP [PIPELINING](https://tools.ietf.org/html/rfc2920) extension
+4. Support SMTP [8BITMIME](https://tools.ietf.org/html/rfc6152) extension
+5. Documentation about security and [smtp attacks](https://github.com/4commerce-technologies-AG/midi-smtp-server#attacks-on-email-communication)
 
 
 ## New to version 2.2.3
