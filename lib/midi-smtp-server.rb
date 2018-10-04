@@ -141,15 +141,13 @@ module MidiSmtpServer
       return if @tcp_servers.empty?
       # wait some seconds before joininig the upcoming threads
       # and check that all TCPServers gots one thread
-      while (@tcp_server_threads.length < @tcp_servers.length) && (sleep_seconds_before_join > 0) do
+      while (@tcp_server_threads.length < @tcp_servers.length) && (sleep_seconds_before_join > 0)
         sleep_seconds_before_join -= 1
         sleep 1
       end
       # try to join any thread
       begin
-        @tcp_server_threads.each do |tcp_server_thread|
-          tcp_server_thread.join
-        end
+        @tcp_server_threads.each(&:join)
 
       # catch ctrl-c to stop service
       rescue Interrupt
@@ -161,21 +159,25 @@ module MidiSmtpServer
       # prevent original array from being changed
       @ports.dup
     end
+
     # New but deprecated method to access the old port attr for compatibility reasons
     def port
       logger.debug('Deprecated method port is used. Please update to ports.join() etc.')
       ports.join(', ')
     end
+
     # Array of hosts / addresses on which to bind, set as string seperated by commata like '127.0.0.1, ::1'
     def hosts
       # prevent original array from being changed
       @hosts.dup
     end
+
     # New but deprecated method to access the old host attr for compatibility reasons
     def host
       logger.debug('Deprecated method host is used. Please update to hosts.join() etc.')
       hosts.join(', ')
     end
+
     # Maximum number of connections to accept at a time, as a Fixnum
     attr_reader :max_connections
     # Maximum time in seconds to wait for a complete incoming data line, as a FixNum
