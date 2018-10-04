@@ -283,12 +283,12 @@ module MidiSmtpServer
 
     # event on CONNECTION
     def on_connect_event(ctx)
-      logger.debug("Client connect from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]}")
+      logger.debug("Client connect from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} to #{ctx[:server][:local_ip]}:#{ctx[:server][:local_port]}")
     end
 
     # event before DISONNECT
     def on_disconnect_event(ctx)
-      logger.debug("Client disconnect from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]}")
+      logger.debug("Client disconnect from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} on #{ctx[:server][:local_ip]}:#{ctx[:server][:local_port]}")
     end
 
     # event on HELO/EHLO
