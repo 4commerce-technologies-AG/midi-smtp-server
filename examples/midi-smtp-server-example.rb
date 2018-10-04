@@ -11,10 +11,18 @@ class MySmtpd < MidiSmtpServer::Smtpd
     super
   end
 
+  # check while getting unknown commands
+  def on_process_line_unknown_event(ctx, line)
+    # check
+    raise MidiSmtpServer::Smtpd421Exception, 'Connection Abort: Too many unknown commands where sent!' if ctx[:server][:exceptions] >= 5
+    # otherwise call the super method
+    super
+  end
+
   # get each message after DATA <message> .
   def on_message_data_event(ctx)
     # Output for debug
-    logger.debug("mail from: [#{ctx[:envelope][:from]}] for recipient(s): [#{ctx[:envelope][:to]}]...")
+    logger.debug("mail reveived at: [#{ctx[:server][:local_ip]}:#{ctx[:server][:local_port]}] from: [#{ctx[:envelope][:from]}] for recipient(s): [#{ctx[:envelope][:to]}]...")
 
     # Just decode message ones to make sure, that this message ist readable
     @mail = Mail.read_from_string(ctx[:message][:data])
@@ -32,7 +40,7 @@ trap('INT') do
 end
 
 # Output for debug
-puts "#{Time.now}: Starting MySmtpd (Simple example) ..."
+puts "#{Time.now}: Starting MySmtpd [#{MidiSmtpServer::VERSION::STRING}|#{MidiSmtpServer::VERSION::DATE}] (Simple example) ..."
 
 # Create a new server instance listening at localhost interfaces 127.0.0.1:2525
 # and accepting a maximum of 4 simultaneous connections
