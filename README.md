@@ -524,7 +524,7 @@ After launching `gnutls-cli` start the SMTP dialog by sending `EHLO` and `STARTS
 
 ## Attacks on email communication
 
-You should take care of your project and the communication which it will handle. At least there are a number of attack possibilities even against email communication. It is important to know some of the attacks to write safe codes. Here are just a few interesting links about that:
+You should take care of your project and the communication which it will handle. At least there are a number of attack possibilities even against email communication. It is important to know some of the attacks to write safe codes. Here are just a few starting links about that:
 
 1. [SMTP Injection via recipient (and sender) email addresses](https://www.mbsd.jp/Whitepaper/smtpi.pdf)
 1. [Measuring E-Mail Header Injections on the World Wide Web](https://www.cs.ucsb.edu/~vigna/publications/2018_SAC_MailHeaderInjection.pdf)
@@ -563,7 +563,7 @@ You will find a detailed description of class methods and parameters at [RubyDoc
 2. Support binding of [multiple ports and hosts / ip addresses](https://github.com/4commerce-technologies-AG/midi-smtp-server#multiple-ports-and-addresses)
 3. Support (optionally) SMTP [PIPELINING](https://tools.ietf.org/html/rfc2920) extension
 4. Support SMTP [8BITMIME](https://tools.ietf.org/html/rfc6152) extension
-5. Documentation about security and [smtp attacks](https://github.com/4commerce-technologies-AG/midi-smtp-server#attacks-on-email-communication)
+5. Links about security and [email attacks](https://github.com/4commerce-technologies-AG/midi-smtp-server#attacks-on-email-communication)
 
 
 ## New to version 2.2.3
