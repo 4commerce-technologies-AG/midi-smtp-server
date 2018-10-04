@@ -130,12 +130,12 @@ MidiSmtpServer can be easy customized via subclassing. Simply subclass the `Midi
 
 ## IPv4 and IPv6 ready
 
-The underlaying ruby component [TCPServer](https://ruby-doc.org/stdlib-2.5.0/libdoc/socket/rdoc/TCPServer.html) allows support for IPv4 and IPv6 communication. If using the `DEFAULT_SMTPD_HOST` as your host option than explicitely IPv4 `127.0.0.1` will be enabled. If using the string `localhost` it depends on your _hosts_ file. If that contains a line like `::1 localhost` you might enable your server instance on IPv6 localhost only. Be aware of that when accessing your service.
+The underlaying ruby component [TCPServer](https://ruby-doc.org/stdlib-2.5.0/libdoc/socket/rdoc/TCPServer.html) allows support for IPv4 and IPv6 communication. If using the `DEFAULT_SMTPD_HOST` as your hosts option than explicitely IPv4 `127.0.0.1` will be enabled. If using the string `localhost` it depends on your _hosts_ file. If that contains a line like `::1 localhost` you might enable your server instance on IPv6 localhost only. Be aware of that when accessing your service.
 
 
 ## Multiple ports and addresses
 
-Since version 2.3.0 you may define multiple hosts or ip addresses and ports at once when initializing the class. The ports and hosts arguments may be comma seperated strings with multiple ports and addresses like:
+Since version 2.3.0 you may define multiple ports and hosts or ip addresses at once when initializing the class. The ports and hosts arguments may be comma seperated strings with multiple ports and addresses like:
 
 ``` ruby
   # use port 2525 on all addresses
@@ -636,7 +636,7 @@ If you are already using MidiSmtpServer at a release 1.x it might be only some s
 ##### 2.x
 
 ```ruby
-  def initialize(port = DEFAULT_SMTPD_PORT, host = DEFAULT_SMTPD_HOST, max_connections = 4, opts = {})
+  def initialize(ports = DEFAULT_SMTPD_PORT, hosts = DEFAULT_SMTPD_HOST, max_connections = 4, opts = {})
   # opts may include
   opts = { do_dns_reverse_lookup: true }
   opts = { logger: myLoggerObject }
@@ -726,7 +726,7 @@ If you are already using MiniSmtpServer it might be only some straight forward w
 ##### MidiSmtpServer
 
 ```ruby
-  def initialize(port = DEFAULT_SMTPD_PORT, host = DEFAULT_SMTPD_HOST, max_connections = 4, opts = {})
+  def initialize(ports = DEFAULT_SMTPD_PORT, hosts = DEFAULT_SMTPD_HOST, max_connections = 4, opts = {})
   # opts may include
   opts = { do_dns_reverse_lookup: true }
   opts = { logger: myLoggerObject }
