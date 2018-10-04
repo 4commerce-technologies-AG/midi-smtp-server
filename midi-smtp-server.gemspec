@@ -4,7 +4,7 @@ require 'midi-smtp-server/version'
 Gem::Specification.new do |s|
   s.name        = 'midi-smtp-server'
   s.version     = MidiSmtpServer::VERSION::STRING
-  s.date        = '2018-10-04'
+  s.date        = MidiSmtpServer::VERSION::DATE
   s.summary     = 'MidiSmtpServer Class'
   s.description = 'A small and highly customizable ruby SMTP-Server class with builtin support for AUTH and SSL/STARTTLS.'
   s.authors     = ['Tom Freudenberg']
