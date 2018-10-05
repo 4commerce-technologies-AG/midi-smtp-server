@@ -342,6 +342,7 @@ You can access some important client and server values by using the `ctx` array 
   ctx[:message][:delivered]
 
   # access message in on_message_data_event and on_message_data_receiving_event
+  ctx[:message][:body_encoding]
   ctx[:message][:bytesize]
   ctx[:message][:data]
 
@@ -395,6 +396,13 @@ Or to implement something like a Teergrube for spammers etc.:
 ```
 
 Or to check already the message headers before receiving the complete message data. And lots more.
+
+
+## 8BITMIME support
+
+Since version 2.3.0 there is builtin 8BITMIME extension support like described in [RFC6152](https://tools.ietf.org/html/rfc6152). When sender is using the 8BITMIME capabilty it will give enconding information about body encoding during `MAIL FROM` command. The encoding will be read by MidiSmtpServer and is published at context vars `ctx[:message][:body_encoding`. Possible values are `""` (undefined), `"7bit"` (strictly 7bit) or `"8bit"` (strictly 8bit).
+
+Even when `"8bit"` is signaled you have to decide the correct encoding like `utf-8` or `iso-8859-1` etc.
 
 
 ## Authentication support
@@ -600,7 +608,7 @@ You will find a detailed description of class methods and parameters at [RubyDoc
 1. Support [IPv4 and IPv6 (documentation)](https://github.com/4commerce-technologies-AG/midi-smtp-server#ipv4-and-ipv6-ready)
 2. Support binding of [multiple ports and hosts / ip addresses](https://github.com/4commerce-technologies-AG/midi-smtp-server#multiple-ports-and-addresses)
 3. Support (optionally) SMTP [PIPELINING](https://tools.ietf.org/html/rfc2920) extension
-4. Support SMTP [8BITMIME](https://tools.ietf.org/html/rfc6152) extension
+4. Support SMTP [8BITMIME](https://github.com/4commerce-technologies-AG/midi-smtp-server#8bitmime-support) extension
 5. Modify welcome and greeting messages
 6. Links about security and [email attacks](https://github.com/4commerce-technologies-AG/midi-smtp-server#attacks-on-email-communication)
 
