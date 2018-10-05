@@ -232,6 +232,10 @@ module MidiSmtpServer
     end
 
     # event on CONNECTION
+    # you may change the ctx[:server][:welcome_response] and
+    # you may change the ctx[:server][:helo_response] in here so
+    # that these will be used as welcome and greeting strings
+    # the values are not allowed to return CR nor LF chars and will be stripped
     def on_connect_event(ctx)
       logger.debug("Client connect from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} to #{ctx[:server][:local_ip]}:#{ctx[:server][:local_port]}")
     end
@@ -242,6 +246,9 @@ module MidiSmtpServer
     end
 
     # event on HELO/EHLO
+    # you may change the ctx[:server][:helo_response] in here so
+    # that this will be used as greeting string
+    # the value is not allowed to return CR nor LF chars and will be stripped
     def on_helo_event(ctx, helo_data) end
 
     # check the authentification on AUTH
@@ -415,13 +422,20 @@ module MidiSmtpServer
       _, Thread.current[:ctx][:server][:remote_port], Thread.current[:ctx][:server][:remote_host], Thread.current[:ctx][:server][:remote_ip] = @do_dns_reverse_lookup ? io.peeraddr(:hostname) : io.peeraddr(:numeric)
       # save connection date/time
       Thread.current[:ctx][:server][:connected] = Time.now.utc
+      # build and save the welcome and greeting response strings
+      Thread.current[:ctx][:server][:welcome_response] = "#{Thread.current[:ctx][:server][:local_host]} says welcome!"
+      Thread.current[:ctx][:server][:helo_response] = "#{Thread.current[:ctx][:server][:local_host]} at your service!"
       # check if we want to let this remote station connect us
       on_connect_event(Thread.current[:ctx])
       # handle connection
       begin
         begin
-          # reply welcome
-          io.print "220 #{Thread.current[:ctx][:server][:local_host]} says welcome!\r\n" unless io.closed?
+          # reply welcome message
+          output = "220 #{Thread.current[:ctx][:server][:welcome_response].to_s.strip}\r\n"
+
+          # log and show to client
+          logger.debug('>>> ' + output)
+          io.print output unless io.closed?
 
           # initialize io_buffer for input data
           io_buffer = ''
@@ -604,7 +618,9 @@ module MidiSmtpServer
             case line
               when (/^EHLO/i)
                 # reply supported extensions
-                return "250-8BITMIME\r\n" +
+                return "250-#{Thread.current[:ctx][:server][:helo_response].to_s.strip}\r\n" +
+                       # respond with 8BITMIME extension
+                       "250-8BITMIME\r\n" +
                        # respond with PIPELINING if enabled
                        (@pipelining_extension ? "250-PIPELINING\r\n" : '') +
                        # respond with AUTH extensions if enabled
@@ -614,7 +630,7 @@ module MidiSmtpServer
                        '250 OK'
               else
                 # reply ok only
-                return '250 OK'
+                return "250 OK #{Thread.current[:ctx][:server][:helo_response].to_s.strip}".strip
             end
 
           when /^STARTTLS\s*$/i
@@ -904,7 +920,9 @@ module MidiSmtpServer
             remote_host: '',
             remote_ip: '',
             remote_port: '',
+            welcome_response: '',
             helo: '',
+            helo_response: '',
             connected: '',
             exceptions: 0,
             authorization_id: '',
