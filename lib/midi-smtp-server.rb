@@ -494,7 +494,7 @@ module MidiSmtpServer
               # process commands and handle special SmtpdExceptions
               begin
                 # check for pipelining
-                raise Smtpd500PipeliningException unless @pipelining_extension if io_buffer_line_lf && (Thread.current[:cmd_sequence] != :CMD_DATA)
+                raise Smtpd500PipeliningException unless @pipelining_extension || !io_buffer_line_lf || (Thread.current[:cmd_sequence] == :CMD_DATA)
 
                 # process line
                 output = process_line(line)
