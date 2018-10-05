@@ -89,6 +89,10 @@ MidiSmtpServer can be easy customized via subclassing. Simply subclass the `Midi
 
 ```ruby
   # event on CONNECTION
+  # you may change the ctx[:server][:welcome_response] and
+  # you may change the ctx[:server][:helo_response] in here so
+  # that these will be used as welcome and greeting strings
+  # the values are not allowed to return CR nor LF chars and will be stripped
   def on_connect_event(ctx)
   end
 
@@ -97,6 +101,9 @@ MidiSmtpServer can be easy customized via subclassing. Simply subclass the `Midi
   end
 
   # event on HELO/EHLO:
+  # you may change the ctx[:server][:helo_response] in here so
+  # that this will be used as greeting string
+  # the value is not allowed to return CR nor LF chars and will be stripped
   def on_helo_event(ctx, helo_data)
   end
 
@@ -155,6 +162,29 @@ You may write any combination of ports and addresses that should be served. That
 There are also a `ports` and `hosts` reader for this values. Please be aware that we will drop the old attributes of `port` and `host` within the next minor release.
 
 
+## Modifying welcome and greeting responses
+
+While connecting from a client, the server will show up with a first welcome message and after HELO or EHLO with a greeting message as well as the capabilities (EHLO). The response messages are build and stored in `ctx` values. You may change the content during `on_connect_event` and `on_helo_event`.
+
+``` ruby
+  # simple rewrite and return value
+  def on_connect_event(ctx)
+    ctx[:server][:welcome_response] = 'My welcome message!'
+    ctx[:server][:helo_response] = 'My greeting message!'
+  end
+```
+
+If you want to show your local_ip or hostname etc. you may also include the context vars for that. Be aware to expose only necessary internal information and addresses etc.
+
+``` ruby
+  # simple rewrite and return value
+  def on_connect_event(ctx)
+    ctx[:server][:welcome_response] = "#{ctx[:server][:local_host]} [#{ctx[:server][:local_ip]}] says welcome!"
+    ctx[:server][:helo_response] = "#{ctx[:server][:local_host]} [#{ctx[:server][:local_ip]}] is serving you!"
+  end
+```
+
+
 ## Modifying MAIL FROM and RCPT TO addresses
 
 Since release `1.1.4` the `on_mail_from_event` and `on_rcpt_to_event` allows to return values that should be added to the lists. This is useful if you want to e.g. normalize all incoming addresses. Format defined by RFC for `<path>` as a `MAIL FROM` or `RCPT TO` addresses is:
@@ -175,7 +205,7 @@ To make it easier for processing addresses, you are able to normalize them like:
     # we believe in downcased addresses
     mail_from_data.downcase!
     # return address
-    return mail_from_data
+    mail_from_data
   end
 
   # rewrite, process more checks and return value
@@ -187,7 +217,7 @@ To make it easier for processing addresses, you are able to normalize them like:
     # Output for debug
     puts "Normalized to: [#{rcpt_to_data}]..."
     # return address
-    return rcpt_to_data
+    rcpt_to_data
   end
 ```
 
@@ -269,8 +299,12 @@ AUTH
 You can access some important client and server values by using the `ctx` array when in event methods:
 
 ```ruby
-  # helo string
+  # welcome, helo/ehlo (client) and response strings
+  # welcome_response and helo_response values may be changed
+  # during on_connect_event and on_helo_event
+  ctx[:server][:welcome_response]
   ctx[:server][:helo]
+  ctx[:server][:helo_response]
 
   # local (server's) infos
   ctx[:server][:local_ip]
@@ -535,7 +569,7 @@ You should take care of your project and the communication which it will handle.
 Be aware that with enabled option of [PIPELINING](https://tools.ietf.org/html/rfc2920) you can't figure out sender or recipient address injection by the SMTP server. From point of security PIPELINING should be disabled as it is per default since version 2.3.0 on this component.
 
 ```ruby
-# PIPELINING ist not allewd (false) per _Default_
+# PIPELINING ist not allowed (false) per _Default_
 opts = { pipelining_extension: DEFAULT_PIPELINING_EXTENSION }
 ```
 
@@ -567,7 +601,8 @@ You will find a detailed description of class methods and parameters at [RubyDoc
 2. Support binding of [multiple ports and hosts / ip addresses](https://github.com/4commerce-technologies-AG/midi-smtp-server#multiple-ports-and-addresses)
 3. Support (optionally) SMTP [PIPELINING](https://tools.ietf.org/html/rfc2920) extension
 4. Support SMTP [8BITMIME](https://tools.ietf.org/html/rfc6152) extension
-5. Links about security and [email attacks](https://github.com/4commerce-technologies-AG/midi-smtp-server#attacks-on-email-communication)
+5. Modify welcome and greeting messages
+6. Links about security and [email attacks](https://github.com/4commerce-technologies-AG/midi-smtp-server#attacks-on-email-communication)
 
 
 ## New to version 2.2.3
