@@ -769,6 +769,23 @@ module MidiSmtpServer
             raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(Thread.current[:ctx])
             # handle command
             @cmd_data = line.gsub(/^MAIL FROM\:/i, '').strip
+            # check for BODY= parameter
+            case @cmd_data
+              # test for explicit 7bit
+              when (/\sBODY=7BIT$/i)
+                # save info about encoding
+                Thread.current[:ctx][:message][:body_encoding] = '7bit'
+              # test for 8bit
+              when (/\sBODY=8BITMIME$/i)
+                # save info about encoding
+                Thread.current[:ctx][:message][:body_encoding] = '8bit'
+              # test for unknown encoding
+              when (/\sBODY=.*$/i)
+                # unknown BODY encoding
+                raise Smtpd501Exception
+            end
+            # drop any BODY= content
+            @cmd_data = @cmd_data.gsub(/\sBODY=.*/i, '').strip
             # call event to handle data
             return_value = on_mail_from_event(Thread.current[:ctx], @cmd_data)
             if return_value
@@ -952,6 +969,8 @@ module MidiSmtpServer
         message: {
           delivered: -1,
           bytesize: -1,
+          header_encoding: '',
+          body_encoding: '',
           data: ''
         }
       )
