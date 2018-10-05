@@ -482,11 +482,16 @@ module MidiSmtpServer
 
             # check if io_buffer is filled and contains already a line-feed
             while io_buffer_line_lf
-              # extract line from io_buffer
+              # extract line (containing \n) from io_buffer and slice io_buffer
               line = io_buffer.slice!(0, io_buffer_line_lf + 1)
 
+              # remove unallowed / unwanted \r \n from line
+              # in case that we already looked into buffer for \n, we just have 1 of this in line
+              # for any other \r we will drop that too
+              line.delete!("\r\n")
+
               # log line, verbosity based on log severity and command sequence
-              logger.debug('<<< ' + line) if Thread.current[:cmd_sequence] != :CMD_DATA
+              logger.debug("<<< #{line}\n") if Thread.current[:cmd_sequence] != :CMD_DATA
 
               # check for next line-feed already in io_buffer
               io_buffer_line_lf = io_buffer.index("\n")
@@ -849,18 +854,23 @@ module MidiSmtpServer
       else
         # If we are in date mode then ...
 
-        # ... we need to add always the new message data (line) to the message
-        Thread.current[:ctx][:message][:data] << line
-
         # ... and the entire new message data (line) does NOT consists
         # solely of a period (.) on a line by itself then we are being
         # told to continue data mode and the command sequence state
         # will stay on :CMD_DATA
-        unless line.chomp =~ /^\.$/
+        unless line == '.'
+          # remove a preceding first dot as defined by RFC 5321 (section-4.5.2)
+          line.slice!(0) if line[0] == '.'
+
+          # we need to add the new message data (line) to the message
+          # and make sure to add CR LF as defined by RFC
+          Thread.current[:ctx][:message][:data] << line << "\r\n"
+
           # call event to inspect message data while recording line by line
           # e.g. abort while receiving too big incoming mail or
           # create a teergrube for spammers etc.
           on_message_data_receiving_event(Thread.current[:ctx])
+
           # just return and stay on :CMD_DATA
           return ''
         end
@@ -869,10 +879,8 @@ module MidiSmtpServer
         # solely of a period on a line by itself then we are being
         # told to finish data mode
 
-        # remove empty line
-        Thread.current[:ctx][:message][:data].chomp!('')
-        # remove ending line period (.)
-        Thread.current[:ctx][:message][:data].chomp!('.')
+        # remove last CR LF in buffer
+        Thread.current[:ctx][:message][:data].chomp!
         # save delivered UTC time
         Thread.current[:ctx][:message][:delivered] = Time.now.utc
         # save bytesize of message data
