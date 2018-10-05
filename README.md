@@ -167,7 +167,7 @@ There are also a `ports` and `hosts` reader for this values. Please be aware tha
 While connecting from a client, the server will show up with a first welcome message and after HELO or EHLO with a greeting message as well as the capabilities (EHLO). The response messages are build and stored in `ctx` values. You may change the content during `on_connect_event` and `on_helo_event`.
 
 ``` ruby
-  # simple rewrite and return value
+  # update welcome and helo response
   def on_connect_event(ctx)
     ctx[:server][:welcome_response] = 'My welcome message!'
     ctx[:server][:helo_response] = 'My greeting message!'
@@ -177,7 +177,7 @@ While connecting from a client, the server will show up with a first welcome mes
 If you want to show your local_ip or hostname etc. you may also include the context vars for that. Be aware to expose only necessary internal information and addresses etc.
 
 ``` ruby
-  # simple rewrite and return value
+  # update welcome and helo response
   def on_connect_event(ctx)
     ctx[:server][:welcome_response] = "#{ctx[:server][:local_host]} [#{ctx[:server][:local_ip]}] says welcome!"
     ctx[:server][:helo_response] = "#{ctx[:server][:local_host]} [#{ctx[:server][:local_ip]}] is serving you!"
