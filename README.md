@@ -20,13 +20,6 @@ require 'mail'
 # Server class
 class MySmtpd < MidiSmtpServer::Smtpd
 
-  def start
-    # initialize and do your own initailizations
-
-    # call inherited class method
-    super
-  end
-
   # get each message after DATA <message> .
   def on_message_data_event(ctx)
     # Output for debug
@@ -48,10 +41,13 @@ trap('INT') do
 end
 
 # Output for debug
-puts "#{Time.now}: Starting MySmtpd #{MidiSmtpServer::VERSION::STRING} ..."
+puts "#{Time.now}: Starting MySmtpd [#{MidiSmtpServer::VERSION::STRING}|#{MidiSmtpServer::VERSION::DATE}] ..."
 
-# Create a new server instance listening at localhost interfaces 127.0.0.1:2525
-# and accepting a maximum of 4 simultaneous connections
+# Create a new server instance listening on localhost IPv4 (127.0.0.1) at port 2525
+# and proces with a maximum of 4 simultaneous sessions. Any additional TCP connection
+# will be queued and processed on next free slot. Checkout issue #13 at
+# https://github.com/4commerce-technologies-AG/midi-smtp-server/issues/13
+# about system utilization and message processing.
 server = MySmtpd.new
 
 # setup exit code
@@ -89,7 +85,7 @@ Use the component in your project sources by:
 
 ## Customizing the server
 
-MidiSmtpServer can be easy customized via subclassing. Simply subclass the `MidiSmtpServer` class as given in the example above and re-define event handlers:
+MidiSmtpServer can be easily customized via subclassing. Simply subclass the `MidiSmtpServer` class as given in the example above and re-define event handlers:
 
 ```ruby
   # event on CONNECTION
@@ -632,10 +628,11 @@ You will find a detailed description of class methods and parameters at [RubyDoc
 1. Support [IPv4 and IPv6 (documentation)](https://github.com/4commerce-technologies-AG/midi-smtp-server#ipv4-and-ipv6-ready)
 2. Support binding of [multiple ports and hosts / ip addresses](https://github.com/4commerce-technologies-AG/midi-smtp-server#multiple-ports-and-addresses)
 3. Support (optionally) SMTP [PIPELINING](https://tools.ietf.org/html/rfc2920) extension
-4. Support SMTP [8BITMIME](https://github.com/4commerce-technologies-AG/midi-smtp-server#8bitmime-and-smtputf8-support) extension
-5. Support SMTP [SMTPUTF8](https://github.com/4commerce-technologies-AG/midi-smtp-server#8bitmime-and-smtputf8-support) extension
-6. Modify welcome and greeting messages
-7. Links about security and [email attacks](https://github.com/4commerce-technologies-AG/midi-smtp-server#attacks-on-email-communication)
+4. Support (optionally) SMTP [8BITMIME](https://github.com/4commerce-technologies-AG/midi-smtp-server#8bitmime-and-smtputf8-support) extension
+5. Support (optionally) SMTP [SMTPUTF8](https://github.com/4commerce-technologies-AG/midi-smtp-server#8bitmime-and-smtputf8-support) extension
+6. SMTP PIPELINING, 8BITMIME amd SMTPUTF8 extensions are _disabled_ by default
+7. Support modification of local welcome and greeting messages
+8. Documentation and Links about security and [email attacks](https://github.com/4commerce-technologies-AG/midi-smtp-server#attacks-on-email-communication)
 
 
 ## New to version 2.2.3
