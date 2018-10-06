@@ -630,7 +630,7 @@ You will find a detailed description of class methods and parameters at [RubyDoc
 3. Support (optionally) SMTP [PIPELINING](https://tools.ietf.org/html/rfc2920) extension
 4. Support (optionally) SMTP [8BITMIME](https://github.com/4commerce-technologies-AG/midi-smtp-server#8bitmime-and-smtputf8-support) extension
 5. Support (optionally) SMTP [SMTPUTF8](https://github.com/4commerce-technologies-AG/midi-smtp-server#8bitmime-and-smtputf8-support) extension
-6. SMTP PIPELINING, 8BITMIME amd SMTPUTF8 extensions are _disabled_ by default
+6. SMTP PIPELINING, 8BITMIME and SMTPUTF8 extensions are _disabled_ by default
 7. Support modification of local welcome and greeting messages
 8. Documentation and Links about security and [email attacks](https://github.com/4commerce-technologies-AG/midi-smtp-server#attacks-on-email-communication)
 
