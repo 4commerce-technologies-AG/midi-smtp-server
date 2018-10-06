@@ -89,9 +89,9 @@ MidiSmtpServer can be easy customized via subclassing. Simply subclass the `Midi
 
 ```ruby
   # event on CONNECTION
-  # you may change the ctx[:server][:welcome_response] and
+  # you may change the ctx[:server][:local_response] and
   # you may change the ctx[:server][:helo_response] in here so
-  # that these will be used as welcome and greeting strings
+  # that these will be used as local welcome and greeting strings
   # the values are not allowed to return CR nor LF chars and will be stripped
   def on_connect_event(ctx)
   end
@@ -164,12 +164,12 @@ There are also a `ports` and `hosts` reader for this values. Please be aware tha
 
 ## Modifying welcome and greeting responses
 
-While connecting from a client, the server will show up with a first welcome message and after HELO or EHLO with a greeting message as well as the capabilities (EHLO). The response messages are build and stored in `ctx` values. You may change the content during `on_connect_event` and `on_helo_event`.
+While connecting from a client, the server will show up with a first local welcome message and after HELO or EHLO with a greeting message as well as the capabilities (EHLO). The response messages are build and stored in `ctx` values. You may change the content during `on_connect_event` and `on_helo_event`.
 
 ``` ruby
-  # update welcome and helo response
+  # update local welcome and helo response
   def on_connect_event(ctx)
-    ctx[:server][:welcome_response] = 'My welcome message!'
+    ctx[:server][:local_response] = 'My welcome message!'
     ctx[:server][:helo_response] = 'My greeting message!'
   end
 ```
@@ -177,9 +177,9 @@ While connecting from a client, the server will show up with a first welcome mes
 If you want to show your local_ip or hostname etc. you may also include the context vars for that. Be aware to expose only necessary internal information and addresses etc.
 
 ``` ruby
-  # update welcome and helo response
+  # update local welcome and helo response
   def on_connect_event(ctx)
-    ctx[:server][:welcome_response] = "#{ctx[:server][:local_host]} [#{ctx[:server][:local_ip]}] says welcome!"
+    ctx[:server][:local_response] = "#{ctx[:server][:local_host]} [#{ctx[:server][:local_ip]}] says welcome!"
     ctx[:server][:helo_response] = "#{ctx[:server][:local_host]} [#{ctx[:server][:local_ip]}] is serving you!"
   end
 ```
@@ -300,9 +300,9 @@ You can access some important client and server values by using the `ctx` array 
 
 ```ruby
   # welcome, helo/ehlo (client) and response strings
-  # welcome_response and helo_response values may be changed
+  # local_response and helo_response values may be changed
   # during on_connect_event and on_helo_event
-  ctx[:server][:welcome_response]
+  ctx[:server][:local_response]
   ctx[:server][:helo]
   ctx[:server][:helo_response]
 
@@ -398,11 +398,31 @@ Or to implement something like a Teergrube for spammers etc.:
 Or to check already the message headers before receiving the complete message data. And lots more.
 
 
-## 8BITMIME support
+## 8BITMIME and SMTPUTF8 support
 
-Since version 2.3.0 there is builtin 8BITMIME extension support like described in [RFC6152](https://tools.ietf.org/html/rfc6152). When sender is using the 8BITMIME capabilty it will give enconding information about body encoding during `MAIL FROM` command. The encoding will be read by MidiSmtpServer and is published at context vars `ctx[:message][:body_encoding`. Possible values are `""` (undefined), `"7bit"` (strictly 7bit) or `"8bit"` (strictly 8bit).
+Since version 2.3.0 there is builtin optional internationalization support via SMTP 8BITMIME and SMTPUTF8 extension described in [RFC6152](https://tools.ietf.org/html/rfc6152) and [RFC6531](https://tools.ietf.org/html/rfc6531).
 
-Even when `"8bit"` is signaled you have to decide the correct encoding like `utf-8` or `iso-8859-1` etc.
+The extensions are disabled by default and could be enabled by:
+
+```ruby
+# enable internationalization SMTP extensions
+opts = { internationalization_extensions: true }
+```
+
+When enabled and sender is using the 8BITMIME and SMTPUTF8 capabilities, the given enconding information about body and message encoding are set by `MAIL FROM` command. The encodings are read by MidiSmtpServer and published at context vars `ctx[:envelope][:encoding_body]` and `ctx[:envelope][:encoding_utf8]`.
+
+Possible values for `ctx[:envelope][:encoding_body]` are:
+
+1. `""` (default, not set by client)
+2. `"7bit"` (strictly 7bit)
+3. `"8bitmime"` (strictly 8bit)
+
+Possible values for `ctx[:envelope][:encoding_utf8]` are:
+
+1. `""` (default, not set by client)
+2. `"utf8t"` (utf8 is enabled for headers and body)
+
+Even when `"8bitmime"` was set, you have to decide the correct encoding like `utf-8` or `iso-8859-1` etc. If also `"utf8"` was set, then encoding should be `utf-8`.
 
 
 ## Authentication support
@@ -608,9 +628,10 @@ You will find a detailed description of class methods and parameters at [RubyDoc
 1. Support [IPv4 and IPv6 (documentation)](https://github.com/4commerce-technologies-AG/midi-smtp-server#ipv4-and-ipv6-ready)
 2. Support binding of [multiple ports and hosts / ip addresses](https://github.com/4commerce-technologies-AG/midi-smtp-server#multiple-ports-and-addresses)
 3. Support (optionally) SMTP [PIPELINING](https://tools.ietf.org/html/rfc2920) extension
-4. Support SMTP [8BITMIME](https://github.com/4commerce-technologies-AG/midi-smtp-server#8bitmime-support) extension
-5. Modify welcome and greeting messages
-6. Links about security and [email attacks](https://github.com/4commerce-technologies-AG/midi-smtp-server#attacks-on-email-communication)
+4. Support SMTP [8BITMIME](https://github.com/4commerce-technologies-AG/midi-smtp-server#8bitmime-and-smtputf8-support) extension
+5. Support SMTP [SMTPUTF8](https://github.com/4commerce-technologies-AG/midi-smtp-server#8bitmime-and-smtputf8-support) extension
+6. Modify welcome and greeting messages
+7. Links about security and [email attacks](https://github.com/4commerce-technologies-AG/midi-smtp-server#attacks-on-email-communication)
 
 
 ## New to version 2.2.3
