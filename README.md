@@ -6,7 +6,7 @@ With version 2 the library gots a lot of improvements (2.3.x Multiple ports and 
 
 We suggest everybody using MidiSmtpServer 1.x or 2.x to switch at least to latest 2.3.y.
 
-For upgrades from version 1.x or from MiniSmtpServer you may follow the guides (see appendix) how to change your existing code to be compatible with the latest releases. You may update to latest 2.3.x without any changes if already using some version 2.x.
+For upgrades from version 1.x or from MiniSmtpServer you may follow the guides (see appendix) how to change your existing code to be compatible with the latest releases. You may update to latest 2.3.y without any changes if already using some version 2.x.
 
 
 ## Using the library
