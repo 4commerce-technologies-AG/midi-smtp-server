@@ -22,6 +22,7 @@ module MidiSmtpServer
 
   # default value for SMTPD extensions support
   DEFAULT_PIPELINING_EXTENSION = false
+  DEFAULT_INTERNATIONALIZATION_EXTENSIONS = false
 
   # Authentification modes
   AUTH_MODES = [:AUTH_FORBIDDEN, :AUTH_OPTIONAL, :AUTH_REQUIRED].freeze
@@ -136,6 +137,8 @@ module MidiSmtpServer
     attr_reader :encrypt_mode
     # handle SMTP PIPELINING extension
     attr_reader :pipelining_extension
+    # handle SMTP 8BITMIME and SMTPUTF8 extension
+    attr_reader :internationalization_extensions
 
     # logging object, may be overrriden by special loggers like YELL or others
     attr_reader :logger
@@ -151,6 +154,7 @@ module MidiSmtpServer
     # +opts.io_buffer_chunk_size+:: size of chunks (bytes) to read non-blocking from socket (DEFAULT_IO_BUFFER_CHUNK_SIZE)
     # +opts.io_buffer_max_size+:: max size of buffer (max line length) until \lf ist expected (DEFAULT_IO_BUFFER_MAX_SIZE, nil => disabled test)
     # +opts.pipelining_extension+:: set to true for support of SMTP PIPELINING extension (DEFAULT_PIPELINING_EXTENSION)
+    # +opts.internationalization_extensions+:: set to true for support of SMTP 8BITMIME and SMTPUTF8 extensions (DEFAULT_INTERNATIONALIZATION_EXTENSIONS)
     # +opts.auth_mode+:: enable builtin authentication support (:AUTH_FORBIDDEN, :AUTH_OPTIONAL, :AUTH_REQUIRED)
     # +opts.tls_mode+:: enable builtin TLS support (:TLS_FORBIDDEN, :TLS_OPTIONAL, :TLS_REQUIRED)
     # +opts.tls_cert_path+:: path to tls cerificate chain file
@@ -206,6 +210,7 @@ module MidiSmtpServer
 
       # smtp extensions
       @pipelining_extension = opts.include?(:pipelining_extension) ? opts[:pipelining_extension] : DEFAULT_PIPELINING_EXTENSION
+      @internationalization_extensions = opts.include?(:internationalization_extensions) ? opts[:internationalization_extensions] : DEFAULT_INTERNATIONALIZATION_EXTENSIONS
 
       # lists for connections and thread management
       @connections = []
@@ -232,9 +237,9 @@ module MidiSmtpServer
     end
 
     # event on CONNECTION
-    # you may change the ctx[:server][:welcome_response] and
+    # you may change the ctx[:server][:local_response] and
     # you may change the ctx[:server][:helo_response] in here so
-    # that these will be used as welcome and greeting strings
+    # that these will be used as local welcome and greeting strings
     # the values are not allowed to return CR nor LF chars and will be stripped
     def on_connect_event(ctx)
       logger.debug("Client connect from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} to #{ctx[:server][:local_ip]}:#{ctx[:server][:local_port]}")
@@ -422,16 +427,16 @@ module MidiSmtpServer
       _, Thread.current[:ctx][:server][:remote_port], Thread.current[:ctx][:server][:remote_host], Thread.current[:ctx][:server][:remote_ip] = @do_dns_reverse_lookup ? io.peeraddr(:hostname) : io.peeraddr(:numeric)
       # save connection date/time
       Thread.current[:ctx][:server][:connected] = Time.now.utc
-      # build and save the welcome and greeting response strings
-      Thread.current[:ctx][:server][:welcome_response] = "#{Thread.current[:ctx][:server][:local_host]} says welcome!"
+      # build and save the local welcome and greeting response strings
+      Thread.current[:ctx][:server][:local_response] = "#{Thread.current[:ctx][:server][:local_host]} says welcome!"
       Thread.current[:ctx][:server][:helo_response] = "#{Thread.current[:ctx][:server][:local_host]} at your service!"
       # check if we want to let this remote station connect us
       on_connect_event(Thread.current[:ctx])
       # handle connection
       begin
         begin
-          # reply welcome message
-          output = "220 #{Thread.current[:ctx][:server][:welcome_response].to_s.strip}\r\n"
+          # reply local welcome message
+          output = "220 #{Thread.current[:ctx][:server][:local_response].to_s.strip}\r\n"
 
           # log and show to client
           logger.debug('>>> ' + output)
@@ -625,7 +630,9 @@ module MidiSmtpServer
                 # reply supported extensions
                 return "250-#{Thread.current[:ctx][:server][:helo_response].to_s.strip}\r\n" +
                        # respond with 8BITMIME extension
-                       "250-8BITMIME\r\n" +
+                       (@internationalization_extensions ? "250-8BITMIME\r\n" : '') +
+                       # respond with SMTPUTF8 extension
+                       (@internationalization_extensions ? "250-SMTPUTF8\r\n" : '') +
                        # respond with PIPELINING if enabled
                        (@pipelining_extension ? "250-PIPELINING\r\n" : '') +
                        # respond with AUTH extensions if enabled
@@ -772,20 +779,33 @@ module MidiSmtpServer
             # check for BODY= parameter
             case @cmd_data
               # test for explicit 7bit
-              when (/\sBODY=7BIT$/i)
+              when (/\sBODY=7BIT(\s|$)/i)
+                # raise exception if not supported
+                raise Smtpd501Exception unless @internationalization_extensions
                 # save info about encoding
-                Thread.current[:ctx][:message][:body_encoding] = '7bit'
+                Thread.current[:ctx][:envelope][:encoding_body] = '7bit'
               # test for 8bit
-              when (/\sBODY=8BITMIME$/i)
+              when (/\sBODY=8BITMIME(\s|$)/i)
+                # raise exception if not supported
+                raise Smtpd501Exception unless @internationalization_extensions
                 # save info about encoding
-                Thread.current[:ctx][:message][:body_encoding] = '8bit'
+                Thread.current[:ctx][:envelope][:encoding_body] = '8bitmime'
               # test for unknown encoding
               when (/\sBODY=.*$/i)
                 # unknown BODY encoding
                 raise Smtpd501Exception
             end
-            # drop any BODY= content
-            @cmd_data = @cmd_data.gsub(/\sBODY=.*/i, '').strip
+            # check for SMTPUTF8 parameter
+            case @cmd_data
+              # test for explicit 7bit
+              when (/\sSMTPUTF8(\s|$)/i)
+                # raise exception if not supported
+                raise Smtpd501Exception unless @internationalization_extensions
+                # save info about encoding
+                Thread.current[:ctx][:envelope][:encoding_utf8] = 'utf8'
+            end
+            # drop any BODY= and SMTPUTF8 content
+            @cmd_data = @cmd_data.gsub(/\sBODY=(7BIT|8BITMIME)/i, '').gsub(/\sSMTPUTF8/i, '').strip if @internationalization_extensions
             # call event to handle data
             return_value = on_mail_from_event(Thread.current[:ctx], @cmd_data)
             if return_value
@@ -942,10 +962,10 @@ module MidiSmtpServer
             local_host: '',
             local_ip: '',
             local_port: '',
+            local_response: '',
             remote_host: '',
             remote_ip: '',
             remote_port: '',
-            welcome_response: '',
             helo: '',
             helo_response: '',
             connected: '',
@@ -961,7 +981,9 @@ module MidiSmtpServer
       Thread.current[:ctx].merge!(
         envelope: {
           from: '',
-          to: []
+          to: [],
+          encoding_body: '',
+          encoding_utf8: ''
         }
       )
       # reset message data
@@ -969,8 +991,6 @@ module MidiSmtpServer
         message: {
           delivered: -1,
           bytesize: -1,
-          header_encoding: '',
-          body_encoding: '',
           data: ''
         }
       )
