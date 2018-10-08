@@ -623,6 +623,31 @@ E.g. create a SMTP-Server to receive messages via SMTP and forward them plain or
 You will find a detailed description of class methods and parameters at [RubyDoc](http://www.rubydoc.info/gems/midi-smtp-server/MidiSmtpServer/Smtpd)
 
 
+## MidiSmtpServer testing
+
+Since version 2.3 we added implementation and integration tests to this repository. While the implementation tests are checking the components, integration tests try to verify the correct exchange of messages for different scenarios.
+
+You may run all tests through the `test_runner.rb` helper:
+
+``` bash
+  ruby -I lib test/test_runner.rb
+```
+
+or with more verbose output
+
+``` bash
+  ruby -I lib test/test_runner.rb -v
+```
+
+To just run some selected (by regular expression) tests, you may use the `-n filter` option. The example will run only the tests and specs containing the word _connections_ in their method_name or describe_text:
+
+``` bash
+  ruby -I lib test/test_runner.rb -v -n /connections/
+```
+
+Be aware that the filter is case sensitive.
+
+
 ## New to version 2.3.0
 
 1. Support [IPv4 and IPv6 (documentation)](https://github.com/4commerce-technologies-AG/midi-smtp-server#ipv4-and-ipv6-ready)
@@ -633,6 +658,7 @@ You will find a detailed description of class methods and parameters at [RubyDoc
 6. SMTP PIPELINING, 8BITMIME and SMTPUTF8 extensions are _disabled_ by default
 7. Support modification of local welcome and greeting messages
 8. Documentation and Links about security and [email attacks](https://github.com/4commerce-technologies-AG/midi-smtp-server#attacks-on-email-communication)
+9. Added [implementation and integration testing](https://github.com/4commerce-technologies-AG/midi-smtp-server#midismtpserver-testing)
 
 
 ## New to version 2.2.3

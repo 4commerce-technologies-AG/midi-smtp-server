@@ -6,7 +6,7 @@
 
 # to just run selected (regular expression) tests use:
 # ruby -I lib test/test_runner.rb -v -n /connections/
-# this will run only the tests and specs caontaining
+# this will run only the tests and specs containing
 # _connections_ in their method_name or describe_text
 
 # Runs all tests before Ruby exits, using `Kernel#at_exit`.
