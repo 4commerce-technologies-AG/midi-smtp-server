@@ -150,8 +150,8 @@ module MidiSmtpServer
     #
     # +ports+:: ports to listen on. Allows multiple ports like "2525, 3535" or "2525:3535, 2525"
     # +hosts+:: interface ip or hostname to listen on or blank to listen on all interfaces. Allows multiple addresses like "127.0.0.1, ::1"
-    # +max_connections+:: maximum number of simultaneous processed connections, this does not limit the TCP connection itself
-    # +opts+:: optional hash with settings
+    # +max_connections+:: maximum number of simultaneous processed connections, this does not limit the number of concurrent TCP connections
+    # +opts+:: hash with optional settings
     # +opts.do_dns_reverse_lookup+:: flag if this smtp server should do reverse DNS lookups on incoming connections
     # +opts.io_cmd_timeout+:: time in seconds to wait until complete line of data is expected (DEFAULT_IO_CMD_TIMEOUT, nil => disabled test)
     # +opts.io_buffer_chunk_size+:: size of chunks (bytes) to read non-blocking from socket (DEFAULT_IO_BUFFER_CHUNK_SIZE)
@@ -165,6 +165,7 @@ module MidiSmtpServer
     # +opts.tls_ciphers+:: allowed ciphers for connection
     # +opts.tls_methods+:: allowed methods for protocol
     # +opts.logger+:: own logger class, otherwise default logger is created
+    # +opts.logger_severity+:: logger level when default logger is used
     def initialize(ports = DEFAULT_SMTPD_PORT, hosts = DEFAULT_SMTPD_HOST, max_connections = DEFAULT_SMTPD_MAX_CONNECTIONS, opts = {})
       # logging
       if opts.include?(:logger)
@@ -174,6 +175,7 @@ module MidiSmtpServer
         @logger = Logger.new(STDOUT)
         @logger.datetime_format = '%Y-%m-%d %H:%M:%S'
         @logger.formatter = proc { |severity, datetime, _progname, msg| "#{datetime}: [#{severity}] #{msg.chomp}\n" }
+        @logger.level = opts.include?(:logger_severity) ? opts[:logger_severity] : Logger::DEBUG
       end
 
       # initialize class vars
