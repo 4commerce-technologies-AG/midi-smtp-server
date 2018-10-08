@@ -9,4 +9,11 @@ class MidiSmtpServerTest < MidiSmtpServer::Smtpd
     logger.level = Logger::UNKNOWN
   end
 
+  # change visibilty for testing
+  public :process_line
+  public :process_reset_session
+  public :process_auth_plain
+  public :process_auth_login_user
+  public :process_auth_login_pass
+
 end

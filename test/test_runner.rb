@@ -22,7 +22,8 @@ test_files = []
 Dir.chdir(File.dirname(__FILE__)) do
   test_files += Dir.glob('setup/**/*.rb')
   test_files += Dir.glob('specs/**/*_test.rb')
-  test_files += Dir.glob('units/**/*_test.rb')
+  test_files += Dir.glob('unit/**/*_test.rb')
+  test_files += Dir.glob('integration/**/*_test.rb')
 end
 
 # require each test
