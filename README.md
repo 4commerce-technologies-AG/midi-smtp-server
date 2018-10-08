@@ -623,9 +623,9 @@ E.g. create a SMTP-Server to receive messages via SMTP and forward them plain or
 You will find a detailed description of class methods and parameters at [RubyDoc](http://www.rubydoc.info/gems/midi-smtp-server/MidiSmtpServer/Smtpd)
 
 
-## MidiSmtpServer testing
+## Reliable code with minitest
 
-Since version 2.3 we added implementation and integration tests to this repository. While the implementation tests are checking the components, integration tests try to verify the correct exchange of messages for different scenarios.
+Since version 2.3 implementation and integration tests by minitest framework are added to this repository. While the implementation tests are mostly checking the components, the integration tests try to verify the correct exchange of messages for different scenarios.
 
 You may run all tests through the `test_runner.rb` helper:
 
@@ -658,7 +658,7 @@ Be aware that the filter is case sensitive.
 6. SMTP PIPELINING, 8BITMIME and SMTPUTF8 extensions are _disabled_ by default
 7. Support modification of local welcome and greeting messages
 8. Documentation and Links about security and [email attacks](https://github.com/4commerce-technologies-AG/midi-smtp-server#attacks-on-email-communication)
-9. Added [implementation and integration testing](https://github.com/4commerce-technologies-AG/midi-smtp-server#midismtpserver-testing)
+9. Added [implementation and integration testing](https://github.com/4commerce-technologies-AG/midi-smtp-server#reliable-code-with-minitest)
 
 
 ## New to version 2.2.3
