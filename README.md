@@ -633,7 +633,7 @@ You may run all tests through the `test_runner.rb` helper:
   ruby -I lib test/test_runner.rb
 ```
 
-or with more verbose output
+or with more verbose output:
 
 ``` bash
   ruby -I lib test/test_runner.rb -v
