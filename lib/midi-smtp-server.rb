@@ -358,9 +358,10 @@ module MidiSmtpServer
               # add to list of connections
               @connections << Thread.current
               begin
+                # process smtp service on io socket
+                io = serve_client(Thread.current, io)
                 # save returned io value due to maybe
                 # established ssl io socket
-                io = serve_client(io)
               rescue SmtpdStopConnectionException
                 # ignore this exception due to service shutdown
               rescue StandardError => e
@@ -418,28 +419,28 @@ module MidiSmtpServer
     end
 
     # handle connection
-    def serve_client(io)
+    def serve_client(session, io)
       # ON CONNECTION
       # 220 <domain> Service ready
       # 421 <domain> Service not available, closing transmission channel
       # Reset and initialize message
-      process_reset_ctx(true)
+      process_reset_session(session, true)
       # get local address info
-      _, Thread.current[:ctx][:server][:local_port], Thread.current[:ctx][:server][:local_host], Thread.current[:ctx][:server][:local_ip] = @do_dns_reverse_lookup ? io.addr(:hostname) : io.addr(:numeric)
+      _, session[:ctx][:server][:local_port], session[:ctx][:server][:local_host], session[:ctx][:server][:local_ip] = @do_dns_reverse_lookup ? io.addr(:hostname) : io.addr(:numeric)
       # get remote partner hostname and address
-      _, Thread.current[:ctx][:server][:remote_port], Thread.current[:ctx][:server][:remote_host], Thread.current[:ctx][:server][:remote_ip] = @do_dns_reverse_lookup ? io.peeraddr(:hostname) : io.peeraddr(:numeric)
+      _, session[:ctx][:server][:remote_port], session[:ctx][:server][:remote_host], session[:ctx][:server][:remote_ip] = @do_dns_reverse_lookup ? io.peeraddr(:hostname) : io.peeraddr(:numeric)
       # save connection date/time
-      Thread.current[:ctx][:server][:connected] = Time.now.utc
+      session[:ctx][:server][:connected] = Time.now.utc
       # build and save the local welcome and greeting response strings
-      Thread.current[:ctx][:server][:local_response] = "#{Thread.current[:ctx][:server][:local_host]} says welcome!"
-      Thread.current[:ctx][:server][:helo_response] = "#{Thread.current[:ctx][:server][:local_host]} at your service!"
+      session[:ctx][:server][:local_response] = "#{session[:ctx][:server][:local_host]} says welcome!"
+      session[:ctx][:server][:helo_response] = "#{session[:ctx][:server][:local_host]} at your service!"
       # check if we want to let this remote station connect us
-      on_connect_event(Thread.current[:ctx])
+      on_connect_event(session[:ctx])
       # handle connection
       begin
         begin
           # reply local welcome message
-          output = "220 #{Thread.current[:ctx][:server][:local_response].to_s.strip}\r\n"
+          output = "220 #{session[:ctx][:server][:local_response].to_s.strip}\r\n"
 
           # log and show to client
           logger.debug('>>> ' + output)
@@ -457,13 +458,13 @@ module MidiSmtpServer
           # while input data handle communication
           loop do
             # test if STARTTLS sequence
-            if Thread.current[:cmd_sequence] == :CMD_STARTTLS
+            if session[:cmd_sequence] == :CMD_STARTTLS
               # start ssl tunnel
               io = @tls.start(io)
               # save enabled tls
-              Thread.current[:ctx][:server][:encrypted] = Time.now.utc
+              session[:ctx][:server][:encrypted] = Time.now.utc
               # set sequence back to HELO/EHLO
-              Thread.current[:cmd_sequence] = :CMD_HELO
+              session[:cmd_sequence] = :CMD_HELO
               # reset timeout timestamp
               timestamp_timeout = Time.now.to_i
             end
@@ -499,7 +500,7 @@ module MidiSmtpServer
               line.delete!("\r\n")
 
               # log line, verbosity based on log severity and command sequence
-              logger.debug("<<< #{line}\n") if Thread.current[:cmd_sequence] != :CMD_DATA
+              logger.debug("<<< #{line}\n") if session[:cmd_sequence] != :CMD_DATA
 
               # check for next line-feed already in io_buffer
               io_buffer_line_lf = io_buffer.index("\n")
@@ -507,10 +508,10 @@ module MidiSmtpServer
               # process commands and handle special SmtpdExceptions
               begin
                 # check for pipelining
-                raise Smtpd500PipeliningException unless @pipelining_extension || !io_buffer_line_lf || (Thread.current[:cmd_sequence] == :CMD_DATA)
+                raise Smtpd500PipeliningException unless @pipelining_extension || !io_buffer_line_lf || (session[:cmd_sequence] == :CMD_DATA)
 
                 # process line
-                output = process_line(line)
+                output = process_line(session, line)
 
               # defined abort channel exception
               rescue Smtpd421Exception => e
@@ -520,7 +521,7 @@ module MidiSmtpServer
               # defined SmtpdException
               rescue SmtpdException => e
                 # inc number of detected exceptions during this session
-                Thread.current[:ctx][:server][:exceptions] += 1
+                session[:ctx][:server][:exceptions] += 1
                 # log error info if logging
                 logger.error("#{e}")
                 # get the given smtp dialog result
@@ -529,7 +530,7 @@ module MidiSmtpServer
               # Unknown general Exception during processing
               rescue StandardError => e
                 # inc number of detected exceptions during this session
-                Thread.current[:ctx][:server][:exceptions] += 1
+                session[:ctx][:server][:exceptions] += 1
                 # log error info if logging
                 logger.error("#{e}")
                 # set default smtp server dialog error
@@ -551,7 +552,7 @@ module MidiSmtpServer
             end
 
             # check for valid quit or broken communication
-            break if (Thread.current[:cmd_sequence] == :CMD_QUIT) || io.closed? || shutdown?
+            break if (session[:cmd_sequence] == :CMD_QUIT) || io.closed? || shutdown?
           end
           # graceful end of connection
           output = "221 Service closing transmission channel\r\n"
@@ -579,31 +580,31 @@ module MidiSmtpServer
 
       ensure
         # event for cleanup at end of communication
-        on_disconnect_event(Thread.current[:ctx])
+        on_disconnect_event(session[:ctx])
       end
 
       # return socket handler, maybe replaced with ssl
       return io
     end
 
-    def process_line(line)
+    def process_line(session, line)
       # check whether in auth challenge modes
-      if Thread.current[:cmd_sequence] == :CMD_AUTH_PLAIN_VALUES
+      if session[:cmd_sequence] == :CMD_AUTH_PLAIN_VALUES
         # handle authentication
-        process_auth_plain(line)
+        process_auth_plain(session, line)
 
       # check whether in auth challenge modes
-      elsif Thread.current[:cmd_sequence] == :CMD_AUTH_LOGIN_USER
+      elsif session[:cmd_sequence] == :CMD_AUTH_LOGIN_USER
         # handle authentication
-        process_auth_login_user(line)
+        process_auth_login_user(session, line)
 
       # check whether in auth challenge modes
-      elsif Thread.current[:cmd_sequence] == :CMD_AUTH_LOGIN_PASS
+      elsif session[:cmd_sequence] == :CMD_AUTH_LOGIN_PASS
         # handle authentication
-        process_auth_login_pass(line)
+        process_auth_login_pass(session, line)
 
       # check whether in data or command mode
-      elsif Thread.current[:cmd_sequence] != :CMD_DATA
+      elsif session[:cmd_sequence] != :CMD_DATA
 
         # Handle specific messages from the client
         case line
@@ -618,20 +619,20 @@ module MidiSmtpServer
             # 521 <domain> does not accept mail [rfc1846]
             # ---------
             # check valid command sequence
-            raise Smtpd503Exception if Thread.current[:cmd_sequence] != :CMD_HELO
+            raise Smtpd503Exception if session[:cmd_sequence] != :CMD_HELO
             # handle command
             @cmd_data = line.gsub(/^(HELO|EHLO)\ /i, '').strip
             # call event to handle data
-            on_helo_event(Thread.current[:ctx], @cmd_data)
+            on_helo_event(session[:ctx], @cmd_data)
             # if no error raised, append to message hash
-            Thread.current[:ctx][:server][:helo] = @cmd_data
+            session[:ctx][:server][:helo] = @cmd_data
             # set sequence state as RSET
-            Thread.current[:cmd_sequence] = :CMD_RSET
+            session[:cmd_sequence] = :CMD_RSET
             # check whether to answer as HELO or EHLO
             case line
               when (/^EHLO/i)
                 # reply supported extensions
-                return "250-#{Thread.current[:ctx][:server][:helo_response].to_s.strip}\r\n" +
+                return "250-#{session[:ctx][:server][:helo_response].to_s.strip}\r\n" +
                        # respond with 8BITMIME extension
                        (@internationalization_extensions ? "250-8BITMIME\r\n" : '') +
                        # respond with SMTPUTF8 extension
@@ -641,11 +642,11 @@ module MidiSmtpServer
                        # respond with AUTH extensions if enabled
                        (@auth_mode == :AUTH_FORBIDDEN ? '' : "250-AUTH LOGIN PLAIN\r\n") +
                        # respond with STARTTLS if available and not already enabled
-                       (@encrypt_mode == :TLS_FORBIDDEN || encrypted?(Thread.current[:ctx]) ? '' : "250-STARTTLS\r\n") +
+                       (@encrypt_mode == :TLS_FORBIDDEN || encrypted?(session[:ctx]) ? '' : "250-STARTTLS\r\n") +
                        '250 OK'
               else
                 # reply ok only
-                return "250 OK #{Thread.current[:ctx][:server][:helo_response].to_s.strip}".strip
+                return "250 OK #{session[:ctx][:server][:helo_response].to_s.strip}".strip
             end
 
           when /^STARTTLS\s*$/i
@@ -657,13 +658,13 @@ module MidiSmtpServer
             # check that encryption is allowed
             raise Smtpd500Exception if @encrypt_mode == :TLS_FORBIDDEN
             # check valid command sequence
-            raise Smtpd503Exception if Thread.current[:cmd_sequence] == :CMD_HELO
+            raise Smtpd503Exception if session[:cmd_sequence] == :CMD_HELO
             # check initialized TlsTransport object
             raise Tls454Exception unless @tls
             # check valid command sequence
-            raise Smtpd503Exception if encrypted?(Thread.current[:ctx])
+            raise Smtpd503Exception if encrypted?(session[:ctx])
             # set sequence for next command input
-            Thread.current[:cmd_sequence] = :CMD_STARTTLS
+            session[:cmd_sequence] = :CMD_STARTTLS
             # return with new service ready message
             return '220 Ready to start TLS'
 
@@ -681,11 +682,11 @@ module MidiSmtpServer
             # check that authentication is allowed
             raise Smtpd500Exception if @auth_mode == :AUTH_FORBIDDEN
             # check valid command sequence
-            raise Smtpd503Exception if Thread.current[:cmd_sequence] != :CMD_RSET
+            raise Smtpd503Exception if session[:cmd_sequence] != :CMD_RSET
             # check that encryption is enabled if necessary
-            raise Tls530Exception if @encrypt_mode == :TLS_REQUIRED && !encrypted?(Thread.current[:ctx])
+            raise Tls530Exception if @encrypt_mode == :TLS_REQUIRED && !encrypted?(session[:ctx])
             # check that not already authenticated
-            raise Smtpd503Exception if authenticated?(Thread.current[:ctx])
+            raise Smtpd503Exception if authenticated?(session[:ctx])
             # handle command line
             @auth_data = line.gsub(/^AUTH\ /i, '').strip.gsub(/\s+/, ' ').split(' ')
             # handle auth command
@@ -695,26 +696,26 @@ module MidiSmtpServer
                 # check if only command was given
                 if @auth_data.length == 1
                   # set sequence for next command input
-                  Thread.current[:cmd_sequence] = :CMD_AUTH_PLAIN_VALUES
+                  session[:cmd_sequence] = :CMD_AUTH_PLAIN_VALUES
                   # response code include post ending with a space
                   return '334 '
                 else
                   # handle authentication with given auth_id and password
-                  process_auth_plain(@auth_data.length == 2 ? @auth_data[1] : [])
+                  process_auth_plain(session, @auth_data.length == 2 ? @auth_data[1] : [])
                 end
 
               when (/LOGIN/i)
                 # check if auth_id was sent too
                 if @auth_data.length == 1
                   # reset auth_challenge
-                  Thread.current[:auth_challenge] = {}
+                  session[:auth_challenge] = {}
                   # set sequence for next command input
-                  Thread.current[:cmd_sequence] = :CMD_AUTH_LOGIN_USER
+                  session[:cmd_sequence] = :CMD_AUTH_LOGIN_USER
                   # response code with request for Username
                   return '334 ' + Base64.strict_encode64('Username:')
                 elsif @auth_data.length == 2
                   # handle next sequence
-                  process_auth_login_user(@auth_data[1])
+                  process_auth_login_user(session, @auth_data[1])
                 else
                   raise Smtpd500Exception
                 end
@@ -747,18 +748,18 @@ module MidiSmtpServer
             # 501 Syntax error in parameters or arguments
             # ---------
             # check valid command sequence
-            raise Smtpd503Exception if Thread.current[:cmd_sequence] == :CMD_HELO
+            raise Smtpd503Exception if session[:cmd_sequence] == :CMD_HELO
             # check that encryption is enabled if necessary
-            raise Tls530Exception if @encrypt_mode == :TLS_REQUIRED && !encrypted?(Thread.current[:ctx])
+            raise Tls530Exception if @encrypt_mode == :TLS_REQUIRED && !encrypted?(session[:ctx])
             # handle command
-            process_reset_ctx
+            process_reset_session(session)
             return '250 OK'
 
           when (/^QUIT\s*$/i)
             # QUIT
             # 221 <domain> Service closing transmission channel
             # 500 Syntax error, command unrecognised
-            Thread.current[:cmd_sequence] = :CMD_QUIT
+            session[:cmd_sequence] = :CMD_QUIT
             return ''
 
           when (/^MAIL FROM\:/i)
@@ -772,11 +773,11 @@ module MidiSmtpServer
             # 552 Requested mail action aborted: exceeded storage allocation
             # ---------
             # check valid command sequence
-            raise Smtpd503Exception if Thread.current[:cmd_sequence] != :CMD_RSET
+            raise Smtpd503Exception if session[:cmd_sequence] != :CMD_RSET
             # check that encryption is enabled if necessary
-            raise Tls530Exception if @encrypt_mode == :TLS_REQUIRED && !encrypted?(Thread.current[:ctx])
+            raise Tls530Exception if @encrypt_mode == :TLS_REQUIRED && !encrypted?(session[:ctx])
             # check that authentication is enabled if necessary
-            raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(Thread.current[:ctx])
+            raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(session[:ctx])
             # handle command
             @cmd_data = line.gsub(/^MAIL FROM\:/i, '').strip
             # check for BODY= parameter
@@ -786,13 +787,13 @@ module MidiSmtpServer
                 # raise exception if not supported
                 raise Smtpd501Exception unless @internationalization_extensions
                 # save info about encoding
-                Thread.current[:ctx][:envelope][:encoding_body] = '7bit'
+                session[:ctx][:envelope][:encoding_body] = '7bit'
               # test for 8bit
               when (/\sBODY=8BITMIME(\s|$)/i)
                 # raise exception if not supported
                 raise Smtpd501Exception unless @internationalization_extensions
                 # save info about encoding
-                Thread.current[:ctx][:envelope][:encoding_body] = '8bitmime'
+                session[:ctx][:envelope][:encoding_body] = '8bitmime'
               # test for unknown encoding
               when (/\sBODY=.*$/i)
                 # unknown BODY encoding
@@ -805,20 +806,20 @@ module MidiSmtpServer
                 # raise exception if not supported
                 raise Smtpd501Exception unless @internationalization_extensions
                 # save info about encoding
-                Thread.current[:ctx][:envelope][:encoding_utf8] = 'utf8'
+                session[:ctx][:envelope][:encoding_utf8] = 'utf8'
             end
             # drop any BODY= and SMTPUTF8 content
             @cmd_data = @cmd_data.gsub(/\sBODY=(7BIT|8BITMIME)/i, '').gsub(/\sSMTPUTF8/i, '').strip if @internationalization_extensions
             # call event to handle data
-            return_value = on_mail_from_event(Thread.current[:ctx], @cmd_data)
+            return_value = on_mail_from_event(session[:ctx], @cmd_data)
             if return_value
               # overwrite data with returned value
               @cmd_data = return_value
             end
             # if no error raised, append to message hash
-            Thread.current[:ctx][:envelope][:from] = @cmd_data
+            session[:ctx][:envelope][:from] = @cmd_data
             # set sequence state
-            Thread.current[:cmd_sequence] = :CMD_MAIL
+            session[:cmd_sequence] = :CMD_MAIL
             # reply ok
             return '250 OK'
 
@@ -840,23 +841,23 @@ module MidiSmtpServer
             # 553 Requested action not taken: mailbox name not allowed
             # ---------
             # check valid command sequence
-            raise Smtpd503Exception unless [:CMD_MAIL, :CMD_RCPT].include?(Thread.current[:cmd_sequence])
+            raise Smtpd503Exception unless [:CMD_MAIL, :CMD_RCPT].include?(session[:cmd_sequence])
             # check that encryption is enabled if necessary
-            raise Tls530Exception if @encrypt_mode == :TLS_REQUIRED && !encrypted?(Thread.current[:ctx])
+            raise Tls530Exception if @encrypt_mode == :TLS_REQUIRED && !encrypted?(session[:ctx])
             # check that authentication is enabled if necessary
-            raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(Thread.current[:ctx])
+            raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(session[:ctx])
             # handle command
             @cmd_data = line.gsub(/^RCPT TO\:/i, '').strip
             # call event to handle data
-            return_value = on_rcpt_to_event(Thread.current[:ctx], @cmd_data)
+            return_value = on_rcpt_to_event(session[:ctx], @cmd_data)
             if return_value
               # overwrite data with returned value
               @cmd_data = return_value
             end
             # if no error raised, append to message hash
-            Thread.current[:ctx][:envelope][:to] << @cmd_data
+            session[:ctx][:envelope][:to] << @cmd_data
             # set sequence state
-            Thread.current[:cmd_sequence] = :CMD_RCPT
+            session[:cmd_sequence] = :CMD_RCPT
             # reply ok
             return '250 OK'
 
@@ -874,21 +875,21 @@ module MidiSmtpServer
             # 554 Transaction failed
             # ---------
             # check valid command sequence
-            raise Smtpd503Exception if Thread.current[:cmd_sequence] != :CMD_RCPT
+            raise Smtpd503Exception if session[:cmd_sequence] != :CMD_RCPT
             # check that encryption is enabled if necessary
-            raise Tls530Exception if @encrypt_mode == :TLS_REQUIRED && !encrypted?(Thread.current[:ctx])
+            raise Tls530Exception if @encrypt_mode == :TLS_REQUIRED && !encrypted?(session[:ctx])
             # check that authentication is enabled if necessary
-            raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(Thread.current[:ctx])
+            raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(session[:ctx])
             # handle command
             # set sequence state
-            Thread.current[:cmd_sequence] = :CMD_DATA
+            session[:cmd_sequence] = :CMD_DATA
             # reply ok / proceed with message data
             return '354 Enter message, ending with "." on a line by itself'
 
           else
             # If we somehow get to this point then
             # allow handling of unknown command line
-            on_process_line_unknown_event(Thread.current[:ctx], line)
+            on_process_line_unknown_event(session[:ctx], line)
         end
 
       else
@@ -904,12 +905,12 @@ module MidiSmtpServer
 
           # we need to add the new message data (line) to the message
           # and make sure to add CR LF as defined by RFC
-          Thread.current[:ctx][:message][:data] << line << "\r\n"
+          session[:ctx][:message][:data] << line << "\r\n"
 
           # call event to inspect message data while recording line by line
           # e.g. abort while receiving too big incoming mail or
           # create a teergrube for spammers etc.
-          on_message_data_receiving_event(Thread.current[:ctx])
+          on_message_data_receiving_event(session[:ctx])
 
           # just return and stay on :CMD_DATA
           return ''
@@ -920,14 +921,14 @@ module MidiSmtpServer
         # told to finish data mode
 
         # remove last CR LF in buffer
-        Thread.current[:ctx][:message][:data].chomp!
+        session[:ctx][:message][:data].chomp!
         # save delivered UTC time
-        Thread.current[:ctx][:message][:delivered] = Time.now.utc
+        session[:ctx][:message][:delivered] = Time.now.utc
         # save bytesize of message data
-        Thread.current[:ctx][:message][:bytesize] = Thread.current[:ctx][:message][:data].bytesize
+        session[:ctx][:message][:bytesize] = session[:ctx][:message][:data].bytesize
         # call event to process message
         begin
-          on_message_data_event(Thread.current[:ctx])
+          on_message_data_event(session[:ctx])
           return '250 Requested mail action okay, completed'
 
         # test for SmtpdException
@@ -943,24 +944,24 @@ module MidiSmtpServer
         ensure
           # always start with empty values after finishing incoming message
           # and rset command sequence
-          process_reset_ctx
+          process_reset_session(session)
         end
 
       end
     end
 
     # reset the context of current smtpd dialog
-    def process_reset_ctx(connection_initialize = false)
+    def process_reset_session(session, connection_initialize = false)
       # set active command sequence info
-      Thread.current[:cmd_sequence] = connection_initialize ? :CMD_HELO : :CMD_RSET
+      session[:cmd_sequence] = connection_initialize ? :CMD_HELO : :CMD_RSET
       # drop any auth challenge
-      Thread.current[:auth_challenge] = {}
+      session[:auth_challenge] = {}
       # test existing of :ctx hash
-      Thread.current[:ctx] || Thread.current[:ctx] = {}
+      session[:ctx] || session[:ctx] = {}
       # reset server values (only on connection start)
       if connection_initialize
         # create or rebuild :ctx hash
-        Thread.current[:ctx].merge!(
+        session[:ctx].merge!(
           server: {
             local_host: '',
             local_ip: '',
@@ -981,7 +982,7 @@ module MidiSmtpServer
         )
       end
       # reset envelope values
-      Thread.current[:ctx].merge!(
+      session[:ctx].merge!(
         envelope: {
           from: '',
           to: [],
@@ -990,7 +991,7 @@ module MidiSmtpServer
         }
       )
       # reset message data
-      Thread.current[:ctx].merge!(
+      session[:ctx].merge!(
         message: {
           delivered: -1,
           bytesize: -1,
@@ -1000,67 +1001,67 @@ module MidiSmtpServer
     end
 
     # handle plain authentification
-    def process_auth_plain(encoded_auth_response)
+    def process_auth_plain(session, encoded_auth_response)
       begin
         # extract auth id (and password)
         @auth_values = Base64.decode64(encoded_auth_response).split("\x00")
         # check for valid credentials parameters
         raise Smtpd500Exception unless @auth_values.length == 3
         # call event function to test credentials
-        return_value = on_auth_event(Thread.current[:ctx], @auth_values[0], @auth_values[1], @auth_values[2])
+        return_value = on_auth_event(session[:ctx], @auth_values[0], @auth_values[1], @auth_values[2])
         if return_value
           # overwrite data with returned value as authorization id
           @auth_values[0] = return_value
         end
         # save authentication information to ctx
-        Thread.current[:ctx][:server][:authorization_id] = @auth_values[0].to_s.empty? ? @auth_values[1] : @auth_values[0]
-        Thread.current[:ctx][:server][:authentication_id] = @auth_values[1]
-        Thread.current[:ctx][:server][:authenticated] = Time.now.utc
+        session[:ctx][:server][:authorization_id] = @auth_values[0].to_s.empty? ? @auth_values[1] : @auth_values[0]
+        session[:ctx][:server][:authentication_id] = @auth_values[1]
+        session[:ctx][:server][:authenticated] = Time.now.utc
         # response code
         return '235 OK'
 
       ensure
         # whatever happens in this check, reset next sequence
-        Thread.current[:cmd_sequence] = :CMD_RSET
+        session[:cmd_sequence] = :CMD_RSET
       end
     end
 
-    def process_auth_login_user(encoded_auth_response)
+    def process_auth_login_user(session, encoded_auth_response)
       # save challenged auth_id
-      Thread.current[:auth_challenge][:authorization_id] = ''
-      Thread.current[:auth_challenge][:authentication_id] = Base64.decode64(encoded_auth_response)
+      session[:auth_challenge][:authorization_id] = ''
+      session[:auth_challenge][:authentication_id] = Base64.decode64(encoded_auth_response)
       # set sequence for next command input
-      Thread.current[:cmd_sequence] = :CMD_AUTH_LOGIN_PASS
+      session[:cmd_sequence] = :CMD_AUTH_LOGIN_PASS
       # response code with request for Password
       return '334 ' + Base64.strict_encode64('Password:')
     end
 
-    def process_auth_login_pass(encoded_auth_response)
+    def process_auth_login_pass(session, encoded_auth_response)
       begin
         # extract auth id (and password)
         @auth_values = [
-          Thread.current[:auth_challenge][:authorization_id],
-          Thread.current[:auth_challenge][:authentication_id],
+          session[:auth_challenge][:authorization_id],
+          session[:auth_challenge][:authentication_id],
           Base64.decode64(encoded_auth_response)
         ]
         # check for valid credentials
-        return_value = on_auth_event(Thread.current[:ctx], @auth_values[0], @auth_values[1], @auth_values[2])
+        return_value = on_auth_event(session[:ctx], @auth_values[0], @auth_values[1], @auth_values[2])
         if return_value
           # overwrite data with returned value as authorization id
           @auth_values[0] = return_value
         end
         # save authentication information to ctx
-        Thread.current[:ctx][:server][:authorization_id] = @auth_values[0].to_s.empty? ? @auth_values[1] : @auth_values[0]
-        Thread.current[:ctx][:server][:authentication_id] = @auth_values[1]
-        Thread.current[:ctx][:server][:authenticated] = Time.now.utc
+        session[:ctx][:server][:authorization_id] = @auth_values[0].to_s.empty? ? @auth_values[1] : @auth_values[0]
+        session[:ctx][:server][:authentication_id] = @auth_values[1]
+        session[:ctx][:server][:authenticated] = Time.now.utc
         # response code
         return '235 OK'
 
       ensure
         # whatever happens in this check, reset next sequence
-        Thread.current[:cmd_sequence] = :CMD_RSET
+        session[:cmd_sequence] = :CMD_RSET
         # and reset auth_challenge
-        Thread.current[:auth_challenge] = {}
+        session[:auth_challenge] = {}
       end
     end
 
