@@ -1,5 +1,5 @@
 # require the libraries
-require_relative "../../lib/midi-smtp-server"
+require_relative '../../lib/midi-smtp-server'
 
 class MidiSmtpServerTest < MidiSmtpServer::Smtpd
 
