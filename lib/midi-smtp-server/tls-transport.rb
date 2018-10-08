@@ -3,6 +3,7 @@ module MidiSmtpServer
 
   # Encryption modes
   ENCRYPT_MODES = [:TLS_FORBIDDEN, :TLS_OPTIONAL, :TLS_REQUIRED].freeze
+  DEFAULT_ENCRYPT_MODE = :TLS_FORBIDDEN
 
   # Encryption ciphers and methods
   # check https://www.owasp.org/index.php/TLS_Cipher_String_Cheat_Sheet

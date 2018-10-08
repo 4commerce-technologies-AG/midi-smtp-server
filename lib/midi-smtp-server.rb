@@ -21,11 +21,12 @@ module MidiSmtpServer
   DEFAULT_IO_BUFFER_MAX_SIZE = 1 * 1024 * 1024
 
   # default value for SMTPD extensions support
-  DEFAULT_PIPELINING_EXTENSION = false
-  DEFAULT_INTERNATIONALIZATION_EXTENSIONS = false
+  DEFAULT_PIPELINING_EXTENSION_ENABLED = false
+  DEFAULT_INTERNATIONALIZATION_EXTENSIONS_ENABLED = false
 
   # Authentification modes
   AUTH_MODES = [:AUTH_FORBIDDEN, :AUTH_OPTIONAL, :AUTH_REQUIRED].freeze
+  DEFAULT_AUTH_MODE = :AUTH_FORBIDDEN
 
   # class for SmtpServer
   class Smtpd
@@ -153,8 +154,8 @@ module MidiSmtpServer
     # +opts.io_cmd_timeout+:: time in seconds to wait until complete line of data is expected (DEFAULT_IO_CMD_TIMEOUT, nil => disabled test)
     # +opts.io_buffer_chunk_size+:: size of chunks (bytes) to read non-blocking from socket (DEFAULT_IO_BUFFER_CHUNK_SIZE)
     # +opts.io_buffer_max_size+:: max size of buffer (max line length) until \lf ist expected (DEFAULT_IO_BUFFER_MAX_SIZE, nil => disabled test)
-    # +opts.pipelining_extension+:: set to true for support of SMTP PIPELINING extension (DEFAULT_PIPELINING_EXTENSION)
-    # +opts.internationalization_extensions+:: set to true for support of SMTP 8BITMIME and SMTPUTF8 extensions (DEFAULT_INTERNATIONALIZATION_EXTENSIONS)
+    # +opts.pipelining_extension+:: set to true for support of SMTP PIPELINING extension (DEFAULT_PIPELINING_EXTENSION_ENABLED)
+    # +opts.internationalization_extensions+:: set to true for support of SMTP 8BITMIME and SMTPUTF8 extensions (DEFAULT_INTERNATIONALIZATION_EXTENSIONS_ENABLED)
     # +opts.auth_mode+:: enable builtin authentication support (:AUTH_FORBIDDEN, :AUTH_OPTIONAL, :AUTH_REQUIRED)
     # +opts.tls_mode+:: enable builtin TLS support (:TLS_FORBIDDEN, :TLS_OPTIONAL, :TLS_REQUIRED)
     # +opts.tls_cert_path+:: path to tls cerificate chain file
@@ -209,8 +210,8 @@ module MidiSmtpServer
       @io_buffer_max_size = opts.include?(:io_buffer_max_size) ? opts[:io_buffer_max_size] : DEFAULT_IO_BUFFER_MAX_SIZE
 
       # smtp extensions
-      @pipelining_extension = opts.include?(:pipelining_extension) ? opts[:pipelining_extension] : DEFAULT_PIPELINING_EXTENSION
-      @internationalization_extensions = opts.include?(:internationalization_extensions) ? opts[:internationalization_extensions] : DEFAULT_INTERNATIONALIZATION_EXTENSIONS
+      @pipelining_extension = opts.include?(:pipelining_extension) ? opts[:pipelining_extension] : DEFAULT_PIPELINING_EXTENSION_ENABLED
+      @internationalization_extensions = opts.include?(:internationalization_extensions) ? opts[:internationalization_extensions] : DEFAULT_INTERNATIONALIZATION_EXTENSIONS_ENABLED
 
       # lists for connections and thread management
       @connections = []
@@ -218,7 +219,7 @@ module MidiSmtpServer
       @connections_cv = ConditionVariable.new
 
       # check for encryption
-      @encrypt_mode = opts.include?(:tls_mode) ? opts[:tls_mode] : :TLS_FORBIDDEN
+      @encrypt_mode = opts.include?(:tls_mode) ? opts[:tls_mode] : DEFAULT_ENCRYPT_MODE
       raise "Unknown encryption mode #{@encrypt_mode} was given by opts!" unless ENCRYPT_MODES.include?(@encrypt_mode)
       # check for tls
       if @encrypt_mode != :TLS_FORBIDDEN
@@ -227,7 +228,7 @@ module MidiSmtpServer
       end
 
       # check for authentification
-      @auth_mode = opts.include?(:auth_mode) ? opts[:auth_mode] : :AUTH_FORBIDDEN
+      @auth_mode = opts.include?(:auth_mode) ? opts[:auth_mode] : DEFAULT_AUTH_MODE
       raise "Unknown authentification mode #{@auth_mode} was given by opts!" unless AUTH_MODES.include?(@auth_mode)
 
       # next should prevent (if wished) to auto resolve hostnames and create a delay on connection
