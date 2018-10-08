@@ -124,7 +124,7 @@ module MidiSmtpServer
       hosts.join(', ')
     end
 
-    # Maximum number of connections to accept at a time, as a Fixnum
+    # Maximum number of simultaneous processed connections, this does not limit the TCP connection itself, as a FixNum
     attr_reader :max_connections
     # Maximum time in seconds to wait for a complete incoming data line, as a FixNum
     attr_reader :io_cmd_timeout
@@ -132,6 +132,8 @@ module MidiSmtpServer
     attr_reader :io_buffer_chunk_size
     # Maximum bytes to read as buffer before expecting completet incoming data line, as a FixNum
     attr_reader :io_buffer_max_size
+    # Flag if should do reverse DNS lookups on incoming connections
+    attr_reader :do_dns_reverse_lookup
     # Authentification mode
     attr_reader :auth_mode
     # Encryption mode
@@ -148,9 +150,9 @@ module MidiSmtpServer
     #
     # +ports+:: ports to listen on. Allows multiple ports like "2525, 3535" or "2525:3535, 2525"
     # +hosts+:: interface ip or hostname to listen on or blank to listen on all interfaces. Allows multiple addresses like "127.0.0.1, ::1"
-    # +max_connections+:: maximum number of simultaneous connections
-    # +opts+:: optional settings
-    # +opts.do_dns_reverse_lookup+:: flag if this smtp server should do reverse lookups on incoming connections
+    # +max_connections+:: maximum number of simultaneous processed connections, this does not limit the TCP connection itself
+    # +opts+:: optional hash with settings
+    # +opts.do_dns_reverse_lookup+:: flag if this smtp server should do reverse DNS lookups on incoming connections
     # +opts.io_cmd_timeout+:: time in seconds to wait until complete line of data is expected (DEFAULT_IO_CMD_TIMEOUT, nil => disabled test)
     # +opts.io_buffer_chunk_size+:: size of chunks (bytes) to read non-blocking from socket (DEFAULT_IO_BUFFER_CHUNK_SIZE)
     # +opts.io_buffer_max_size+:: max size of buffer (max line length) until \lf ist expected (DEFAULT_IO_BUFFER_MAX_SIZE, nil => disabled test)
