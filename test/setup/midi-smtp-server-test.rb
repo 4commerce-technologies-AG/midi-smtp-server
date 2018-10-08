@@ -3,10 +3,11 @@ require_relative '../../lib/midi-smtp-server'
 
 class MidiSmtpServerTest < MidiSmtpServer::Smtpd
 
-  # disable DEBUG log output
   def initialize(ports = MidiSmtpServer::DEFAULT_SMTPD_PORT, hosts = MidiSmtpServer::DEFAULT_SMTPD_HOST, max_connections = MidiSmtpServer::DEFAULT_SMTPD_MAX_CONNECTIONS, opts = {})
-    super
-    logger.level = Logger::UNKNOWN
+    # disable DEBUG log output
+    opts[:logger_severity] = 5 # Logger::UNKNOWN
+    # initialize
+    super(ports, hosts, max_connections, opts)
   end
 
   # change visibilty for testing
