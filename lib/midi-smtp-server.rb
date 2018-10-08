@@ -358,8 +358,10 @@ module MidiSmtpServer
               # add to list of connections
               @connections << Thread.current
               begin
+                # initialize a session storage hash
+                Thread.current[:session] = {}
                 # process smtp service on io socket
-                io = serve_client(Thread.current, io)
+                io = serve_client(Thread.current[:session], io)
                 # save returned io value due to maybe
                 # established ssl io socket
               rescue SmtpdStopConnectionException
