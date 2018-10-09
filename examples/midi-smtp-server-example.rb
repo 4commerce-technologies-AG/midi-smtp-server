@@ -4,21 +4,6 @@ require 'mail'
 # Server class
 class MySmtpd < MidiSmtpServer::Smtpd
 
-  def start
-    # initialize and do your own initailizations
-
-    # call inherited class method
-    super
-  end
-
-  # check while getting unknown commands
-  def on_process_line_unknown_event(ctx, line)
-    # check
-    raise MidiSmtpServer::Smtpd421Exception, 'Connection Abort: Too many unknown commands where sent!' if ctx[:server][:exceptions] >= 5
-    # otherwise call the super method
-    super
-  end
-
   # get each message after DATA <message> .
   def on_message_data_event(ctx)
     # Output for debug
@@ -28,7 +13,7 @@ class MySmtpd < MidiSmtpServer::Smtpd
     @mail = Mail.read_from_string(ctx[:message][:data])
 
     # handle incoming mail, just show the message source
-    logger.debug(@mail.to_s)
+    logger.debug(@mail.subject)
   end
 
 end

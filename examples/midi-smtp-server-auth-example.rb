@@ -4,13 +4,6 @@ require 'mail'
 # Server class
 class MySmtpd < MidiSmtpServer::Smtpd
 
-  def start
-    # initialize and do your own initailizations
-
-    # call inherited class method
-    super
-  end
-
   # check the authentification
   # if any value returned, that will be used for ongoing processing
   # otherwise the original value will be used for authorization_id
