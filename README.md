@@ -23,8 +23,10 @@ class MySmtpd < MidiSmtpServer::Smtpd
   def on_message_data_event(ctx)
     # Output for debug
     logger.debug("[#{ctx[:envelope][:from]}] for recipient(s): [#{ctx[:envelope][:to]}]...")
-    # Just decode message ones to make sure, that this message ist readable
+
+    # Just decode message once to make sure, that this message ist readable
     @mail = Mail.read_from_string(ctx[:message][:data])
+
     # handle incoming mail, just show the message subject
     logger.debug(@mail.subject)
   end
