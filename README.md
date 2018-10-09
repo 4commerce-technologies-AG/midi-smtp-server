@@ -13,7 +13,7 @@ For upgrades from version 1.x or from MiniSmtpServer you may follow the guides (
 
 ## Using the library
 
-To create your own SMTP-Server service simply do by:
+To create your own SMTP-Server service with DATA processing simply do:
 
 ```ruby
 # Server class
