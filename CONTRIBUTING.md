@@ -1,4 +1,4 @@
-## How to contribute to Midi-Smtp-Server
+## How to contribute to midi-smtp-server
 
 Hi, welcome to this project.
 
@@ -29,7 +29,7 @@ Hi, welcome to this project.
 
 ### Fixed whitespace, formatted code, or made a purely cosmetic patch?
 
-* Changes that are cosmetic in nature and do not add anything substantial to the stability, functionality, or testability of Rails will be accepted but on low priority depending on open issues and time.
+* Changes that are cosmetic in nature and do not add anything substantial to the stability, functionality, or testability of MidiSmtpServer will be accepted but on low priority depending on open issues and time.
 
 
 <br/>
