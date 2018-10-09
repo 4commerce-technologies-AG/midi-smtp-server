@@ -16,9 +16,6 @@ For upgrades from version 1.x or from MiniSmtpServer you may follow the guides (
 To create your own SMTP-Server service simply do by:
 
 ```ruby
-require 'midi-smtp-server'
-require 'mail'
-
 # Server class
 class MySmtpd < MidiSmtpServer::Smtpd
 
@@ -26,51 +23,32 @@ class MySmtpd < MidiSmtpServer::Smtpd
   def on_message_data_event(ctx)
     # Output for debug
     logger.debug("[#{ctx[:envelope][:from]}] for recipient(s): [#{ctx[:envelope][:to]}]...")
-
     # Just decode message ones to make sure, that this message ist readable
     @mail = Mail.read_from_string(ctx[:message][:data])
-
-    # handle incoming mail, just show the message source
-    logger.debug(@mail.to_s)
+    # handle incoming mail, just show the message subject
+    logger.debug(@mail.subject)
   end
 
 end
+```
 
-# try to gracefully shutdown on Ctrl-C
-trap('INT') do
-  puts 'Interrupted, exit now...'
-  exit 0
-end
+Please checkout the source codes from [Examples](https://github.com/4commerce-technologies-AG/midi-smtp-server/tree/master/examples) for working SMTP-Services.
 
-# Output for debug
-puts "#{Time.now}: Starting MySmtpd [#{MidiSmtpServer::VERSION::STRING}|#{MidiSmtpServer::VERSION::DATE}] ..."
 
-# Create a new server instance listening on localhost IPv4 (127.0.0.1) at port 2525
-# and proces with a maximum of 4 simultaneous sessions. Any additional TCP connection
-# will be queued and processed on next free slot. Checkout issue #13 at
-# https://github.com/4commerce-technologies-AG/midi-smtp-server/issues/13
-# about system utilization and message processing.
-server = MySmtpd.new
+## Operation purposes
 
-# setup exit code
-at_exit do
-  # check to shutdown connection
-  if server
-    # Output for debug
-    puts "#{Time.now}: Shutdown MySmtpd..."
-    # stop all threads and connections gracefully
-    server.stop
+There is an endless field of application for SMTP-Servers. You like to create your own SMTP-Service to receive messages and forward them plain or processed to services like Slack, Trello, Redmine, etc.
+
+This source code show the example to receive messages via SMTP and store them to RabbitMQ (Message-Queue-Server) for subsequent processings etc.:
+
+```ruby
+  # get each message after DATA <message> .
+  def on_message_data_event(ctx)
+    # Just decode message once to make sure, that this message ist readable
+    @mail = Mail.read_from_string(ctx[:message])
+    # Publish to rabbit
+    @bunny_exchange.publish(@mail.to_s, :headers => { 'x-smtp' => @mail.header.to_s }, :routing_key => "to_queue")
   end
-  # Output for debug
-  puts "#{Time.now}: MySmtpd down!\n"
-end
-
-# Start the server
-server.start
-
-# Run on server forever
-server.join
-
 ```
 
 
@@ -603,27 +581,6 @@ Be aware that with enabled option of [PIPELINING](https://tools.ietf.org/html/rf
 opts = { pipelining_extension: DEFAULT_PIPELINING_EXTENSION }
 ```
 
-## Endless operation purposes
-
-E.g. create a SMTP-Server to receive messages via SMTP and store them to RabbitMQ Message-Queue-Server:
-
-```ruby
-  # get each message after DATA <message> .
-  def on_message_data_event(ctx)
-    # Just decode message ones to make sure, that this message ist readable
-    @mail = Mail.read_from_string(ctx[:message])
-    # Publish to rabbit
-    @bunny_exchange.publish(@mail.to_s, :headers => { 'x-smtp' => @mail.header.to_s }, :routing_key => "to_queue")
-  end
-```
-
-E.g. create a SMTP-Server to receive messages via SMTP and forward them plain or processed to services like Slack, Trello, Redmine, ...
-
-
-## MidiSmtpServer::Smtpd Class documentation
-
-You will find a detailed description of class methods and parameters at [RubyDoc](http://www.rubydoc.info/gems/midi-smtp-server/MidiSmtpServer/Smtpd)
-
 
 ## RFC(2)822 - CR LF modes
 
@@ -707,11 +664,16 @@ To just run some selected (by regular expression) tests, you may use the `-n fil
 Be aware that the filter is case sensitive.
 
 
+## MidiSmtpServer::Smtpd Class documentation
+
+You will find a detailed description of class methods and parameters at [RubyDoc](http://www.rubydoc.info/gems/midi-smtp-server/MidiSmtpServer/Smtpd)
+
+
 ## New to version 2.3.0
 
 1. Support [IPv4 and IPv6 (documentation)](https://github.com/4commerce-technologies-AG/midi-smtp-server#ipv4-and-ipv6-ready)
 2. Support binding of [multiple ports and hosts / ip addresses](https://github.com/4commerce-technologies-AG/midi-smtp-server#multiple-ports-and-addresses)
-3. Support of RFC(2)822 [CR LF modes](https://github.com/4commerce-technologies-AG/midi-smtp-server#rfc2822-cr-lf-modes)
+3. Support of RFC(2)822 [CR LF modes](https://github.com/4commerce-technologies-AG/midi-smtp-server#rfc2822---cr-lf-modes)
 4. Support (optionally) SMTP [PIPELINING](https://tools.ietf.org/html/rfc2920) extension
 5. Support (optionally) SMTP [8BITMIME](https://github.com/4commerce-technologies-AG/midi-smtp-server#8bitmime-and-smtputf8-support) extension
 6. Support (optionally) SMTP [SMTPUTF8](https://github.com/4commerce-technologies-AG/midi-smtp-server#8bitmime-and-smtputf8-support) extension
