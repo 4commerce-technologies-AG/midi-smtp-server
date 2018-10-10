@@ -245,7 +245,6 @@ module MidiSmtpServer
       @encrypt_mode = opts.include?(:tls_mode) ? opts[:tls_mode] : DEFAULT_ENCRYPT_MODE
       raise "Unknown encryption mode #{@encrypt_mode} was given by opts!" unless ENCRYPT_MODES.include?(@encrypt_mode)
       # SSL transport layer for STARTTLS
-      @tls = nil
       if @encrypt_mode == :TLS_FORBIDDEN
         @tls = nil
       else
