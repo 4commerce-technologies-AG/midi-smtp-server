@@ -284,4 +284,16 @@ module MidiSmtpServer
 
   end
 
+  # Status when expeting CRLF sequence as line breaks (RFC(2)822)
+
+  # 500 Bad input, missing CRLF line termination
+  class Smtpd500CrLfSequenceException < SmtpdException
+
+    def initialize(msg = nil)
+      # call inherited constructor
+      super msg, 500, 'Bad input, Lines must be terminated by CRLF sequence'
+    end
+
+  end
+
 end
