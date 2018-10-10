@@ -41,7 +41,7 @@ Please checkout the source codes from [Examples](https://github.com/4commerce-te
 
 There is an endless field of application for SMTP-Servers. You like to create your own SMTP-Service to receive messages and forward them plain or processed to services like Slack, Trello, Redmine, etc.
 
-This source code show the example to receive messages via SMTP and store them to RabbitMQ (Message-Queue-Server) for subsequent processings etc.:
+This source code shows the example to receive messages via SMTP and store them to RabbitMQ (Message-Queue-Server) for subsequent processings etc.:
 
 ```ruby
   # get each message after DATA <message> .
