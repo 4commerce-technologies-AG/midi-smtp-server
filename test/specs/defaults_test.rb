@@ -36,6 +36,12 @@ describe MidiSmtpServerTest do
     end
   end
 
+  describe 'defaults crlf_mode' do
+    it 'must respond with :CRLF_ENSURE' do
+      @smtpd.crlf_mode.must_equal MidiSmtpServer::DEFAULT_CRLF_MODE
+    end
+  end
+
   describe 'defaults io_cmd_timeout' do
     it 'must respond with 30' do
       @smtpd.io_cmd_timeout.must_equal MidiSmtpServer::DEFAULT_IO_CMD_TIMEOUT

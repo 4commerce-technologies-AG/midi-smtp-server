@@ -46,11 +46,11 @@ class ProcessLineUnitTest < Minitest::Test
 
   def test_ehlo
     helo_str = 'Process line unit test'
-    result = @smtpd.process_line(@session, "EHLO #{helo_str}")
+    result = @smtpd.process_line(@session, "EHLO #{helo_str}", "\r\n")
     assert_equal "250-#{@session[:ctx][:server][:helo_response]}\r\n250-8BITMIME\r\n250-SMTPUTF8\r\n250-AUTH LOGIN PLAIN\r\n250-STARTTLS\r\n250 OK", result
     assert_equal @session[:ctx][:server][:helo], helo_str
     # check event values
-    refute_empty @smtpd.ev_helo_data
+    assert_equal @smtpd.ev_helo_data, helo_str
     assert_equal @smtpd.ev_ctx_server_local_host, @session[:ctx][:server][:local_host]
   end
 

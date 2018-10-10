@@ -24,7 +24,7 @@ class ProcessLineRandomUnitTest < Minitest::Test
   def test_helo
     setup_session
     helo_str = 'Process line unit test'
-    result = @smtpd.process_line(@session, "HELO #{helo_str}")
+    result = @smtpd.process_line(@session, "HELO #{helo_str}", "\r\n")
     assert_equal "250 OK #{@session[:ctx][:server][:helo_response]}", result
     assert_equal @session[:ctx][:server][:helo], helo_str
   end
@@ -32,7 +32,7 @@ class ProcessLineRandomUnitTest < Minitest::Test
   def test_helo_noncase_strip
     setup_session
     helo_str = '  Process line unit test   '
-    result = @smtpd.process_line(@session, "hElO #{helo_str}")
+    result = @smtpd.process_line(@session, "hElO #{helo_str}", "\r\n")
     assert_equal "250 OK #{@session[:ctx][:server][:helo_response]}", result
     assert_equal @session[:ctx][:server][:helo], helo_str.strip
   end
@@ -40,7 +40,7 @@ class ProcessLineRandomUnitTest < Minitest::Test
   def test_ehlo_noncase_strip
     setup_session
     helo_str = '  Process line unit test   '
-    result = @smtpd.process_line(@session, "eHlO #{helo_str}")
+    result = @smtpd.process_line(@session, "eHlO #{helo_str}", "\r\n")
     assert_equal "250-#{@session[:ctx][:server][:helo_response]}\r\n250-8BITMIME\r\n250-SMTPUTF8\r\n250-PIPELINING\r\n250-AUTH LOGIN PLAIN\r\n250 OK", result
     assert_equal @session[:ctx][:server][:helo], helo_str.strip
   end
