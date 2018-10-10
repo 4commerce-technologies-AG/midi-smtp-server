@@ -48,6 +48,7 @@ This source code show the example to receive messages via SMTP and store them to
   def on_message_data_event(ctx)
     # Just decode message once to make sure, that this message ist readable
     @mail = Mail.read_from_string(ctx[:message])
+
     # Publish to rabbit
     @bunny_exchange.publish(@mail.to_s, :headers => { 'x-smtp' => @mail.header.to_s }, :routing_key => "to_queue")
   end
