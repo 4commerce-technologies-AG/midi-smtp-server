@@ -15,6 +15,12 @@ module MidiSmtpServer
   DEFAULT_SMTPD_PORT = 2525
   DEFAULT_SMTPD_MAX_CONNECTIONS = 4
 
+  # default values for conformity to RFC(2)822 and addtionals
+  # if interested in details, checkout discussion on issue queue at:
+  # https://github.com/4commerce-technologies-AG/midi-smtp-server/issues/16
+  CRLF_MODES = [:CRLF_ENSURE, :CRLF_LEAVE, :CRLF_STRICT].freeze
+  DEFAULT_CRLF_MODE = :CRLF_ENSURE
+
   # default values for IO operations
   DEFAULT_IO_CMD_TIMEOUT = 30
   DEFAULT_IO_BUFFER_CHUNK_SIZE = 4 * 1024
@@ -126,6 +132,8 @@ module MidiSmtpServer
 
     # Maximum number of simultaneous processed connections, this does not limit the TCP connection itself, as a FixNum
     attr_reader :max_connections
+    # CRLF handling based on conformity to RFC(2)822
+    attr_reader :crlf_mode
     # Maximum time in seconds to wait for a complete incoming data line, as a FixNum
     attr_reader :io_cmd_timeout
     # Bytes to read non-blocking from socket into buffer, as a FixNum
@@ -152,14 +160,15 @@ module MidiSmtpServer
     # +hosts+:: interface ip or hostname to listen on or blank to listen on all interfaces. Allows multiple addresses like "127.0.0.1, ::1"
     # +max_connections+:: maximum number of simultaneous processed connections, this does not limit the number of concurrent TCP connections
     # +opts+:: hash with optional settings
+    # +opts.crlf_mode+:: CRLF handling support (:CRLF_ENSURE [default], :CRLF_LEAVE, :CRLF_STRICT)
     # +opts.do_dns_reverse_lookup+:: flag if this smtp server should do reverse DNS lookups on incoming connections
     # +opts.io_cmd_timeout+:: time in seconds to wait until complete line of data is expected (DEFAULT_IO_CMD_TIMEOUT, nil => disabled test)
     # +opts.io_buffer_chunk_size+:: size of chunks (bytes) to read non-blocking from socket (DEFAULT_IO_BUFFER_CHUNK_SIZE)
     # +opts.io_buffer_max_size+:: max size of buffer (max line length) until \lf ist expected (DEFAULT_IO_BUFFER_MAX_SIZE, nil => disabled test)
     # +opts.pipelining_extension+:: set to true for support of SMTP PIPELINING extension (DEFAULT_PIPELINING_EXTENSION_ENABLED)
     # +opts.internationalization_extensions+:: set to true for support of SMTP 8BITMIME and SMTPUTF8 extensions (DEFAULT_INTERNATIONALIZATION_EXTENSIONS_ENABLED)
-    # +opts.auth_mode+:: enable builtin authentication support (:AUTH_FORBIDDEN, :AUTH_OPTIONAL, :AUTH_REQUIRED)
-    # +opts.tls_mode+:: enable builtin TLS support (:TLS_FORBIDDEN, :TLS_OPTIONAL, :TLS_REQUIRED)
+    # +opts.auth_mode+:: enable builtin authentication support (:AUTH_FORBIDDEN [default], :AUTH_OPTIONAL, :AUTH_REQUIRED)
+    # +opts.tls_mode+:: enable builtin TLS support (:TLS_FORBIDDEN [default], :TLS_OPTIONAL, :TLS_REQUIRED)
     # +opts.tls_cert_path+:: path to tls cerificate chain file
     # +opts.tls_key_path+:: path to tls key file
     # +opts.tls_ciphers+:: allowed ciphers for connection
@@ -178,14 +187,15 @@ module MidiSmtpServer
         @logger.level = opts.include?(:logger_severity) ? opts[:logger_severity] : Logger::DEBUG
       end
 
-      # initialize class vars
-
       # list of TCPServers
       @tcp_servers = []
       # list of running threads
       @tcp_server_threads = []
-      # SSL transport layer for STARTTLS
-      @tls = nil
+
+      # lists for connections and thread management
+      @connections = []
+      @connections_mutex = Mutex.new
+      @connections_cv = ConditionVariable.new
 
       # settings
 
@@ -205,8 +215,18 @@ module MidiSmtpServer
         # check that not also the '' wildcard for hosts is added to the list
         raise 'Do not use wildcard "" for hosts while specifying multiple hosts!' if @hosts.include?('')
       end
+
       # read max_connections
       @max_connections = max_connections
+
+      # check for crlf mode
+      @crlf_mode = opts.include?(:crlf_mode) ? opts[:crlf_mode] : DEFAULT_CRLF_MODE
+      raise "Unknown CRLF mode #{@crlf_mode} was given by opts!" unless CRLF_MODES.include?(@crlf_mode)
+
+      # always prevent auto resolving hostnames to prevent a delay on socket connect
+      BasicSocket.do_not_reverse_lookup = true
+      # do reverse lookups manually if enabled by io.addr and io.peeraddr
+      @do_dns_reverse_lookup = opts.include?(:do_dns_reverse_lookup) ? opts[:do_dns_reverse_lookup] : true
 
       # io and buffer settings
       @io_cmd_timeout = opts.include?(:io_cmd_timeout) ? opts[:io_cmd_timeout] : DEFAULT_IO_CMD_TIMEOUT
@@ -217,28 +237,21 @@ module MidiSmtpServer
       @pipelining_extension = opts.include?(:pipelining_extension) ? opts[:pipelining_extension] : DEFAULT_PIPELINING_EXTENSION_ENABLED
       @internationalization_extensions = opts.include?(:internationalization_extensions) ? opts[:internationalization_extensions] : DEFAULT_INTERNATIONALIZATION_EXTENSIONS_ENABLED
 
-      # lists for connections and thread management
-      @connections = []
-      @connections_mutex = Mutex.new
-      @connections_cv = ConditionVariable.new
-
-      # check for encryption
-      @encrypt_mode = opts.include?(:tls_mode) ? opts[:tls_mode] : DEFAULT_ENCRYPT_MODE
-      raise "Unknown encryption mode #{@encrypt_mode} was given by opts!" unless ENCRYPT_MODES.include?(@encrypt_mode)
-      # check for tls
-      if @encrypt_mode != :TLS_FORBIDDEN
-        require 'openssl'
-        @tls = TlsTransport.new(opts[:tls_cert_path], opts[:tls_key_path], opts[:tls_ciphers], opts[:tls_methods], @logger)
-      end
-
       # check for authentification
       @auth_mode = opts.include?(:auth_mode) ? opts[:auth_mode] : DEFAULT_AUTH_MODE
       raise "Unknown authentification mode #{@auth_mode} was given by opts!" unless AUTH_MODES.include?(@auth_mode)
 
-      # next should prevent (if wished) to auto resolve hostnames and create a delay on connection
-      BasicSocket.do_not_reverse_lookup = true
-      # save flag if this smtp server should do reverse lookups
-      @do_dns_reverse_lookup = opts.include?(:do_dns_reverse_lookup) ? opts[:do_dns_reverse_lookup] : true
+      # check for encryption
+      @encrypt_mode = opts.include?(:tls_mode) ? opts[:tls_mode] : DEFAULT_ENCRYPT_MODE
+      raise "Unknown encryption mode #{@encrypt_mode} was given by opts!" unless ENCRYPT_MODES.include?(@encrypt_mode)
+      # SSL transport layer for STARTTLS
+      @tls = nil
+      if @encrypt_mode == :TLS_FORBIDDEN
+        @tls = nil
+      else
+        require 'openssl'
+        @tls = TlsTransport.new(opts[:tls_cert_path], opts[:tls_key_path], opts[:tls_ciphers], opts[:tls_methods], @logger)
+      end
     end
 
     # event on CONNECTION
@@ -498,24 +511,47 @@ module MidiSmtpServer
               # extract line (containing \n) from io_buffer and slice io_buffer
               line = io_buffer.slice!(0, io_buffer_line_lf + 1)
 
-              # remove unallowed / unwanted \r \n from line
-              # in case that we already looked into buffer for \n, we just have 1 of this in line
-              # for any other \r we will drop that too
-              line.delete!("\r\n")
-
-              # log line, verbosity based on log severity and command sequence
-              logger.debug("<<< #{line}\n") if session[:cmd_sequence] != :CMD_DATA
-
               # check for next line-feed already in io_buffer
               io_buffer_line_lf = io_buffer.index("\n")
 
               # process commands and handle special SmtpdExceptions
               begin
-                # check for pipelining
+                # check for pipelining extension or violation
                 raise Smtpd500PipeliningException unless @pipelining_extension || !io_buffer_line_lf || (session[:cmd_sequence] == :CMD_DATA)
 
+                # handle input line based on @crlf_mode
+                case crlf_mode
+                  when :CRLF_ENSURE
+                    # always use \r\n for line_break
+                    line_break = "\r\n"
+                    # remove any \r or \n occurence from line
+                    line.delete!("\r\n")
+                    # log line, verbosity based on log severity and command sequence
+                    logger.debug('<<< ' << line << "\n") if session[:cmd_sequence] != :CMD_DATA
+
+                  when :CRLF_LEAVE
+                    # use input line_break for line_break
+                    line_break = line[-2..-1] == "\r\n" ? "\r\n" : "\n"
+                    # remove line_break from line
+                    line.chomp!
+                    # log line, verbosity based on log severity and command sequence
+                    logger.debug('<<< ' << line.gsub("\r", '[\r]') << "\n") if session[:cmd_sequence] != :CMD_DATA
+
+                  when :CRLF_STRICT
+                    # always use \r\n for line_break
+                    line_break = "\r\n"
+                    # check line ends up by \r\n
+                    raise Smtpd500CrLfSequenceException unless line[-2..-1] == "\r\n"
+                    # remove line_break from line
+                    line.chomp!
+                    # check line for additional \r
+                    raise Smtpd500Exception, 'Line contains additional CR chars!' if line.index("\r")
+                    # log line, verbosity based on log severity and command sequence
+                    logger.debug('<<< ' << line << "\n") if session[:cmd_sequence] != :CMD_DATA
+                end
+
                 # process line
-                output = process_line(session, line)
+                output = process_line(session, line, line_break)
 
               # defined abort channel exception
               rescue Smtpd421Exception => e
@@ -591,7 +627,7 @@ module MidiSmtpServer
       return io
     end
 
-    def process_line(session, line)
+    def process_line(session, line, line_break)
       # check whether in auth challenge modes
       if session[:cmd_sequence] == :CMD_AUTH_PLAIN_VALUES
         # handle authentication
@@ -909,7 +945,7 @@ module MidiSmtpServer
 
           # we need to add the new message data (line) to the message
           # and make sure to add CR LF as defined by RFC
-          session[:ctx][:message][:data] << line << "\r\n"
+          session[:ctx][:message][:data] << line << line_break
 
           # call event to inspect message data while recording line by line
           # e.g. abort while receiving too big incoming mail or
@@ -924,7 +960,7 @@ module MidiSmtpServer
         # solely of a period on a line by itself then we are being
         # told to finish data mode
 
-        # remove last CR LF in buffer
+        # remove last CR LF pair or single LF in buffer
         session[:ctx][:message][:data].chomp!
         # save delivered UTC time
         session[:ctx][:message][:delivered] = Time.now.utc
