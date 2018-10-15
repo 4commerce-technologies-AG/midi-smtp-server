@@ -167,7 +167,7 @@ For processing 1.000.000 mails per 24 hours, it may divided by seconds per day (
 
 If you need 1.000.000 mail per hour than propably 416 simultaniously processed threads should be fine.
 
-The number of `max_connections` in both cases should be equal or higher than `max_processings`. In the above examples it should be fine to use 512 or 1024 if your system does fit with its ressources. If an unlimited number of concurrent TCP connections should be allowed, then set the value for `max_connections` to `nil` (which is also the default when not specified).
+The number of `max_connections` should always be equal or higher than `max_processings`. In the above examples it should be fine to use 512 or 1024 if your system does fit with its ressources. If an unlimited number of concurrent TCP connections should be allowed, then set the value for `max_connections` to `nil` (which is also the default when not specified).
 
 
 ## Modifying welcome and greeting responses
