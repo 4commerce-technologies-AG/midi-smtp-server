@@ -50,7 +50,7 @@ module MidiSmtpServer
 
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 421, 'Service not available, closing transmission channel'
+      super msg, 421, 'Service too busy or not available, closing transmission channel'
     end
 
   end
