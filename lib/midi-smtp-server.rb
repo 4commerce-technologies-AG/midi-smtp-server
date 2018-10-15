@@ -13,7 +13,7 @@ module MidiSmtpServer
   # default values
   DEFAULT_SMTPD_HOST = '127.0.0.1'.freeze
   DEFAULT_SMTPD_PORT = 2525
-  DEFAULT_SMTPD_MAX_CONNECTIONS = 4
+  DEFAULT_SMTPD_MAX_PROCESSINGS = 4
 
   # default values for conformity to RFC(2)822 and addtionals
   # if interested in details, checkout discussion on issue queue at:
@@ -140,10 +140,10 @@ module MidiSmtpServer
       hosts.join(', ')
     end
 
-    # Maximum number of allowed connections, this does limit the TCP connections, as a FixNum
-    attr_reader :max_connections
     # Maximum number of simultaneous processed connections, this does not limit the TCP connections itself, as a FixNum
     attr_reader :max_processings
+    # Maximum number of allowed connections, this does limit the TCP connections, as a FixNum
+    attr_reader :max_connections
     # CRLF handling based on conformity to RFC(2)822
     attr_reader :crlf_mode
     # Maximum time in seconds to wait for a complete incoming data line, as a FixNum
@@ -170,9 +170,9 @@ module MidiSmtpServer
     #
     # +ports+:: ports to listen on. Allows multiple ports like "2525, 3535" or "2525:3535, 2525"
     # +hosts+:: interface ip or hostname to listen on or blank to listen on all interfaces. Allows multiple addresses like "127.0.0.1, ::1"
-    # +max_connections+:: maximum number of connections, this does limit the number of concurrent TCP connections
+    # +max_processings+:: maximum number of simultaneous processed connections, this does not limit the number of concurrent TCP connections
     # +opts+:: hash with optional settings
-    # +opts.max_processings+:: maximum number of simultaneous processed connections, this does not limit the number of concurrent TCP connections
+    # +opts.max_connections+:: maximum number of connections, this does limit the number of concurrent TCP connections (not set or nil => unlimited)
     # +opts.crlf_mode+:: CRLF handling support (:CRLF_ENSURE [default], :CRLF_LEAVE, :CRLF_STRICT)
     # +opts.do_dns_reverse_lookup+:: flag if this smtp server should do reverse DNS lookups on incoming connections
     # +opts.io_cmd_timeout+:: time in seconds to wait until complete line of data is expected (DEFAULT_IO_CMD_TIMEOUT, nil => disabled test)
@@ -188,7 +188,7 @@ module MidiSmtpServer
     # +opts.tls_methods+:: allowed methods for protocol
     # +opts.logger+:: own logger class, otherwise default logger is created
     # +opts.logger_severity+:: logger level when default logger is used
-    def initialize(ports = DEFAULT_SMTPD_PORT, hosts = DEFAULT_SMTPD_HOST, max_connections = DEFAULT_SMTPD_MAX_CONNECTIONS, opts = {})
+    def initialize(ports = DEFAULT_SMTPD_PORT, hosts = DEFAULT_SMTPD_HOST, max_processings = DEFAULT_SMTPD_MAX_PROCESSINGS, opts = {})
       # logging
       if opts.include?(:logger)
         @logger = opts[:logger]
@@ -230,10 +230,11 @@ module MidiSmtpServer
         raise 'Do not use wildcard "" for hosts while specifying multiple hosts!' if @hosts.include?('')
       end
 
-      # read max_connections
-      @max_connections = max_connections
-      # read max_processings (if less or equal to max_connections) or use max connections as fallback
-      @max_processings = opts.include?(:max_processings) && opts[:max_processings] <= @max_connections ? opts[:max_processings] : @max_connections
+      # read max_processings
+      @max_processings = max_processings
+      # check max_connections
+      @max_connections = opts.include?(:max_connections) ? opts[:max_connections] : nil
+      raise 'Number of concurrent connections is lower than number of simultaneous processings!' if @max_connections && @max_connections < @max_processings
 
       # check for crlf mode
       @crlf_mode = opts.include?(:crlf_mode) ? opts[:crlf_mode] : DEFAULT_CRLF_MODE
@@ -474,7 +475,7 @@ module MidiSmtpServer
           on_connect_event(session[:ctx])
 
           # drop connection (respond 421) if too busy
-          raise 'Abort connection while too busy, exceeding max_connections!' if connections > max_connections
+          raise 'Abort connection while too busy, exceeding max_connections!' if max_connections && connections > max_connections
 
           # check active processings for new client
           @connections_mutex.synchronize do

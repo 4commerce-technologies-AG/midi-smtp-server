@@ -147,15 +147,15 @@ There are also a `ports` and `hosts` reader for this values. Please be aware tha
 
 ## Utilization of connections and processings
 
-The options `max_connections` and `opts { max_processings }` allows to define the utilization of the running service. The value of `max_connections` will block any additional concurrent TCP connection and respond with SMTP error code 421 on more connections. The additional `max_processings` value will allow to wait for processing while active processings have reached the maximum value.
+The options `max_processings` and `opts { max_connections }` allows to define the utilization of the running service. The value of `max_processings` will allow to queue processings while active processings have reached the maximum value. The additional (optional) value of `max_connections` will block any additional concurrent TCP connection and respond with SMTP error code 421 on more connections.
 
 E.g.:
 
 ``` ruby
-  server = MySmtpd.new('2525', '127.0.0.1', 100, {max_processings: 4})
+  server = MySmtpd.new('2525', '127.0.0.1', 4, {max_connections: 100})
 ```
 
-In this example the service will allow 100 concurrent TCP connections but just process 4 of them simultaniously until all connections have been handled. If there are more than 100 concurrent TCP connections, those will be closed by error `421 Service too busy or not available`. That will _normally_ ensure, that the sender would try again after a while.
+In this example the service will allow 100 concurrent TCP connections but just process 4 of them simultaneously until all connections have been handled. If there are more than 100 concurrent TCP connections, those will be closed by error `421 Service too busy or not available`. That error code will _normally_ ensure, that the sender would try again after a while.
 
 This allows to calculate the utilization of your service by limiting the connections and processings.
 
@@ -167,7 +167,7 @@ For processing 1.000.000 mails per 24 hours, it may divided by seconds per day (
 
 If you need 1.000.000 mail per hour than propably 416 simultaniously processed threads should be fine.
 
-The number of `max_connections` in both cases should be equal or higher than `max_processings`. In the above examples it should be fine to use 512 or 1024 if your system does fit with its ressources.
+The number of `max_connections` in both cases should be equal or higher than `max_processings`. In the above examples it should be fine to use 512 or 1024 if your system does fit with its ressources. If an unlimited number of concurrent TCP connections should be allowed, then set the value for `max_connections` to `nil` (which is also the default when not specified).
 
 
 ## Modifying welcome and greeting responses
