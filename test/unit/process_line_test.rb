@@ -14,7 +14,7 @@ class ProcessLineUnitTest < Minitest::Test
     attr_reader :ev_message_delivered
     attr_reader :ev_message_bytesize
 
-    def on_auth_event(ctx, authorization_id, authentication_id, authentication)
+    def on_auth_event(_ctx, authorization_id, authentication_id, authentication)
       # save local event data
       @ev_auth_authentication_id = authentication_id
       @ev_auth_authentication = authentication
@@ -40,11 +40,14 @@ class ProcessLineUnitTest < Minitest::Test
   # with same session object. so its just initialized
   # once as a class var but setup will link each test
   # the instance vars
+  # rubocop:disable Style/ClassVars
   @@smtpd = nil
   @@session = nil
+  # rubocop:enable Style/ClassVars
 
   # initialize once before tests
   def preliminary_setup_smtpd
+    # rubocop:disable Style/ClassVars
     @@smtpd = MidiSmtpServerProcessLineTest.new(
       '2525',
       '127.0.0.1',
@@ -54,12 +57,15 @@ class ProcessLineUnitTest < Minitest::Test
       pipelining_extension: false,
       internationalization_extensions: true
     )
+    # rubocop:enable Style/ClassVars
   end
 
   # initialize once before tests
   def preliminary_setup_session
     # prepare a session hash
+    # rubocop:disable Style/ClassVars
     @@session = {}
+    # rubocop:enable Style/ClassVars
     @@smtpd.process_reset_session(@@session, true)
     # enter some valid status
     @@session[:ctx][:server][:local_host] = 'localhost.local'
@@ -114,7 +120,7 @@ class ProcessLineUnitTest < Minitest::Test
     assert_equal 'supervisor', @session[:ctx][:server][:authorization_id]
     assert_equal 'administrator', @session[:ctx][:server][:authentication_id]
     refute_equal '', @session[:ctx][:server][:authenticated].to_s
-    assert_in_delta Time.now, @session[:ctx][:server][:authenticated],1.0
+    assert_in_delta Time.now, @session[:ctx][:server][:authenticated], 1.0
   end
 
   def test_20_mail_from
@@ -150,7 +156,7 @@ class ProcessLineUnitTest < Minitest::Test
     result = @smtpd.process_line(@session, '.', "\r\n")
     assert result.start_with?('250 ')
     assert_equal :CMD_RSET, @session[:cmd_sequence]
-    assert_equal -1, @session[:ctx][:message][:bytesize]
+    assert_equal (-1), @session[:ctx][:message][:bytesize]
     assert_equal '', @session[:ctx][:message][:data]
     assert_in_delta Time.now, @smtpd.ev_message_delivered, 1
     assert_equal 138, @smtpd.ev_message_bytesize
@@ -161,18 +167,18 @@ class ProcessLineUnitTest < Minitest::Test
   end
 
   def test_90_noop
-    result = @smtpd.process_line(@session, "NOOP", "\r\n")
+    result = @smtpd.process_line(@session, 'NOOP', "\r\n")
     assert_equal '250 OK', result
   end
 
   def test_91_rset
-    result = @smtpd.process_line(@session, "RSET", "\r\n")
+    result = @smtpd.process_line(@session, 'RSET', "\r\n")
     assert_equal '250 OK', result
     assert_equal :CMD_RSET, @session[:cmd_sequence]
   end
 
   def test_99_quit
-    result = @smtpd.process_line(@session, "QUIT", "\r\n")
+    result = @smtpd.process_line(@session, 'QUIT', "\r\n")
     assert_equal '', result
     assert_equal :CMD_QUIT, @session[:cmd_sequence]
   end
