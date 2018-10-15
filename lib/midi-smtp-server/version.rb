@@ -9,7 +9,7 @@ module MidiSmtpServer
 
     STRING = [MAJOR, MINOR, TINY].compact.join('.').freeze
 
-    DATE = '2018-10-10'.freeze
+    DATE = '2018-10-17'.freeze
 
   end
 
