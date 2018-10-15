@@ -30,9 +30,15 @@ describe MidiSmtpServerTest do
     end
   end
 
-  describe 'defaults max_connections' do
+  describe 'defaults max_processings' do
     it 'must respond with 4' do
-      @smtpd.max_connections.must_equal 4
+      @smtpd.max_processings.must_equal 4
+    end
+  end
+
+  describe 'defaults max_connections' do
+    it 'must respond with nil' do
+      @smtpd.max_connections.must_be_nil
     end
   end
 
