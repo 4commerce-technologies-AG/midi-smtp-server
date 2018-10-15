@@ -163,7 +163,7 @@ This allows to calculate the utilization of your service by limiting the connect
 
 It depends on the system resources (RAM, CPU) how many threads and connections your service may handle simultaniously but it should reflect also how many messages it has to proceed per time interval.
 
-For processing 1.000.000 mails per 24 hours, it may divided by seconds per day (24 * 60 * 60 = 86.400). This results in 11.5 mails per second. If the average processing time per mail is 15 seconds (long runner), then the service might have an overlap of 15 times 11.5 connections simultaniously. If that is expected, then `max_proecssings` of 172 should be fine.
+For processing 1.000.000 mails per 24 hours, it may divided by seconds per day (24 * 60 * 60 = 86.400). This results in 11.5 mails per second. If the average processing time per mail is 15 seconds (long runner), then the service might have an overlap of 15 times 11.5 connections simultaniously. If that is expected, then `max_processings` of 172 should be fine.
 
 If you need 1.000.000 mail per hour than propably 416 simultaniously processed threads should be fine.
 
