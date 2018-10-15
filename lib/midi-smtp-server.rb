@@ -80,9 +80,19 @@ module MidiSmtpServer
       @connections.size
     end
 
-    # Return if has connected clients
+    # Return if has active connected clients
     def connections?
       @connections.any?
+    end
+
+    # Return the current number of processed clients
+    def processings
+      @processings.size
+    end
+
+    # Return if has active processed clients
+    def processings?
+      @processings.any?
     end
 
     # Join with the server thread(s)
@@ -130,8 +140,10 @@ module MidiSmtpServer
       hosts.join(', ')
     end
 
-    # Maximum number of simultaneous processed connections, this does not limit the TCP connection itself, as a FixNum
+    # Maximum number of allowed connections, this does limit the TCP connections, as a FixNum
     attr_reader :max_connections
+    # Maximum number of simultaneous processed connections, this does not limit the TCP connections itself, as a FixNum
+    attr_reader :max_processings
     # CRLF handling based on conformity to RFC(2)822
     attr_reader :crlf_mode
     # Maximum time in seconds to wait for a complete incoming data line, as a FixNum
@@ -158,8 +170,9 @@ module MidiSmtpServer
     #
     # +ports+:: ports to listen on. Allows multiple ports like "2525, 3535" or "2525:3535, 2525"
     # +hosts+:: interface ip or hostname to listen on or blank to listen on all interfaces. Allows multiple addresses like "127.0.0.1, ::1"
-    # +max_connections+:: maximum number of simultaneous processed connections, this does not limit the number of concurrent TCP connections
+    # +max_connections+:: maximum number of connections, this does limit the number of concurrent TCP connections
     # +opts+:: hash with optional settings
+    # +opts.max_processings+:: maximum number of simultaneous processed connections, this does not limit the number of concurrent TCP connections
     # +opts.crlf_mode+:: CRLF handling support (:CRLF_ENSURE [default], :CRLF_LEAVE, :CRLF_STRICT)
     # +opts.do_dns_reverse_lookup+:: flag if this smtp server should do reverse DNS lookups on incoming connections
     # +opts.io_cmd_timeout+:: time in seconds to wait until complete line of data is expected (DEFAULT_IO_CMD_TIMEOUT, nil => disabled test)
@@ -194,6 +207,7 @@ module MidiSmtpServer
 
       # lists for connections and thread management
       @connections = []
+      @processings = []
       @connections_mutex = Mutex.new
       @connections_cv = ConditionVariable.new
 
@@ -218,6 +232,8 @@ module MidiSmtpServer
 
       # read max_connections
       @max_connections = max_connections
+      # read max_processings (if less or equal to max_connections) or use max connections as fallback
+      @max_processings = opts.include?(:max_processings) && opts[:max_processings] <= @max_connections ? opts[:max_processings] : @max_connections
 
       # check for crlf mode
       @crlf_mode = opts.include?(:crlf_mode) ? opts[:crlf_mode] : DEFAULT_CRLF_MODE
@@ -359,18 +375,13 @@ module MidiSmtpServer
         begin
           # always check for shutdown request
           until shutdown?
-            # check available connections for new clients
-            @connections_mutex.synchronize do
-              while @connections.size >= @max_connections
-                @connections_cv.wait(@connections_mutex)
-              end
-            end
             # get new client and start additional thread
             # to handle client process
             client = tcp_server.accept
             Thread.new(client) do |io|
               # add to list of connections
               @connections << Thread.current
+              # handle connection
               begin
                 # initialize a session storage hash
                 Thread.current[:session] = {}
@@ -395,8 +406,10 @@ module MidiSmtpServer
                 end
                 # remove closed session from connections
                 @connections_mutex.synchronize do
-                  # drop this thread from served connections
+                  # drop this thread from connections
                   @connections.delete(Thread.current)
+                  # drop this thread from processings
+                  @processings.delete(Thread.current)
                   # signal mutex for next waiting thread
                   @connections_cv.signal
                 end
@@ -436,25 +449,44 @@ module MidiSmtpServer
 
     # handle connection
     def serve_client(session, io)
-      # ON CONNECTION
-      # 220 <domain> Service ready
-      # 421 <domain> Service not available, closing transmission channel
-      # Reset and initialize message
-      process_reset_session(session, true)
-      # get local address info
-      _, session[:ctx][:server][:local_port], session[:ctx][:server][:local_host], session[:ctx][:server][:local_ip] = @do_dns_reverse_lookup ? io.addr(:hostname) : io.addr(:numeric)
-      # get remote partner hostname and address
-      _, session[:ctx][:server][:remote_port], session[:ctx][:server][:remote_host], session[:ctx][:server][:remote_ip] = @do_dns_reverse_lookup ? io.peeraddr(:hostname) : io.peeraddr(:numeric)
-      # save connection date/time
-      session[:ctx][:server][:connected] = Time.now.utc
-      # build and save the local welcome and greeting response strings
-      session[:ctx][:server][:local_response] = "#{session[:ctx][:server][:local_host]} says welcome!"
-      session[:ctx][:server][:helo_response] = "#{session[:ctx][:server][:local_host]} at your service!"
-      # check if we want to let this remote station connect us
-      on_connect_event(session[:ctx])
       # handle connection
       begin
         begin
+          # ON CONNECTION
+          # 220 <domain> Service ready
+          # 421 <domain> Service not available, closing transmission channel
+          # Reset and initialize message
+          process_reset_session(session, true)
+
+          # get local address info
+          _, session[:ctx][:server][:local_port], session[:ctx][:server][:local_host], session[:ctx][:server][:local_ip] = @do_dns_reverse_lookup ? io.addr(:hostname) : io.addr(:numeric)
+          # get remote partner hostname and address
+          _, session[:ctx][:server][:remote_port], session[:ctx][:server][:remote_host], session[:ctx][:server][:remote_ip] = @do_dns_reverse_lookup ? io.peeraddr(:hostname) : io.peeraddr(:numeric)
+
+          # save connection date/time
+          session[:ctx][:server][:connected] = Time.now.utc
+
+          # build and save the local welcome and greeting response strings
+          session[:ctx][:server][:local_response] = "#{session[:ctx][:server][:local_host]} says welcome!"
+          session[:ctx][:server][:helo_response] = "#{session[:ctx][:server][:local_host]} at your service!"
+
+          # check if we want to let this remote station connect us
+          on_connect_event(session[:ctx])
+
+          # drop connection (respond 421) if too busy
+          raise 'Abort connection while too busy, exceeding max_connections!' if connections > max_connections
+
+          # check active processings for new client
+          @connections_mutex.synchronize do
+            # when processings exceed maximum number of simultaneous allowed processings, then wait for next free slot
+            while processings >= max_processings
+              @connections_cv.wait(@connections_mutex)
+            end
+          end
+
+          # append this to list of processings
+          @processings << Thread.current
+
           # reply local welcome message
           output = "220 #{session[:ctx][:server][:local_response].to_s.strip}\r\n"
 

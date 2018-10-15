@@ -145,6 +145,31 @@ You may write any combination of ports and addresses that should be served. That
 There are also a `ports` and `hosts` reader for this values. Please be aware that we will drop the old attributes of `port` and `host` within the next minor release.
 
 
+## Utilization for connections and processings
+
+The options `max_connections` and `opts { max_processings }` allows to define the utilization of the running service. The value of `max_connections` will block any additional concurrent TCP connection and respond with SMTP error code 421 on more connections. The additional `max_processings` value will allow to wait for processing while active processings have reached the maximum value.
+
+E.g.:
+
+``` ruby
+  server = MySmtpd.new('2525', '127.0.0.1', 100, {max_processings: 4})
+```
+
+In this example the service will allow 100 concurrent TCP connections but just process 4 of them simultaniously until all connections have been handled. If there are more than 100 concurrent TCP connections, those will be closed by error `421 Service too busy or not available`. That will _normally_ ensure, that the sender would try again after a while.
+
+This allows to calculate the utilization of your service by limiting the connections and processings.
+
+#### Calculate utilization
+
+It depends on the system resources (RAM, CPU) how many threads and connections your service may handle simultaniously but it should reflect also how many messages it has to proceed per time interval.
+
+For processing 1.000.000 mails per 24 hours, it may divided by seconds per day (24 * 60 * 60 = 86.400). This results in 11.5 mails per second. If the average processing time per mail is 15 seconds (long runner), then the service might have an overlap of 15 times 11.5 connections simultaniously. If that is expected, then `max_proecssings` of 172 should be fine.
+
+If you need 1.000.000 mail per hour than propably 416 simultaniously processed threads should be fine.
+
+The number of `max_connections` in both cases should be equal or higher than `max_processings`. In the above examples it should be fine to use 512 or 1024 if your system does fit with its ressources.
+
+
 ## Modifying welcome and greeting responses
 
 While connecting from a client, the server will show up with a first local welcome message and after HELO or EHLO with a greeting message as well as the capabilities (EHLO). The response messages are build and stored in `ctx` values. You may change the content during `on_connect_event` and `on_helo_event`.
@@ -676,14 +701,15 @@ You will find a detailed description of class methods and parameters at [RubyDoc
 
 1. Support [IPv4 and IPv6 (documentation)](https://github.com/4commerce-technologies-AG/midi-smtp-server#ipv4-and-ipv6-ready)
 2. Support binding of [multiple ports and hosts / ip addresses](https://github.com/4commerce-technologies-AG/midi-smtp-server#multiple-ports-and-addresses)
-3. Support of RFC(2)822 [CR LF modes](https://github.com/4commerce-technologies-AG/midi-smtp-server#rfc2822---cr-lf-modes)
-4. Support (optionally) SMTP [PIPELINING](https://tools.ietf.org/html/rfc2920) extension
-5. Support (optionally) SMTP [8BITMIME](https://github.com/4commerce-technologies-AG/midi-smtp-server#8bitmime-and-smtputf8-support) extension
-6. Support (optionally) SMTP [SMTPUTF8](https://github.com/4commerce-technologies-AG/midi-smtp-server#8bitmime-and-smtputf8-support) extension
-7. SMTP PIPELINING, 8BITMIME and SMTPUTF8 extensions are _disabled_ by default
-8. Support modification of local welcome and greeting messages
-9. Documentation and Links about security and [email attacks](https://github.com/4commerce-technologies-AG/midi-smtp-server#attacks-on-email-communication)
-10. Added [implementation and integration testing](https://github.com/4commerce-technologies-AG/midi-smtp-server#reliable-code-with-minitest)
+3. Handle [utilization for connections and processings](https://github.com/4commerce-technologies-AG/midi-smtp-server#utilization-for-connections-and-processings)
+4. Support of RFC(2)822 [CR LF modes](https://github.com/4commerce-technologies-AG/midi-smtp-server#rfc2822---cr-lf-modes)
+5. Support (optionally) SMTP [PIPELINING](https://tools.ietf.org/html/rfc2920) extension
+6. Support (optionally) SMTP [8BITMIME](https://github.com/4commerce-technologies-AG/midi-smtp-server#8bitmime-and-smtputf8-support) extension
+7. Support (optionally) SMTP [SMTPUTF8](https://github.com/4commerce-technologies-AG/midi-smtp-server#8bitmime-and-smtputf8-support) extension
+8. SMTP PIPELINING, 8BITMIME and SMTPUTF8 extensions are _disabled_ by default
+9. Support modification of local welcome and greeting messages
+10. Documentation and Links about security and [email attacks](https://github.com/4commerce-technologies-AG/midi-smtp-server#attacks-on-email-communication)
+11. Added [implementation and integration testing](https://github.com/4commerce-technologies-AG/midi-smtp-server#reliable-code-with-minitest)
 
 
 ## New to version 2.2.3
