@@ -145,7 +145,7 @@ You may write any combination of ports and addresses that should be served. That
 There are also a `ports` and `hosts` reader for this values. Please be aware that we will drop the old attributes of `port` and `host` within the next minor release.
 
 
-## Utilization for connections and processings
+## Utilization of connections and processings
 
 The options `max_connections` and `opts { max_processings }` allows to define the utilization of the running service. The value of `max_connections` will block any additional concurrent TCP connection and respond with SMTP error code 421 on more connections. The additional `max_processings` value will allow to wait for processing while active processings have reached the maximum value.
 
@@ -701,7 +701,7 @@ You will find a detailed description of class methods and parameters at [RubyDoc
 
 1. Support [IPv4 and IPv6 (documentation)](https://github.com/4commerce-technologies-AG/midi-smtp-server#ipv4-and-ipv6-ready)
 2. Support binding of [multiple ports and hosts / ip addresses](https://github.com/4commerce-technologies-AG/midi-smtp-server#multiple-ports-and-addresses)
-3. Handle [utilization for connections and processings](https://github.com/4commerce-technologies-AG/midi-smtp-server#utilization-for-connections-and-processings)
+3. Handle [utilization of connections and processings](https://github.com/4commerce-technologies-AG/midi-smtp-server#utilization-of-connections-and-processings)
 4. Support of RFC(2)822 [CR LF modes](https://github.com/4commerce-technologies-AG/midi-smtp-server#rfc2822---cr-lf-modes)
 5. Support (optionally) SMTP [PIPELINING](https://tools.ietf.org/html/rfc2920) extension
 6. Support (optionally) SMTP [8BITMIME](https://github.com/4commerce-technologies-AG/midi-smtp-server#8bitmime-and-smtputf8-support) extension
