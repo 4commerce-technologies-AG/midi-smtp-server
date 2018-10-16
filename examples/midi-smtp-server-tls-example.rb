@@ -7,13 +7,6 @@ require 'mail'
 # Server class
 class MySmtpd < MidiSmtpServer::Smtpd
 
-  def start
-    # initialize and do your own initailizations
-
-    # call inherited class method
-    super
-  end
-
   def on_process_line_unknown_event(ctx, line)
     # check
     raise MidiSmtpServer::Smtpd421Exception, 'Connection Abort: Too many unknown commands where sent!' if ctx[:server][:exceptions] >= 5
@@ -46,7 +39,7 @@ puts "#{Time.now}: Starting MySmtpd [#{MidiSmtpServer::VERSION::STRING}|#{MidiSm
 
 # Create a new server instance listening at localhost interfaces 127.0.0.1:2525
 # and accepting a maximum of 4 simultaneous connections
-server = MySmtpd.new(MidiSmtpServer::DEFAULT_SMTPD_PORT, '', MidiSmtpServer::DEFAULT_SMTPD_MAX_CONNECTIONS, tls_mode: :TLS_OPTIONAL)
+server = MySmtpd.new(MidiSmtpServer::DEFAULT_SMTPD_PORT, '', MidiSmtpServer::DEFAULT_SMTPD_MAX_PROCESSINGS, tls_mode: :TLS_OPTIONAL)
 
 # setup exit code
 at_exit do
