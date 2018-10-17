@@ -747,7 +747,7 @@ For upgrades from version 1.x or from _Mini_SmtpServer you may follow the guides
 
 #### 2.x
 
-1. Modulelized
+1. Modulized
 2. Removed dependency to GServer
 3. Additional events to interact with
 4. Use logger to log several messages from severity :debug up to :fatal
@@ -760,7 +760,7 @@ If you are already using MidiSmtpServer it might be only some straight forward w
 If you are using _Mini_SmtpServer it should be also only some few work on your codes.
 
 
-### Upgrade from 1.x
+#### Upgrade from 1.x
 
 <details>
 <summary>Open / Close details</summary>
