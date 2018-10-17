@@ -5,10 +5,7 @@ MidiSmtpServer is a small and highly customizable ruby SMTP-Server library with 
 As a library it is mainly designed to be integrated into your projects as serving a SMTP-Server service. The lib will do nothing with your mail and you have to create your own event functions to handle and operate on incoming mails. We are using this in conjunction with [Mikel Lindsaar](https://github.com/mikel) great Mail component (https://github.com/mikel/mail). Time to run your own SMTP-Server service.
 
 With version 2 the library gots a lot of improvements (2.3.x Multiple ports and addresses, 2.2.x Encryption [StartTLS], 2.1.0 Authentication [AUTH], 2.1.1 significant speed improvement, etc.).
-
-We suggest everybody using MidiSmtpServer 1.x or 2.x to switch at least to latest 2.3.y.
-
-For upgrades from version 1.x or from MiniSmtpServer you may follow the guides (see appendix) how to change your existing code to be compatible with the latest releases. You may update to latest 2.3.y without any changes if already using some version 2.x.
+Please checkout section [changes and updates](https://github.com/4commerce-technologies-AG/midi-smtp-server#changes-and-updates) to get the news.
 
 
 ## Using the library
@@ -167,7 +164,7 @@ For processing 1.000.000 mails per 24 hours, it may divided by seconds per day (
 
 If you need 1.000.000 mail per hour than propably 416 simultaniously processed threads should be fine.
 
-The number of `max_connections` should always be equal or higher than `max_processings`. In the above examples it should be fine to use 512 or 1024 if your system does fit with its ressources. If an unlimited number of concurrent TCP connections should be allowed, then set the value for `max_connections` to `nil` (which is also the default when not specified).
+The number of `max_connections` should always be equal or higher than `max_processings`. In the above examples it should be fine to use 512 or 1024 if your system does fit with its resources. If an unlimited number of concurrent TCP connections should be allowed, then set the value for `max_connections` to `nil` (which is also the default when not specified).
 
 
 ## Modifying welcome and greeting responses
@@ -697,7 +694,13 @@ Be aware that the filter is case sensitive.
 You will find a detailed description of class methods and parameters at [RubyDoc](http://www.rubydoc.info/gems/midi-smtp-server/MidiSmtpServer/Smtpd)
 
 
-## New to version 2.3.0
+## Changes and updates
+
+We suggest everybody using MidiSmtpServer 1.x or 2.x to switch at least to latest 2.3.y. The update is painless and without any source code changes if already using some 2.x release :sunglasses:
+
+For upgrades from version 1.x or from _Mini_SmtpServer you may follow the guides (see appendix) how to change your existing code to be compatible with the latest 2.x releases.
+
+#### 2.3.0 (2018-10-17)
 
 1. Support [IPv4 and IPv6 (documentation)](https://github.com/4commerce-technologies-AG/midi-smtp-server#ipv4-and-ipv6-ready)
 2. Support binding of [multiple ports and hosts / ip addresses](https://github.com/4commerce-technologies-AG/midi-smtp-server#multiple-ports-and-addresses)
@@ -712,18 +715,18 @@ You will find a detailed description of class methods and parameters at [RubyDoc
 11. Added [implementation and integration testing](https://github.com/4commerce-technologies-AG/midi-smtp-server#reliable-code-with-minitest)
 
 
-## New to version 2.2.3
+#### 2.2.3
 
 1. Control and validation on incoming data [see Incoming data validation](https://github.com/4commerce-technologies-AG/midi-smtp-server#incoming-data-validation)
 
 
-## New to version 2.2.1
+#### 2.2.1
 
 1. Builtin optional support of STARTTLS encryption
 2. Added examples for a simple midi-smtp-server with TLS support
 
 
-## New to version 2.2.x
+#### 2.2.x
 
 1. Rubocop configuration and passed source code verification
 2. Modified examples for a simple midi-smtp-server with and without auth
@@ -731,18 +734,18 @@ You will find a detailed description of class methods and parameters at [RubyDoc
 4. Optionally gracefully shutdown when service `stop` (default gracefully)
 
 
-## New to version 2.1.1
+#### 2.1.1
 
 1. Huge speed improvement on receiving large message data (1.000+ faster)
 
 
-## New to version 2.1.0
+#### 2.1.0
 
 1. Authentication PLAIN, LOGIN
 2. Safe `join` will catch and rescue `Interrupt`
 
 
-## New to version 2.x
+#### 2.x
 
 1. Modulelized
 2. Removed dependency to GServer
@@ -750,9 +753,14 @@ You will find a detailed description of class methods and parameters at [RubyDoc
 4. Use logger to log several messages from severity :debug up to :fatal
 
 
-## From MidiSmtpServer version 1.x to 2.x
+## Upgrade to 2.x
 
-If you are already using MidiSmtpServer at a release 1.x it might be only some straight forward work to get your code work with version 2.x.
+If you are already using MidiSmtpServer it might be only some straight forward work to get your code ready for MidiSmtpServer version 2.x.
+
+If you are using _Mini_SmtpServer it should be also only some few work on your codes.
+
+
+### Upgrade from 1.x
 
 <details>
 <summary>Open / Close details</summary>
@@ -840,9 +848,7 @@ If you are already using MidiSmtpServer at a release 1.x it might be only some s
 </details>
 
 
-## From MiniSmtpServer to MidiSmtpServer
-
-If you are already using MiniSmtpServer it might be only some straight forward work to get your code work with MidiSmtpServer version 2.x.
+#### Upgrade from MiniSmtpServer
 
 <details>
 <summary>Open / Close details</summary>
@@ -916,7 +922,7 @@ If you are already using MiniSmtpServer it might be only some straight forward w
 </details>
 
 
-## Package
+## Gem Package
 
 You can find, use and download the gem package from [RubyGems.org](http://rubygems.org/gems/midi-smtp-server)
 
