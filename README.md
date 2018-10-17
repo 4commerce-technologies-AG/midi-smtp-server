@@ -755,9 +755,7 @@ For upgrades from version 1.x or from _Mini_SmtpServer you may follow the guides
 
 ## Upgrade to 2.x
 
-If you are already using MidiSmtpServer it might be only some straight forward work to get your code ready for MidiSmtpServer version 2.x.
-
-If you are using _Mini_SmtpServer it should be also only some few work on your codes.
+If you are already using MidiSmtpServer it might be only some straight forward work to get your code ready for MidiSmtpServer version 2.x. Also if you are a _Mini_SmtpServer user, it should request only some few work on your codes.
 
 
 #### Upgrade from 1.x
