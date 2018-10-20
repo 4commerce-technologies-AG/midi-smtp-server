@@ -8,8 +8,20 @@ kbd {
     display: inline-block;
 }
 
-/* The default font-size for code blocks is 75% which makes code
-hard to read. */
+/* The default font-size for code blocks is 75% which makes code hard to read. */
 code {
     font-size: 90%;
+}
+
+/* disable some blocks */
+div.keep-us-sustainable {
+  display: none !important;
+}
+
+div.ethical-rtd {
+  display: none !important;
+}
+
+div.injected {
+  display: none !important;
 }

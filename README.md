@@ -1,16 +1,35 @@
-# midi-smtp-server
+<p align="center" style="margin-bottom: 2em">
+  <img src="https://raw.githubusercontent.com/4commerce-technologies-AG/midi-smtp-server/master/docs/img/midi-smtp-server-logo.png" alt="MidiSmtpServer Logo" width="40%"/>
+</p>
 
-MidiSmtpServer is a small and highly customizable ruby SMTP-Server library with builtin support for AUTH and SSL/STARTTLS, 8BITMIME and SMTPUTF8, IPv4 and IPv6 and additional features.
+<h3 align="center">MidiSmtpServer</h3>
+<p align="center">
+  <strong>The highly customizable ruby SMTP-Service library</strong>
+</p>
+<p align="center">
+-- Mail-Server, SMTP-Service, MTA, Email-Gateway & Router, Mail-Automation --
+</p>
+
+<br>
+
+
+## MidiSmtpServer
+
+MidiSmtpServer is the highly customizable ruby SMTP-Service library with builtin support for AUTH and SSL/STARTTLS, 8BITMIME and SMTPUTF8, IPv4 and IPv6 and additional features.
 
 As a library it is mainly designed to be integrated into your projects as serving a SMTP-Server service. The lib will do nothing with your mail and you have to create your own event functions to handle and operate on incoming mails. We are using this in conjunction with [Mikel Lindsaar](https://github.com/mikel) great Mail component (https://github.com/mikel/mail). Time to run your own SMTP-Server service.
 
 With version 2 the library gots a lot of improvements (2.3.x Multiple ports and addresses, 2.2.x Encryption [StartTLS], 2.1.0 Authentication [AUTH], 2.1.1 significant speed improvement, etc.).
 Please checkout section [changes and updates](https://github.com/4commerce-technologies-AG/midi-smtp-server#changes-and-updates) to get the news.
 
+MidiSmtpServer is an extremely flexible library and almost any aspect of SMTP communications can be handled by deriving its events and using its configuration options.
+
+<br>
+
 
 ## Using the library
 
-To create your own SMTP-Server service with DATA processing simply do:
+To derive your own SMTP-Server service with DATA processing simply do:
 
 ```ruby
 # Server class
@@ -33,10 +52,12 @@ end
 
 Please checkout the source codes from [Examples](https://github.com/4commerce-technologies-AG/midi-smtp-server/tree/master/examples) for working SMTP-Services.
 
+<br>
+
 
 ## Operation purposes
 
-There is an endless field of application for SMTP-Servers. You like to create your own SMTP-Service to receive messages and forward them plain or processed to services like Slack, Trello, Redmine, etc.
+There is an endless field of application for SMTP-Services. You like to create your own SMTP-Server to receive messages and forward them plain or processed to services like Slack, Trello, Redmine, etc.
 
 This source code shows the example to receive messages via SMTP and store them to RabbitMQ (Message-Queue-Server) for subsequent processings etc.:
 
@@ -51,6 +72,8 @@ This source code shows the example to receive messages via SMTP and store them t
   end
 ```
 
+<br>
+
 
 ## Installation
 
@@ -61,6 +84,8 @@ MidiSmtpServer is packaged as a RubyGem so that you can easily install by enteri
 Use the component in your project sources by:
 
   `require 'midi-smtp-server'`
+
+<br>
 
 
 ## Customizing the server
@@ -114,10 +139,14 @@ MidiSmtpServer can be easily customized via subclassing. Simply subclass the `Mi
   end
 ```
 
+<br>
+
 
 ## IPv4 and IPv6 ready
 
 The underlaying ruby component [TCPServer](https://ruby-doc.org/stdlib-2.5.0/libdoc/socket/rdoc/TCPServer.html) allows support for IPv4 and IPv6 communication. If using the `DEFAULT_SMTPD_HOST` as your hosts option than explicitely IPv4 `127.0.0.1` will be enabled. If using the string `localhost` it depends on your _hosts_ file. If that contains a line like `::1 localhost` you might enable your server instance on IPv6 localhost only. Be aware of that when accessing your service.
+
+<br>
 
 
 ## Multiple ports and addresses
@@ -140,6 +169,8 @@ Since version 2.3.0 you may define multiple ports and hosts or ip addresses at o
 You may write any combination of ports and addresses that should be served. That allows complex servers with optionally different services identified by different ports and addresses.
 
 There are also a `ports` and `hosts` reader for this values. Please be aware that we will drop the old attributes of `port` and `host` within the next minor release.
+
+<br>
 
 
 ## Utilization of connections and processings
@@ -166,6 +197,8 @@ If you need 1.000.000 mail per hour than propably 416 simultaniously processed t
 
 The number of `max_connections` should always be equal or higher than `max_processings`. In the above examples it should be fine to use 512 or 1024 if your system does fit with its resources. If an unlimited number of concurrent TCP connections should be allowed, then set the value for `max_connections` to `nil` (which is also the default when not specified).
 
+<br>
+
 
 ## Modifying welcome and greeting responses
 
@@ -188,6 +221,8 @@ If you want to show your local_ip or hostname etc. you may also include the cont
     ctx[:server][:helo_response] = "#{ctx[:server][:local_host]} [#{ctx[:server][:local_ip]}] is serving you!"
   end
 ```
+
+<br>
 
 
 ## Modifying MAIL FROM and RCPT TO addresses
@@ -225,6 +260,8 @@ To make it easier for processing addresses, you are able to normalize them like:
     rcpt_to_data
   end
 ```
+
+<br>
 
 
 ## Responding with errors on special conditions
@@ -298,6 +335,8 @@ AUTH
    E: 500, 421
 ```
 
+<br>
+
 
 ## Access to server values and context
 
@@ -353,6 +392,8 @@ You can access some important client and server values by using the `ctx` array 
 
 ```
 
+<br>
+
 
 ## Incoming data validation
 
@@ -402,6 +443,8 @@ Or to implement something like a Teergrube for spammers etc.:
 
 Or to check already the message headers before receiving the complete message data. And lots more.
 
+<br>
+
 
 ## 8BITMIME and SMTPUTF8 support
 
@@ -428,6 +471,8 @@ Possible values for `ctx[:envelope][:encoding_utf8]` are:
 2. `"utf8t"` (utf8 is enabled for headers and body)
 
 Even when `"8bitmime"` was set, you have to decide the correct encoding like `utf-8` or `iso-8859-1` etc. If also `"utf8"` was set, then encoding should be `utf-8`.
+
+<br>
 
 
 ## Authentication support
@@ -474,6 +519,8 @@ Most of the time the `authorization_id` field will be empty. It allows optional 
 
 We suggest you to return the `authentication_id` on a successful auth event if you do not have special interests on other usage.
 
+<br>
+
 
 ## Authentication status in mixed mode
 
@@ -492,6 +539,8 @@ def on_rcpt_to_event(ctx, rcpt_to_data)
   end
 end
 ```
+
+<br>
 
 
 ## Encryption
@@ -549,12 +598,16 @@ opts = { tls_ciphers: TLS_CIPHERS_WIDEST, tls_methods: TLS_METHODS_LEGACY }
 opts = { tls_ciphers: TLS_CIPHERS_LEGACY, tls_methods: TLS_METHODS_LEGACY }
 ```
 
+<br>
+
 
 ## Certificates
 
 As long as `tls_mode` is set to `:TLS_OPTIONAL` or `:TLS_REQUIRED` and no certificate or key path is given on class initialization, the internal TlsTransport class will create a certificate by itself. This should be only used for testing or debugging purposes and not in production environments. The memory only certificate is valid for 90 days from instantiating the class.
 
 You better should generate a certificate by yourself or use a professional trust-center like [LetsEncrypt](https://letsencrypt.org/).
+
+<br>
 
 
 #### Quick guide to create a certificate
@@ -576,6 +629,8 @@ You may use your certificate and key on your server class like:
 server = MySmtpd.new(2525, '127.0.0.1', 4, { tls_mode: :TLS_OPTIONAL, tls_cert_path: 'cert.pem', tls_key_path: 'key.pem' })
 ```
 
+<br>
+
 
 ## Test encrypted communication
 
@@ -587,6 +642,8 @@ gnutls-cli --insecure -s -p 2525 127.0.0.1
 ```
 
 After launching `gnutls-cli` start the SMTP dialog by sending `EHLO` and `STARTSSL` commands. Next press Ctrl-D on your keyboard to run the handshake for SSL communication between `gnutls-cli` and your server. When ready you may follow up with the delivery dialog for SMTP.
+
+<br>
 
 
 ## Attacks on email communication
@@ -605,6 +662,8 @@ Be aware that with enabled option of [PIPELINING](https://tools.ietf.org/html/rf
 # PIPELINING ist not allowed (false) per _Default_
 opts = { pipelining_extension: DEFAULT_PIPELINING_EXTENSION }
 ```
+
+<br>
 
 
 ## RFC(2)822 - CR LF modes
@@ -663,8 +722,10 @@ To understand the modes in details:
 * The data is 100% equal to the original input because that already was CRLF conform
 * You maybe drop mails while in real world not all senders are working RFC conform
 
+<br>
 
-## Reliable code with minitest
+
+## Reliable code
 
 Since version 2.3 implementation and integration tests by minitest framework are added to this repository. While the implementation tests are mostly checking the components, the integration tests try to verify the correct exchange of messages for different scenarios.
 
@@ -688,10 +749,7 @@ To just run some selected (by regular expression) tests, you may use the `-n fil
 
 Be aware that the filter is case sensitive.
 
-
-## MidiSmtpServer::Smtpd Class documentation
-
-You will find a detailed description of class methods and parameters at [RubyDoc](http://www.rubydoc.info/gems/midi-smtp-server/MidiSmtpServer/Smtpd)
+<br>
 
 
 ## Changes and updates
@@ -751,6 +809,8 @@ For upgrades from version 1.x or from _Mini_SmtpServer you may follow the guides
 2. Removed dependency to GServer
 3. Additional events to interact with
 4. Use logger to log several messages from severity :debug up to :fatal
+
+<br>
 
 
 ## Upgrade to 2.x
@@ -919,17 +979,27 @@ If you are already using MidiSmtpServer it might be only some straight forward w
 ```
 </details>
 
+<br>
+
 
 ## Gem Package
 
-You can find, use and download the gem package from [RubyGems.org](http://rubygems.org/gems/midi-smtp-server)
+You may find, use and download the gem package on [RubyGems.org](http://rubygems.org/gems/midi-smtp-server).
 
-You can find the full documentation on [RubyDoc.info](http://www.rubydoc.info/gems/midi-smtp-server/MidiSmtpServer)
+[![Gem Version](https://badge.fury.io/rb/midi-smtp-server.svg)](http://badge.fury.io/rb/midi-smtp-server) &nbsp;
 
-[![Gem Version](https://badge.fury.io/rb/midi-smtp-server.svg)](http://badge.fury.io/rb/midi-smtp-server)
+<br>
+
+## Documentation
+
+**Class documentation** - you will find a detailed description at [RubyDoc](http://www.rubydoc.info/gems/midi-smtp-server/MidiSmtpServer/Smtpd)
+
+**Library manual** - you will find a manual (in progress) at [ReadTheDocs](https://midi-smtp-server.readthedocs.io/)
+
+<br>
 
 
-### Author & Credits
+## Author & Credits
 
 Author: [Tom Freudenberg](http://about.me/tom.freudenberg)
 

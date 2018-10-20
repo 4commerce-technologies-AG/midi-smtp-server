@@ -1,7 +1,9 @@
-MidiSmtpServer currently has following support channels:
+<h2>Support</h2>
 
 For questions, suggestions, and support please refer to the [contribution guide](https://github.com/4commerce-technologies-AG/midi-smtp-server/blob/master/CONTRIBUTING.md).
 
-## Github
+**Github**
 
-You will get the official project and issue queue at [github/midi-smtp-server](https://github.com/4commerce-technologies-AG/midi-smtp-server).
+You will get the official project sources and issue queue at [https://github.com/4commerce-technologies-AG/midi-smtp-server](https://github.com/4commerce-technologies-AG/midi-smtp-server).
+
+<br>

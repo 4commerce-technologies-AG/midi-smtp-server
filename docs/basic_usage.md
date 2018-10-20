@@ -1,4 +1,4 @@
-## Basic usage
+<h2>Basic usage</h2>
 
 To create your own SMTP-Server service with DATA processing use this starter file:
 
@@ -56,3 +56,5 @@ server.join
 !!! Note
 
     You will find a number of ready to use examples at [GitHub/MidiSmtpServer/Examples](https://github.com/4commerce-technologies-AG/midi-smtp-server/tree/master/examples).
+
+<br>
