@@ -767,7 +767,7 @@ For upgrades from version 1.x or from _Mini_SmtpServer you may follow the guides
 8. SMTP PIPELINING, 8BITMIME and SMTPUTF8 extensions are _disabled_ by default
 9. Support modification of local welcome and greeting messages
 10. Documentation and Links about security and [email attacks](https://github.com/4commerce-technologies-AG/midi-smtp-server#attacks-on-email-communication)
-11. Added [implementation and integration testing](https://github.com/4commerce-technologies-AG/midi-smtp-server#reliable-code-with-minitest)
+11. Added [implementation and integration testing](https://github.com/4commerce-technologies-AG/midi-smtp-server#reliable-code)
 
 
 #### 2.2.3
