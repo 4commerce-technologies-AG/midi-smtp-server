@@ -1,0 +1,14 @@
+site_name: "MidiSmtpServer: The highly customizable ruby SMTP-Server library.
+repo_url: https://github.com/4commerce-technologies-AG/midi-smtp-server
+edit_uri: edit/master/docs/
+copyright: "Copyright &copy; 2018 4commerce technologies AG"
+docs_dir: docs
+nav:
+- Home: index.md
+- Installation: installation.md
+- Basic Usage: basic_usage.md
+extra_css:
+  - css/extra.css
+markdown_extensions:
+  - admonition
+theme: readthedocs
