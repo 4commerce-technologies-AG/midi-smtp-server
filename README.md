@@ -607,9 +607,6 @@ As long as `tls_mode` is set to `:TLS_OPTIONAL` or `:TLS_REQUIRED` and no certif
 
 You better should generate a certificate by yourself or use a professional trust-center like [LetsEncrypt](https://letsencrypt.org/).
 
-<br>
-
-
 #### Quick guide to create a certificate
 
 If interested in detail, read the whole story at [www.thenativeweb.io](https://www.thenativeweb.io/blog/2017-12-29-11-51-the-openssl-beginners-guide-to-creating-ssl-certificates/).
