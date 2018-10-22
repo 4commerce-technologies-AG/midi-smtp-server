@@ -1,0 +1,83 @@
+#about {
+  min-height: 320px;
+
+  .message {
+    transform: translate(0, 27vh);
+
+    color: #ffffff;
+    
+    h1, h2, h3 {
+      margin: 0;
+    }
+
+    h1 {
+      color: #003b79;
+      font-size: calc(4vw + 4vh);
+      font-weight: 500;
+      line-height: 1.2;
+    }
+
+    h2 {
+      font-size: calc(1.4vw + 1.4vh);
+      font-weight: 400;
+      line-height: 1.5;
+    }
+  }
+
+  .banderole {
+    position: absolute;
+    left: 0;
+    bottom: 20%;
+    width: 100%;
+    height: calc(10vw + 10vh);
+    max-height: 300px;
+
+    .logo {
+      position: relative;
+      top: 5%;
+      height: 90%;
+
+      img {
+        height: 90%;
+        vertical-align: middle;
+      }
+
+    }
+
+  }
+
+  .footer {
+    position: absolute;
+    bottom: 0px;
+    width: 100%;
+    color: rgba(255,255,255,0.8);
+    @media #{$smallest-and-down} {
+      font-size: 13px;
+    }
+
+
+    .footer-links {
+      display: inline-block;
+
+      li {
+        float: left;
+        margin: 0.5em 1em;
+        @media #{$small-and-down} {
+          margin: 0.5em 0.5em;
+        }
+
+        a, a:hover, a:visited {
+          color: rgba(255,255,255,0.8);
+        }
+
+        a:hover {
+          text-decoration: underline;
+        }
+
+      }
+
+    }
+
+  }
+
+}

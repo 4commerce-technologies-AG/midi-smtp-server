@@ -1,0 +1,70 @@
+#action {
+  .section {
+    padding-top: 110px;
+  }
+
+  .left-panel {
+    
+    .logo.image-container {
+      margin-top: 4em;
+      margin-bottom: 2em;
+    }
+
+    h1 {
+      font-size: calc(1.8vh + 1.8vw);
+      @media #{$large-and-up} {
+        font-size: 3.2em;
+      }
+      font-weight: 900;
+      color: #003b79;
+      margin: 0;
+    }
+
+    p {
+      font-size: calc(0.8vh + 0.8vw);
+      @media #{$medium-and-down} {
+        font-size: 14px;
+      }
+      margin-top: 3em;
+    }
+
+  }
+
+  .right-panel {
+    
+    margin-top: 2em;
+
+    h1 {
+      font-size: calc(1.2vh + 1.2vw);
+      @media #{$medium-and-down} {
+        font-size: 20px;
+      }
+      font-weight: 500;
+      margin: 0;
+    }
+
+    form {
+      margin-top: 2em;
+      margin-bottom: 6em;
+
+      .row {
+        
+        margin-bottom: 5px;
+
+        .col {
+          padding: 0;
+
+          &.extra-padding {
+            padding-right: 1em;
+          }
+        }
+      }
+
+      .input-field.col label {
+        left: 0;
+      }
+    }
+
+  }
+
+}

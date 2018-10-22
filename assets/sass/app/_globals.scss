@@ -1,0 +1,71 @@
+body {
+  font-size: 1.6rem;
+}
+
+h1 {
+  font-size: 3.5rem;
+}
+
+h4 {
+  font-size: 2.5rem;
+}
+
+h5 {
+  font-size: 2.2rem;
+}
+
+h1.banner {
+  margin: 0 0;
+}
+
+h4.banner {
+  margin: 1rem 0;
+  font-size: 2.2rem;
+}
+
+h5.banner {
+  margin: 0 0;
+  font-size: 1.8rem;
+}
+
+.page-footer {
+  font-size: 1.4rem;
+
+  h5 {
+    font-size: 1.6rem;
+  }
+}
+
+.footer-copyright {
+  font-size: 1.2rem;
+}
+
+a {
+  color: darken($secondary-color, 15%);
+
+  &.underline {
+    padding-bottom: 2px;
+    line-height: 2.0;
+    border-bottom: darken($secondary-color, 15%);
+    border-bottom-width: 2px;
+    border-bottom-style: dotted;
+  }
+}
+
+.italic-text {
+  font-style: italic;
+}
+
+.icon-block {
+  padding: 0 0.75rem;
+  text-align: justify;
+}
+
+/*********************
+  Media Query Classes
+**********************/
+.hide-on-smallest-only {
+  @media #{$smallest-and-down} {
+    display: none !important;
+  }
+}

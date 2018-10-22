@@ -1,0 +1,131 @@
+#start {
+  min-height: 320px;
+
+  .message {
+    @media (orientation: landscape) {
+      transform: translate(20vw, 20vh);
+      width: 80vw;
+    }
+
+    @media (orientation: portrait) {
+      transform: translate(10vw, 6vh);
+      width: 90vw;
+    }
+
+    color: #ffffff;
+    
+    h1, h2, h3 {
+      font-weight: 500;
+      line-height: 1.2;
+      margin: 0;
+    }
+
+    h1 {
+      font-size: calc(3.3vw + 3.3vh);
+    }
+
+    h2 {
+      font-size: calc(2vw + 2vh);
+    }
+  }
+
+  .banderole {
+
+    background-color: rgba(255,255,255,0.8);
+
+    &.landscape {
+      position: absolute;
+      left: 0;
+      bottom: 20%;
+      width: 100%;
+      height: 15%;
+      
+      .logo {
+        margin-left: calc(16vw - 2vh);
+      }
+    }
+    
+    &.portrait {
+      padding-top: 15vh;
+      height: 30vh;
+      max-height: 67vw;
+    }
+
+    .logo {
+      position: relative;
+      top: 5%;
+      height: 90%;
+
+      img {
+        height: 90%;
+        vertical-align: middle;
+      }
+    }
+
+  }
+
+  .action-button-wrapper {
+    position: absolute;
+    width: 100%;
+    bottom: 14vh;
+  }
+
+  .action-button {
+    height: 30vh;
+    
+    &.landscape {
+      position: relative;
+      top: -22vh;
+      margin-left: 50vw;
+  
+      img {
+        height: 100%;
+        vertical-align: middle;
+      }
+    }
+
+    &.portrait {
+      img {
+        height: 50vw;
+        max-height: 350px;
+        max-width: 70vw;
+      }
+    }
+
+  }
+
+}
+
+@media #{$large-and-up} and (orientation: landscape) {
+  #start {
+    min-height: 640px;
+  }
+}
+
+@media #{$medium-and-down} and (orientation: landscape) {
+  #start {
+    min-height: 320px;
+  }
+}
+
+@media #{$small-and-down} and (orientation: landscape) {
+  #start {
+    min-height: 320px;
+  }
+}
+
+@media (orientation: landscape) {
+  .fullscreen-bg {
+    &#start {
+      background-image:url('/images/KOELLA-VIELFALT-landscape.jpg');
+    }
+  }
+}
+
+@media (orientation: portrait) {
+  .fullscreen-bg {
+    &#start {
+      background-image:url('/images/KOELLA-VIELFALT-portrait.jpg');
+    }
+  }
+}
