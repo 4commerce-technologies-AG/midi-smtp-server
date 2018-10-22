@@ -4,7 +4,7 @@ site_description: "The highly customizable ruby SMTP-Service library."
 
 copyright: "Copyright &copy; 2018 4commerce technologies AG"
 
-docs_dir: docs
+docs_dir: mkdocs
 
 pages:
   - Home: index.md
