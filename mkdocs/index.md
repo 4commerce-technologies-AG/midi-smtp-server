@@ -1,5 +1,5 @@
 <p align="center" style="margin-bottom: 2em">
-  <img src="https://raw.githubusercontent.com/4commerce-technologies-AG/midi-smtp-server/master/docs/img/midi-smtp-server-logo.png" alt="MidiSmtpServer Logo" width="50%"/>
+  <img src="https://raw.githubusercontent.com/4commerce-technologies-AG/midi-smtp-server/master/mkdocs/img/midi-smtp-server-logo.png" alt="MidiSmtpServer Logo" width="50%"/>
 </p>
 
 <h1 align="center" style="margin-bottom: 0.3em">

@@ -9,6 +9,7 @@ Gem::Specification.new do |s|
   s.description = 'A small and highly customizable ruby SMTP-Server class with builtin support for AUTH and SSL/STARTTLS.'
   s.authors     = ['Tom Freudenberg']
   s.email       = 'develop.rb.midi-smtp-server@4commerce.net'
+  s.license     = 'MIT'
   s.files       = [
     'README.md',
     'MIT-LICENSE.txt',
@@ -17,6 +18,12 @@ Gem::Specification.new do |s|
     'lib/midi-smtp-server/exceptions.rb',
     'lib/midi-smtp-server/tls-transport.rb'
   ]
-  s.homepage    = 'https://github.com/4commerce-technologies-AG/midi-smtp-server/'
-  s.license     = 'MIT'
+  s.metadata = {
+    homepage_uri:      'https://4commerce-technologies-AG.github.io/midi-smtp-server',
+    source_code_uri:   'https://github.com/4commerce-technologies-AG/midi-smtp-server',
+    changelog_uri:     'https://github.com/4commerce-technologies-AG/midi-smtp-server#changes-and-updates',
+    bug_tracker_uri:   'https://github.com/4commerce-technologies-AG/midi-smtp-server/issues',
+    documentation_uri: "https://www.rubydoc.info/gems/midi-smtp-server/#{MidiSmtpServer::VERSION::STRING}",
+    wiki_uri:          'https://midi-smtp-server.readthedocs.io/'
+  }
 end

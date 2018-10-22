@@ -321,10 +321,16 @@ module MidiSmtpServer
     # otherwise the original value will be used
     def on_rcpt_to_event(ctx, rcpt_to_data) end
 
+    # event when beginning with message DATA
+    def on_message_data_start_event(ctx) end
+
     # event while receiving message DATA
     def on_message_data_receiving_event(ctx) end
 
-    # get each message after DATA <message> .
+    # event when headers are received while receiving message DATA
+    def on_message_data_headers_event(ctx) end
+
+    # get each message after DATA <message>
     def on_message_data_event(ctx) end
 
     # event when process_line identifies an unknown command line
@@ -495,6 +501,9 @@ module MidiSmtpServer
           logger.debug('>>> ' + output)
           io.print output unless io.closed?
 
+          # initialize \r\n for line_break, this is used for CRLF_ENSURE and CRLF_STRICT
+          line_break = "\r\n"
+
           # initialize io_buffer for input data
           io_buffer = ''
 
@@ -554,8 +563,6 @@ module MidiSmtpServer
                 # handle input line based on @crlf_mode
                 case crlf_mode
                   when :CRLF_ENSURE
-                    # always use \r\n for line_break
-                    line_break = "\r\n"
                     # remove any \r or \n occurence from line
                     line.delete!("\r\n")
                     # log line, verbosity based on log severity and command sequence
@@ -564,17 +571,17 @@ module MidiSmtpServer
                   when :CRLF_LEAVE
                     # use input line_break for line_break
                     line_break = line[-2..-1] == "\r\n" ? "\r\n" : "\n"
-                    # remove line_break from line
+                    # check to override session crlf info, only when CRLF_LEAVE is used and in DATA mode
+                    session[:ctx][:message][:crlf] = line_break if session[:cmd_sequence] == :CMD_DATA
+                    # remove any line_break from line
                     line.chomp!
                     # log line, verbosity based on log severity and command sequence
                     logger.debug('<<< ' << line.gsub("\r", '[\r]') << "\n") if session[:cmd_sequence] != :CMD_DATA
 
                   when :CRLF_STRICT
-                    # always use \r\n for line_break
-                    line_break = "\r\n"
                     # check line ends up by \r\n
                     raise Smtpd500CrLfSequenceException unless line[-2..-1] == "\r\n"
-                    # remove line_break from line
+                    # remove any line_break from line
                     line.chomp!
                     # check line for additional \r
                     raise Smtpd500Exception, 'Line contains additional CR chars!' if line.index("\r")
@@ -955,6 +962,8 @@ module MidiSmtpServer
             # handle command
             # set sequence state
             session[:cmd_sequence] = :CMD_DATA
+            # save incoming UTC time
+            session[:ctx][:message][:received] = Time.now.utc
             # reply ok / proceed with message data
             return '354 Enter message, ending with "." on a line by itself'
 
@@ -967,6 +976,9 @@ module MidiSmtpServer
       else
         # If we are in date mode then ...
 
+        # call event to signal beginning of message data transfer
+        on_message_data_start_event(session[:ctx]) unless session[:ctx][:message][:data][0]
+
         # ... and the entire new message data (line) does NOT consists
         # solely of a period (.) on a line by itself then we are being
         # told to continue data mode and the command sequence state
@@ -978,6 +990,16 @@ module MidiSmtpServer
           # we need to add the new message data (line) to the message
           # and make sure to add CR LF as defined by RFC
           session[:ctx][:message][:data] << line << line_break
+
+          # if received an empty line the first time, that identifies
+          # end of headers.
+          unless session[:ctx][:message][:headers] || line[0]
+            # change flag to do not signal this again for the
+            # active message data transmission
+            session[:ctx][:message][:headers] = true
+            # call event to process received headers
+            on_message_data_headers_event(session[:ctx])
+          end
 
           # call event to inspect message data while recording line by line
           # e.g. abort while receiving too big incoming mail or
@@ -1067,6 +1089,12 @@ module MidiSmtpServer
         message: {
           delivered: -1,
           bytesize: -1,
+          # flag if data contains headers
+          headers: false,
+          # per default when using CRLF_ENSURE or CRLF_STRICT
+          # crlf is always \r\n
+          # if CRLF_LEAVE is in use, this will be overriden
+          crlf: "\r\n",
           data: ''
         }
       )

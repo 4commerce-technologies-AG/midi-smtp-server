@@ -1,5 +1,5 @@
 <p align="center" style="margin-bottom: 2em">
-  <img src="https://raw.githubusercontent.com/4commerce-technologies-AG/midi-smtp-server/master/docs/img/midi-smtp-server-logo.png" alt="MidiSmtpServer Logo" width="40%"/>
+  <img src="https://raw.githubusercontent.com/4commerce-technologies-AG/midi-smtp-server/master/mkdocs/img/midi-smtp-server-logo.png" alt="MidiSmtpServer Logo" width="40%"/>
 </p>
 
 <h3 align="center">MidiSmtpServer</h3>
@@ -105,30 +105,38 @@ MidiSmtpServer can be easily customized via subclassing. Simply subclass the `Mi
   def on_disconnect_event(ctx)
   end
 
-  # event on HELO/EHLO:
+  # event on HELO/EHLO
   # you may change the ctx[:server][:helo_response] in here so
   # that this will be used as greeting string
   # the value is not allowed to return CR nor LF chars and will be stripped
   def on_helo_event(ctx, helo_data)
   end
 
-  # get address send in MAIL FROM:
+  # get address send in MAIL FROM
   # if any value returned, that will be used for ongoing processing
   # otherwise the original value will be used
   def on_mail_from_event(ctx, mail_from_data)
   end
 
-  # get each address send in RCPT TO:
+  # get each address send in RCPT TO
   # if any value returned, that will be used for ongoing processing
   # otherwise the original value will be used
   def on_rcpt_to_event(ctx, rcpt_to_data)
+  end
+
+  # event when beginning with message DATA
+  def on_message_data_start_event(ctx)
   end
 
   # event while receiving message DATA
   def on_message_data_receiving_event(ctx)
   end
 
-  # get each message after DATA <message> .
+  # event when headers are received while receiving message DATA
+  def on_message_data_headers_event(ctx)
+  end
+
+  # get each message after DATA <message>
   def on_message_data_event(ctx)
   end
 
@@ -344,8 +352,6 @@ You can access some important client and server values by using the `ctx` array 
 
 ```ruby
   # welcome, helo/ehlo (client) and response strings
-  # local_response and helo_response values may be changed
-  # during on_connect_event and on_helo_event
   ctx[:server][:local_response]
   ctx[:server][:helo]
   ctx[:server][:helo_response]
@@ -382,12 +388,18 @@ You can access some important client and server values by using the `ctx` array 
   # envelope rcpt_to array
   ctx[:envelope][:to][0]
 
+  # timestamp (utc) when message data was initialized
+  ctx[:message][:received]
+
   # timestamp (utc) when message data was completly received
   ctx[:message][:delivered]
 
-  # access message in on_message_data_event and on_message_data_receiving_event
-  ctx[:message][:body_encoding]
+  # access message data size when message data was completly received
   ctx[:message][:bytesize]
+
+  # access message data while receiving message stream
+  ctx[:message][:body_encoding]
+  ctx[:message][:crlf]
   ctx[:message][:data]
 
 ```
