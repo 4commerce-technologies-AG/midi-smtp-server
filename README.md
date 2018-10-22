@@ -1001,6 +1001,8 @@ You may find, use and download the gem package on [RubyGems.org](http://rubygems
 
 ## Documentation
 
+**Project homepage** - you will find a micro-site at [Github](https://4commerce-technologies-ag.github.io/midi-smtp-server)
+
 **Class documentation** - you will find a detailed description at [RubyDoc](http://www.rubydoc.info/gems/midi-smtp-server/MidiSmtpServer/Smtpd)
 
 **Library manual** - you will find a manual (in progress) at [ReadTheDocs](https://midi-smtp-server.readthedocs.io/)
