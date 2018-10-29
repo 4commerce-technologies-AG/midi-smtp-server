@@ -2,6 +2,13 @@ body {
   font-size: 1.6rem;
 }
 
+hr {
+  border: 0;
+  height: 1px;
+  background-image: linear-gradient(to right, rgba(64, 64, 64, 0.25), rgba(151, 164, 168, 0.75), rgba(64, 64, 64, 0.25));
+  width: 60%;
+}
+
 h1 {
   font-size: 3.5rem;
 }
@@ -28,16 +35,19 @@ h5.banner {
   font-size: 1.8rem;
 }
 
-.page-footer {
+footer.page-footer {
   font-size: 1.4rem;
 
   h5 {
     font-size: 1.6rem;
   }
-}
 
-.footer-copyright {
-  font-size: 1.2rem;
+  .footer-copyright {
+    height: auto;
+    line-height: normal;
+    font-size: 1.0rem;
+    padding: 1rem 0;
+  }
 }
 
 a {
