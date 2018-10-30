@@ -57,7 +57,7 @@ Please checkout the source codes from [Examples](https://github.com/4commerce-te
 
 ## Operation purposes
 
-There is an endless field of application for SMTP-Services. You like to create your own SMTP-Server to receive messages and forward them plain or processed to services like Slack, Trello, Redmine, etc.
+There is an endless field of application for SMTP-Services. You want to create your own SMTP-Server as a mail gateway to clean up routed emails from SPAM and VIRUS content. A SMTP Service can receive messages and forward them to services like Slack, Trello, Redmine, Twitter, Facebook, Instagram etc. Incoming mails may be processed plain or handled by proper functions. And much more.
 
 This source code shows the example to receive messages via SMTP and store them to RabbitMQ (Message-Queue-Server) for subsequent processings etc.:
 
