@@ -17,11 +17,12 @@
 
 As a library it is mainly designed to be integrated into your projects as serving a SMTP-Server service. The lib will do nothing with your mail and you have to create your own event functions to handle and operate on incoming mails.
 
-There is an endless field of application for SMTP-Services. You want to create your own SMTP-Server as a mail gateway to clean up routed emails from SPAM and VIRUS content. A SMTP Service can receive messages and forward them to services like Slack, Trello, Redmine, Twitter, Facebook, Instagram etc. Incoming mails may be processed plain or handled by proper functions. And much more.
+There is an endless field of application for SMTP&nbsp;services. You want to create your own SMTP&nbsp;Server as a mail&nbsp;gateway to clean up routed emails from spam and virus content. A SMTP&nbsp;daemon can receive messages and forward them to a service like Slack, Trello, Redmine, Twitter, Facebook, Instagram and others. Incoming mails may be processed and handled native and by proper functions. Whatever purpose of operation is given, if SMTP processing is required, you can choose MidiSmtpServer.
 
 
 See ["Basic Usage"](basic_usage.md) to get yourself familiar with MidiSmtpServer's
 capabilities.
+
 
 MidiSmtpServer is an extremely flexible library and almost any aspect of SMTP communications can be handled by deriving its events and using its configuration options.
 

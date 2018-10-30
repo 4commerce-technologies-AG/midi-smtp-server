@@ -62,6 +62,11 @@ a {
   }
 }
 
+.container .section .row .col p a {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+}
+
 .italic-text {
   font-style: italic;
 }
