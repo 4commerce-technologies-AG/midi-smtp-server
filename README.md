@@ -272,6 +272,55 @@ To make it easier for processing addresses, you are able to normalize them like:
 <br>
 
 
+## Adding and testing headers
+
+Since release `2.3.1` the `on_message_data_start_event` and `on_message_data_headers_event` enable the injection of additional headers like `Received` on DATA streaming. To add a `Received` header before any incoming header, use:
+
+```ruby
+  # event when beginning with message DATA
+  def on_message_data_start_event(ctx)
+    ctx[:message][:data] <<
+      "Received: " <<
+      "from #{ctx[:server][:remote_host]} (#{ctx[:server][:remote_ip]}) " <<
+      "by #{ctx[:server][:local_host]} (#{ctx[:server][:local_ip]}) " <<
+      "with MySmtpd Server; " <<
+      Time.now.strftime("%a, %d %b %Y %H:%M:%S %z") <<
+      ctx[:message][:crlf]
+  end
+```
+
+The `Received` header may be given with more or less additional information like encryption, recipient, sender etc. This should be done while being aware of system safety. Don't reveal to much internal information and choose wisely the published atrributes.
+
+Samples for `Received` headers are:
+
+```
+Received: from localhost ([127.0.0.1])
+  by mail.domain.test with esmtp (Exim 4.86)
+  (envelope-from <user@sample.com>)
+  id 3gIFk7-0006RC-FG
+  for my.user@mydomain.net; Thu, 01 Nov 2018 12:00:00 +0000
+```
+
+```
+Received: from localhost ([127.0.0.1:10025])
+  by mail.domain.test with ESMTPSA id 3gIFk7-0006RC-FG
+  for <my.user@mydomain.net>
+  (version=TLS1_2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128/128);
+  Thu, 01 Nov 2018 12:00:00 +0000
+```
+
+To append special headers or do some checks on transmitted headers, the `on_message_data_headers_event` is called when end of header transmission was automatically discovered.
+
+```ruby
+  # event when headers are received while receiving message DATA
+  def on_message_data_headers_event(ctx)
+    ctx[:message][:data] << 'X-MyHeader: 1.0' << ctx[:message][:crlf]
+  end
+```
+
+<br>
+
+
 ## Responding with errors on special conditions
 
 If you return from event class without an exception, the server will respond to client with the appropriate success code, otherwise the client will be noticed about an error.
