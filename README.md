@@ -388,18 +388,26 @@ You can access some important client and server values by using the `ctx` array 
   # envelope rcpt_to array
   ctx[:envelope][:to][0]
 
+  # envelope enconding settings
+  ctx[:message][:encoding_body]
+  ctx[:message][:encoding_utf8]
+
   # timestamp (utc) when message data was initialized
   ctx[:message][:received]
 
-  # timestamp (utc) when message data was completly received
+  # timestamp (utc) when message data was completely received
   ctx[:message][:delivered]
 
-  # access message data size when message data was completly received
+  # flag to identify if headers already completed while receiving message data stream
+  ctx[:message][:headers]
+
+  # access message data size when message data was completely received
   ctx[:message][:bytesize]
 
-  # access message data while receiving message stream
-  ctx[:message][:body_encoding]
+  # string sequence for message data line-breaks
   ctx[:message][:crlf]
+
+  # access message data while receiving message stream
   ctx[:message][:data]
 
 ```
