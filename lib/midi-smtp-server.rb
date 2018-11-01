@@ -987,19 +987,19 @@ module MidiSmtpServer
           # remove a preceding first dot as defined by RFC 5321 (section-4.5.2)
           line.slice!(0) if line[0] == '.'
 
-          # we need to add the new message data (line) to the message
-          # and make sure to add CR LF as defined by RFC
-          session[:ctx][:message][:data] << line << line_break
-
           # if received an empty line the first time, that identifies
           # end of headers.
-          unless session[:ctx][:message][:headers] || line[0]
+          unless session[:ctx][:message][:headers][0] || line[0]
             # change flag to do not signal this again for the
             # active message data transmission
-            session[:ctx][:message][:headers] = true
+            session[:ctx][:message][:headers] = true.to_s
             # call event to process received headers
             on_message_data_headers_event(session[:ctx])
           end
+
+          # we need to add the new message data (line) to the message
+          # and make sure to add CR LF as defined by RFC
+          session[:ctx][:message][:data] << line << line_break
 
           # call event to inspect message data while recording line by line
           # e.g. abort while receiving too big incoming mail or
@@ -1087,13 +1087,10 @@ module MidiSmtpServer
       # reset message data
       session[:ctx].merge!(
         message: {
+          received: -1,
           delivered: -1,
           bytesize: -1,
-          # flag if data contains headers
-          headers: false,
-          # per default when using CRLF_ENSURE or CRLF_STRICT
-          # crlf is always \r\n
-          # if CRLF_LEAVE is in use, this will be overriden
+          headers: '',
           crlf: "\r\n",
           data: ''
         }
