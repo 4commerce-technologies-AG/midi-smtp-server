@@ -19,11 +19,11 @@ Gem::Specification.new do |s|
     'lib/midi-smtp-server/tls-transport.rb'
   ]
   s.metadata = {
-    homepage_uri:      'https://4commerce-technologies-ag.github.io/midi-smtp-server',
-    source_code_uri:   'https://github.com/4commerce-technologies-AG/midi-smtp-server',
-    changelog_uri:     'https://github.com/4commerce-technologies-AG/midi-smtp-server#changes-and-updates',
-    bug_tracker_uri:   'https://github.com/4commerce-technologies-AG/midi-smtp-server/issues',
-    documentation_uri: "https://www.rubydoc.info/gems/midi-smtp-server/#{MidiSmtpServer::VERSION::STRING}",
-    wiki_uri:          'https://midi-smtp-server.readthedocs.io/'
+    'homepage_uri'      => 'https://4commerce-technologies-ag.github.io/midi-smtp-server',
+    'source_code_uri'   => 'https://github.com/4commerce-technologies-AG/midi-smtp-server',
+    'changelog_uri'     => 'https://github.com/4commerce-technologies-AG/midi-smtp-server#changes-and-updates',
+    'bug_tracker_uri'   => 'https://github.com/4commerce-technologies-AG/midi-smtp-server/issues',
+    'documentation_uri' => "https://www.rubydoc.info/gems/midi-smtp-server/#{MidiSmtpServer::VERSION::STRING}",
+    'wiki_uri'          => 'https://midi-smtp-server.readthedocs.io/'
   }
 end
