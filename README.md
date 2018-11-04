@@ -827,6 +827,9 @@ For upgrades from version 1.x or from _Mini_SmtpServer you may follow the guides
 #### 2.3.1 (2018-11-01)
 
 1. New [events for header inspection and addons](https://github.com/4commerce-technologies-AG/midi-smtp-server#adding-and-testing-headers)
+2. New [MidiSmtpServer micro homepage](https://4commerce-technologies-ag.github.io/midi-smtp-server/)
+3. New [ReadTheDocs manual](https://midi-smtp-server.readthedocs.io/)
+4. New [Recipe for Slack MTA](https://midi-smtp-server.readthedocs.io/cookbook_recipe_slack_mta/)
 
 
 #### 2.3.0 (2018-10-17)
@@ -1063,11 +1066,11 @@ You may find, use and download the gem package on [RubyGems.org](http://rubygems
 
 ## Documentation
 
-**Project homepage** - you will find a micro-site at [Github](https://4commerce-technologies-ag.github.io/midi-smtp-server)
+**[Project homepage](https://4commerce-technologies-ag.github.io/midi-smtp-server)** - you will find a micro-site at [Github](https://4commerce-technologies-ag.github.io/midi-smtp-server)
 
-**Class documentation** - you will find a detailed description at [RubyDoc](http://www.rubydoc.info/gems/midi-smtp-server/MidiSmtpServer/Smtpd)
+**[Class documentation](http://www.rubydoc.info/gems/midi-smtp-server/MidiSmtpServer/Smtpd)** - you will find a detailed description at [RubyDoc](http://www.rubydoc.info/gems/midi-smtp-server/MidiSmtpServer/Smtpd)
 
-**Library manual** - you will find a manual (in progress) at [ReadTheDocs](https://midi-smtp-server.readthedocs.io/)
+**[Library manual](https://midi-smtp-server.readthedocs.io/)** - you will find a manual (in progress) at [ReadTheDocs](https://midi-smtp-server.readthedocs.io/)
 
 <br>
 
