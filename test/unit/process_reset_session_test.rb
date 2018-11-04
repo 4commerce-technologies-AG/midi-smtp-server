@@ -40,8 +40,11 @@ class ProcessResetSessionUnitTest < Minitest::Test
     assert_equal 0, @session[:ctx][:envelope][:to].length
     assert_equal '', @session[:ctx][:envelope][:encoding_body]
     assert_equal '', @session[:ctx][:envelope][:encoding_utf8]
+    assert_equal (-1), @session[:ctx][:message][:received]
     assert_equal (-1), @session[:ctx][:message][:delivered]
     assert_equal (-1), @session[:ctx][:message][:bytesize]
+    assert_equal '', @session[:ctx][:message][:headers]
+    assert_equal "\r\n", @session[:ctx][:message][:crlf]
     assert_equal '', @session[:ctx][:message][:data]
   end
 
