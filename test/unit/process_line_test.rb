@@ -25,11 +25,11 @@ class ProcessLineUnitTest < Minitest::Test
     end
 
     def on_message_data_start_event(ctx)
-      ctx[:message][:data] << "Received: test header" << ctx[:message][:crlf]
+      ctx[:message][:data] << 'Received: test header' << ctx[:message][:crlf]
     end
 
     def on_message_data_headers_event(ctx)
-      ctx[:message][:data] << "X-inject: Y" << ctx[:message][:crlf]
+      ctx[:message][:data] << 'X-inject: Y' << ctx[:message][:crlf]
     end
 
     def on_message_data_event(ctx)
