@@ -24,6 +24,14 @@ class ProcessLineUnitTest < Minitest::Test
       raise MidiSmtpServer::Smtpd535Exception
     end
 
+    def on_message_data_start_event(ctx)
+      ctx[:message][:data] << "Received: test header" << ctx[:message][:crlf]
+    end
+
+    def on_message_data_headers_event(ctx)
+      ctx[:message][:data] << "X-inject: Y" << ctx[:message][:crlf]
+    end
+
     def on_message_data_event(ctx)
       # save local event data
       @ev_message_data = ctx[:message][:data]
@@ -159,11 +167,14 @@ class ProcessLineUnitTest < Minitest::Test
     assert_equal (-1), @session[:ctx][:message][:bytesize]
     assert_equal '', @session[:ctx][:message][:data]
     assert_in_delta Time.now, @smtpd.ev_message_delivered, 1
-    assert_equal 138, @smtpd.ev_message_bytesize
+    assert_equal 174, @smtpd.ev_message_bytesize
+    assert @smtpd.ev_message_data.start_with?("Received: test header\r\n")
     m = Mail.read_from_string(@smtpd.ev_message_data)
     assert_equal 'demo@local.local', m.from[0]
     assert_equal 'Unit Test', m.subject
+    assert_equal 'test header', m.header['Received'].value
     assert_equal 1, m.header['X-test'].value.to_i
+    assert_equal 'Y', m.header['X-inject'].value
   end
 
   def test_90_noop
