@@ -13,7 +13,7 @@
 </p>
 
 
-[MidiSmtpServer](https://github.com/4commerce-technologies-AG/midi-smtp-server) is the highly customizable ruby SMTP-Service library with builtin support for AUTH and SSL/STARTTLS, 8BITMIME and SMTPUTF8, IPv4 and IPv6 and additional features.
+[MidiSmtpServer](https://github.com/4commerce-technologies-AG/midi-smtp-server) is the highly customizable ruby SMTP-Server and SMTP-Service library with builtin support for AUTH and SSL/STARTTLS, 8BITMIME and SMTPUTF8, IPv4 and IPv6 and additional features.
 
 As a library it is mainly designed to be integrated into your projects as serving a SMTP-Server service. The lib will do nothing with your mail and you have to create your own event functions to handle and operate on incoming mails.
 
