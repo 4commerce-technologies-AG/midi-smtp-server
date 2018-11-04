@@ -12,6 +12,9 @@ pages:
   - Basic Usage: basic_usage.md
   - Cookbook: cookbook.md
   - Support: support.md
+  - "&nbsp;": recipes.md
+  - Recipes:
+    - Slack MTA: cookbook_recipe_slack_mta.md
 
 extra_css:
   - css/extra.css

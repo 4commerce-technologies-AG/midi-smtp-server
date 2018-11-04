@@ -1,6 +1,5 @@
 require 'midi-smtp-server'
 require 'slack-notifier'
-require 'openssl'
 require 'mail'
 require 'oga'
 
