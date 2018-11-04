@@ -140,9 +140,10 @@ server.join
 
 <br>
 
-!!! Warning
+Used libraries:
 
-    To run MySlackGateway server you have to install `midi-smtp-server`, `slack-notifier`, `mail` and `oga` gems via `gem install` or `bundler`.
+* [Github/stevenosloan/slack-notifier](https://github.com/stevenosloan/slack-notifier)
+* [Github/mikel/mail](https://github.com/mikel/mail)
 
 <br>
 
@@ -167,5 +168,11 @@ You may send now emails via smtp mail client or bridge to _localhost:2525_ to fo
 
     The source code is available at [Github/MidiSmtpServer/Cookbook](https://github.com/4commerce-technologies-AG/
     midi-smtp-server/blob/master/cookbook/midi-smtp-server-recipe-slack-mta.rb).
+
+<br>
+
+!!! Warning
+
+    To run MySlackGateway server you have to install `midi-smtp-server`, `slack-notifier`, `mail` and `oga` gems via `gem install` or `bundler`.
 
 <br>
