@@ -289,7 +289,7 @@ Since release `2.3.1` the `on_message_data_start_event` and `on_message_data_hea
   end
 ```
 
-The `Received` header may be given with more or less additional information like encryption, recipient, sender etc. This should be done while being aware of system safety. Don't reveal to much internal information and choose wisely the published atrributes.
+The `Received` header may be given with more or less additional information like encryption, recipient, sender etc. This should be done while being aware of system safety. Don't reveal too much internal information and choose wisely the published atrributes.
 
 Samples for `Received` headers are:
 
@@ -537,7 +537,7 @@ Possible values for `ctx[:envelope][:encoding_body]` are:
 Possible values for `ctx[:envelope][:encoding_utf8]` are:
 
 1. `""` (default, not set by client)
-2. `"utf8t"` (utf8 is enabled for headers and body)
+2. `"utf8"` (utf-8 is enabled for headers and body)
 
 Even when `"8bitmime"` was set, you have to decide the correct encoding like `utf-8` or `iso-8859-1` etc. If also `"utf8"` was set, then encoding should be `utf-8`.
 
