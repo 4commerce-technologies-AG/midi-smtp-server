@@ -16,7 +16,7 @@ class MySmtpd < MidiSmtpServer::Smtpd
     # > cGFzc3dvcmQ=
     if authorization_id == '' && authentication_id == 'administrator' && authentication == 'password'
       # yes
-      puts "Authenticated id: #{authentication_id} with authentication: #{authentication} from: #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]}"
+      logger.debug("Authenticated id: #{authentication_id} with authentication: #{authentication} from: #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]}")
       return 'supervisor'
     end
     # otherwise exit with authentification exception
@@ -28,11 +28,11 @@ class MySmtpd < MidiSmtpServer::Smtpd
   def on_mail_from_event(ctx, mail_from_data)
     if authenticated?(ctx)
       # yes
-      puts "Proceed with authorized id: #{ctx[:server][:authorization_id]}"
-      puts "and authentication id: #{ctx[:server][:authentication_id]}"
+      logger.debug("Proceed with authorized id: #{ctx[:server][:authorization_id]}")
+      logger.debug("and authentication id: #{ctx[:server][:authentication_id]}")
     else
       # no
-      puts 'Proceed with anonymoous credentials'
+      logger.debug('Proceed with anonymoous credentials')
     end
     # return the tested mail_from_data as mail to proceed
     mail_from_data
