@@ -1,5 +1,8 @@
+require:
+  - rubocop-performance
+
 AllCops:
-  TargetRubyVersion: 2.1
+  TargetRubyVersion: 2.3
 
 Layout/EmptyLinesAroundModuleBody:
   EnforcedStyle: empty_lines
@@ -13,8 +16,12 @@ Layout/CaseIndentation:
 Layout/EmptyLinesAroundExceptionHandlingKeywords:
   Enabled: no
 
-Lint/HandleExceptions:
+Layout/LineLength:
   Enabled: no
+
+Lint/SuppressedException:
+  Enabled: no
+  AllowComments: true
 
 Lint/UselessAccessModifier:
   Enabled: no
@@ -36,7 +43,7 @@ Style/SymbolArray:
   Enabled: yes
   EnforcedStyle: brackets
 
-Style/UnneededInterpolation:
+Style/RedundantInterpolation:
   Enabled: no
 
 Style/WordArray:
