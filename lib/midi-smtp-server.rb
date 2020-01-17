@@ -1,5 +1,5 @@
 require 'socket'
-require 'thread'
+require 'resolv'
 require 'base64'
 
 # A small and highly customizable ruby SMTP-Server.
@@ -128,7 +128,7 @@ module MidiSmtpServer
       ports.join(', ')
     end
 
-    # Array of hosts / addresses on which to bind, set as string seperated by commata like '127.0.0.1, ::1'
+    # Array of hosts / ip_addresses on which to bind, set as string seperated by commata like 'name.domain.com, 127.0.0.1, ::1'
     def hosts
       # prevent original array from being changed
       @hosts.dup
@@ -138,6 +138,12 @@ module MidiSmtpServer
     def host
       logger.debug('Deprecated method host is used. Please update to hosts.join() etc.')
       hosts.join(', ')
+    end
+
+    # Array of ip_address:port which get bound and build up from given hosts and ports
+    def addresses
+      # prevent original array from being changed
+      @addresses.dup
     end
 
     # Maximum number of simultaneous processed connections, this does not limit the TCP connections itself, as a FixNum
@@ -169,7 +175,7 @@ module MidiSmtpServer
     # Initialize SMTP Server class
     #
     # +ports+:: ports to listen on. Allows multiple ports like "2525, 3535" or "2525:3535, 2525"
-    # +hosts+:: interface ip or hostname to listen on or blank to listen on all interfaces. Allows multiple addresses like "127.0.0.1, ::1"
+    # +hosts+:: interface ip or hostname to listen on or "*" to listen on all interfaces. Allows multiple hostnames and ip_addresses like "name.domain.com, 127.0.0.1, ::1"
     # +max_processings+:: maximum number of simultaneous processed connections, this does not limit the number of concurrent TCP connections
     # +opts+:: hash with optional settings
     # +opts.max_connections+:: maximum number of connections, this does limit the number of concurrent TCP connections (not set or nil => unlimited)
@@ -214,20 +220,69 @@ module MidiSmtpServer
       # settings
 
       # build array of ports
-      raise 'Missing port(s) to bind service(s) to!' if ports.to_s.strip == ''
+      # split string into array to instantiate multiple servers
       @ports = ports.to_s.delete(' ').split(',')
+      # check for at least one port specification
+      raise 'Missing port(s) to bind service(s) to!' if @ports.empty?
+      # check that not also a '' empty item for port is added to the list
+      raise 'Do not use empty value "" for port(s). Please use specific port(s)!' if @ports.include?('')
 
       # build array of hosts
-      if hosts.to_s.strip == ''
-        # default if empty bind to (all) local host addresses
-        @hosts = ['']
-      else
-        # split string into array to instantiate multiple servers
-        @hosts = hosts.to_s.delete(' ').split(',')
-        # check that only unique addresses were given
-        raise 'Duplicate addresses were specified for hosts!' if @hosts.length != @hosts.uniq.length
-        # check that not also the '' wildcard for hosts is added to the list
-        raise 'Do not use wildcard "" for hosts while specifying multiple hosts!' if @hosts.include?('')
+      # split string into array to instantiate multiple servers
+      @hosts = hosts.to_s.delete(' ').split(',')
+      # Deprecated default if empty bind to (first found) local host ip_address
+      # Check that not also the '' wildcard for hosts is added somewhere to the list
+      #
+      # Check source of TCPServer.c at https://github.com/ruby/ruby/blob/trunk/ext/socket/tcpserver.c#L25-L31
+      # * Internally, TCPServer.new calls getaddrinfo() function to obtain ip_addresses.
+      # * If getaddrinfo() returns multiple ip_addresses,
+      # * TCPServer.new TRIES to create a server socket for EACH address and RETURNS FIRST one that is SUCCESSFUL.
+      #
+      # So for that it was a small portion of luck which address had been used then.
+      # We won't support that magic anymore. If wish to bind on all local ip_addresses
+      # and interfaces, use new "*" wildcard, otherwise specify ip_addresses and / or hostnames
+      raise 'Deprecated empty hosts wildcard "" is used. Please use specific hostnames and / or ip_addresses or "*" for wildcard!' if @hosts.empty? || @hosts.include?('')
+
+      # build array of addresses for ip_addresses and ports to use
+      @addresses = []
+      @hosts.each_with_index do |host, index|
+        # resolv ip_addresses for host if not wildcard / all hosts
+        # if host is "*" wildcard (all) interfaces are used
+        # otherwise it will be bind to the found host ip_addresses
+        if host == '*'
+          ip_addresses_for_host = []
+          Socket.ip_address_list.each do |a|
+            # test for all local valid ipv4 and ipv6 ip_addresses
+            # check question on stackoverflow for details
+            # https://stackoverflow.com/questions/59770803/identify-all-relevant-ip-addresses-from-ruby-socket-ip-address-list
+            ip_addresses_for_host << a.ip_address if \
+              (a.ipv4? &&
+                (a.ipv4_loopback? || a.ipv4_private? ||
+                 !(a.ipv4_loopback? || a.ipv4_private? || a.ipv4_multicast?)
+                )
+              ) ||
+              (a.ipv6? &&
+                (a.ipv6_loopback? || a.ipv6_unique_local? ||
+                 !(a.ipv6_loopback? || a.ipv6_unique_local? || a.ipv6_linklocal? || a.ipv6_multicast? || a.ipv6_sitelocal? ||
+                   a.ipv6_mc_global? || a.ipv6_mc_linklocal? || a.ipv6_mc_nodelocal? || a.ipv6_mc_orglocal? || a.ipv6_mc_sitelocal? ||
+                   a.ipv6_v4compat? || a.ipv6_v4mapped? || a.ipv6_unspecified?)
+                )
+              )
+          end
+        else
+          ip_addresses_for_host = Resolv.new.getaddresses(host).uniq
+        end
+        # get ports for that host entry
+        # if ports at index are not specified, use last item
+        # of ports array. if multiple ports specified by
+        # item like 2525:3535:4545, then all ports will be instantiated
+        ports_for_host = (index < @ports.length ? @ports[index] : @ports.last).to_s.split(':')
+        # append combination of ip_address and ports to the list of serving addresses
+        ip_addresses_for_host.each do |ip_address|
+          ports_for_host.each do |port|
+            @addresses << "#{ip_address}:#{port}"
+          end
+        end
       end
 
       # read max_processings
@@ -350,30 +405,23 @@ module MidiSmtpServer
       # set flag to signal shutdown by stop / shutdown command
       @shutdown = false
 
-      # instantiate the service for alls @hosts and @ports
-      @hosts.each_with_index do |host, index|
-        # instantiate the service for each host and port
-        # if host is empty "" wildcard (all) interfaces are used
-        # otherwise it will be bind to single host ip only
-        # if ports at index is not specified, use last item
-        # of ports array. if multiple ports specified by
-        # item like 2525:3535:4545, then all are instantiated
-        ports_for_host = (index < @ports.length ? @ports[index] : @ports.last).to_s.split(':')
-        # loop all ports for that host
-        ports_for_host.each do |port|
-          serve_service_on_host_and_port(host, port)
-        end
+      # instantiate the service for all @addresses (ip_address:port)
+      @addresses.each do |address|
+        # break address into ip_address and port and serve service
+        ip_address = address.rpartition(':').first
+        port = address.rpartition(':').last
+        serve_service_on_ip_address_and_port(ip_address, port)
       end
     end
 
-    # Start the listener thread on single host and port
-    def serve_service_on_host_and_port(host, port)
+    # Start the listener thread on single ip_address and port
+    def serve_service_on_ip_address_and_port(ip_address, port)
       # log information
-      logger.info('Running service on ' + (host == '' ? '<any>' : host) + ':' + port.to_s)
-      # instantiate the service for host and port
-      # if host is empty "" wildcard (all) interfaces are used
-      # otherwise it will be bind to single host ip only
-      tcp_server = TCPServer.new(host, port)
+      logger.info("Starting service on #{ip_address}:#{port}")
+      # check that there is a specific ip_address defined
+      raise 'Deprecated wildcard "" ist not allowed anymore to start a listener on!' if ip_address.empty?
+      # instantiate the service for ip_address and port
+      tcp_server = TCPServer.new(ip_address, port)
       # append this server to the list of TCPServers
       @tcp_servers << tcp_server
 
@@ -437,7 +485,7 @@ module MidiSmtpServer
             # reset local var
             tcp_server = nil
           rescue StandardError
-            # ignor any error from here
+            # ignore any error from here
           end
           if shutdown?
             # wait for finishing opened connections
@@ -510,7 +558,7 @@ module MidiSmtpServer
           # initialize io_buffer_line_lf index
           io_buffer_line_lf = nil
 
-          # initialze timeout timestamp
+          # initialize timeout timestamp
           timestamp_timeout = Time.now.to_i
 
           # while input data handle communication
