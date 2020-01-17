@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # A small and highly customizable ruby SMTP-Server.
 module MidiSmtpServer
 
