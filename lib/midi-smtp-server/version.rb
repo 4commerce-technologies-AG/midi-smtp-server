@@ -1,15 +1,17 @@
+# frozen_string_literal: true
+
 # A small and highly customizable ruby SMTP-Server.
 module MidiSmtpServer
 
   module VERSION
 
-    MAJOR = 2
-    MINOR = 3
-    TINY = 1
+    MAJOR = 3
+    MINOR = 0
+    TINY = 0
 
-    STRING = [MAJOR, MINOR, TINY].compact.join('.').freeze
+    STRING = [MAJOR, MINOR, TINY].compact.join('.')
 
-    DATE = '2018-11-01'.freeze
+    DATE = '2020-01-15'
 
   end
 
