@@ -42,15 +42,15 @@ module MidiSmtpServer
         @ctx.key = OpenSSL::PKey::RSA.new(File.open(@key_path.to_s))
       else
         # if none was set, create a test cert
-        # and try to setup common name(s) for cert
-        @common_names = (['localhost.local', 'localhost', '127.0.0.1', '::1'] + common_names).uniq
+        # and try to setup common subject alt name(s) for cert
+        @alias_names = (['localhost', '127.0.0.1', '::1'] + common_names).uniq
         # initialize self certificate and key
         logger.debug('SSL: using self generated test certificate!')
         @ctx.key = OpenSSL::PKey::RSA.new 4096
         @ctx.cert = OpenSSL::X509::Certificate.new
         @ctx.cert.version = 2
         @ctx.cert.serial = 1
-        @ctx.cert.subject = OpenSSL::X509::Name.new @common_names.map { |cn| ['CN', cn] }
+        @ctx.cert.subject = OpenSSL::X509::Name.new [['CN', 'localhost.local']]
         @ctx.cert.issuer = @ctx.cert.subject
         @ctx.cert.public_key = @ctx.key
         @ctx.cert.not_before = Time.now
@@ -58,8 +58,8 @@ module MidiSmtpServer
         @ef = OpenSSL::X509::ExtensionFactory.new
         @ef.subject_certificate = @ctx.cert
         @ef.issuer_certificate = @ctx.cert
-        @ctx.cert.add_extension(@ef.create_extension('basicConstraints', 'CA:TRUE', true))
-        @ctx.cert.add_extension(@ef.create_extension('keyUsage', 'cRLSign,keyCertSign', true))
+        @ctx.cert.add_extension(@ef.create_extension('basicConstraints', 'CA:FALSE', false))
+        @ctx.cert.add_extension(@ef.create_extension('keyUsage', 'Digital Signature, Non Repudiation, Key Encipherment', false))
         @ctx.cert.sign @ctx.key, OpenSSL::Digest::SHA1.new
       end
     end
