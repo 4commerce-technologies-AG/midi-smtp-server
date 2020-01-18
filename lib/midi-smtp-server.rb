@@ -323,7 +323,15 @@ module MidiSmtpServer
         @tls = nil
       else
         require 'openssl'
-        @tls = TlsTransport.new(opts[:tls_cert_path], opts[:tls_key_path], opts[:tls_ciphers], opts[:tls_methods], @logger)
+        # build generic set of "valid" self signed certificate common names
+        # use all given hosts and detected ip_addresses but not "*" wildcard
+        common_names = @hosts
+        @addresses.each do |address|
+          common_names << address.rpartition(':').first
+        end
+        common_names.delete('*')
+        # create ssl transport service
+        @tls = TlsTransport.new(opts[:tls_cert_path], opts[:tls_key_path], opts[:tls_ciphers], opts[:tls_methods], @hosts , @logger)
       end
     end
 
