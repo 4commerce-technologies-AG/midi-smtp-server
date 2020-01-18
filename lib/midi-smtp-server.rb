@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'socket'
 require 'resolv'
 require 'base64'
@@ -11,7 +13,7 @@ module MidiSmtpServer
   require 'midi-smtp-server/tls-transport'
 
   # default values
-  DEFAULT_SMTPD_HOST = '127.0.0.1'.freeze
+  DEFAULT_SMTPD_HOST = '127.0.0.1'
   DEFAULT_SMTPD_PORT = 2525
   DEFAULT_SMTPD_MAX_PROCESSINGS = 4
 
@@ -546,14 +548,14 @@ module MidiSmtpServer
           output = "220 #{session[:ctx][:server][:local_response].to_s.strip}\r\n"
 
           # log and show to client
-          logger.debug('>>> ' + output)
+          logger.debug(+'>>> ' << output)
           io.print output unless io.closed?
 
-          # initialize \r\n for line_break, this is used for CRLF_ENSURE and CRLF_STRICT
-          line_break = "\r\n"
+          # initialize \r\n for line_break, this is used for CRLF_ENSURE and CRLF_STRICT and mark as mutable
+          line_break = +"\r\n"
 
-          # initialize io_buffer for input data
-          io_buffer = ''
+          # initialize io_buffer for input data and mark as mutable
+          io_buffer = +''
 
           # initialize io_buffer_line_lf index
           io_buffer_line_lf = nil
@@ -614,7 +616,7 @@ module MidiSmtpServer
                     # remove any \r or \n occurence from line
                     line.delete!("\r\n")
                     # log line, verbosity based on log severity and command sequence
-                    logger.debug('<<< ' << line << "\n") if session[:cmd_sequence] != :CMD_DATA
+                    logger.debug(+'<<< ' << line << "\n") if session[:cmd_sequence] != :CMD_DATA
 
                   when :CRLF_LEAVE
                     # use input line_break for line_break
@@ -624,7 +626,7 @@ module MidiSmtpServer
                     # remove any line_break from line
                     line.chomp!
                     # log line, verbosity based on log severity and command sequence
-                    logger.debug('<<< ' << line.gsub("\r", '[\r]') << "\n") if session[:cmd_sequence] != :CMD_DATA
+                    logger.debug(+'<<< ' << line.gsub("\r", '[\r]') << "\n") if session[:cmd_sequence] != :CMD_DATA
 
                   when :CRLF_STRICT
                     # check line ends up by \r\n
@@ -634,11 +636,11 @@ module MidiSmtpServer
                     # check line for additional \r
                     raise Smtpd500Exception, 'Line contains additional CR chars!' if line.index("\r")
                     # log line, verbosity based on log severity and command sequence
-                    logger.debug('<<< ' << line << "\n") if session[:cmd_sequence] != :CMD_DATA
+                    logger.debug(+'<<< ' << line << "\n") if session[:cmd_sequence] != :CMD_DATA
                 end
 
-                # process line
-                output = process_line(session, line, line_break)
+                # process line and mark output as mutable
+                output = +'' << process_line(session, line, line_break)
 
               # defined abort channel exception
               rescue Smtpd421Exception => e
@@ -1103,33 +1105,34 @@ module MidiSmtpServer
       # reset server values (only on connection start)
       if connection_initialize
         # create or rebuild :ctx hash
+        # and mark strings as mutable
         session[:ctx].merge!(
           server: {
-            local_host: '',
-            local_ip: '',
-            local_port: '',
-            local_response: '',
-            remote_host: '',
-            remote_ip: '',
-            remote_port: '',
-            helo: '',
-            helo_response: '',
-            connected: '',
+            local_host: +'',
+            local_ip: +'',
+            local_port: +'',
+            local_response: +'',
+            remote_host: +'',
+            remote_ip: +'',
+            remote_port: +'',
+            helo: +'',
+            helo_response: +'',
+            connected: +'',
             exceptions: 0,
-            authorization_id: '',
-            authentication_id: '',
-            authenticated: '',
-            encrypted: ''
+            authorization_id: +'',
+            authentication_id: +'',
+            authenticated: +'',
+            encrypted: +''
           }
         )
       end
       # reset envelope values
       session[:ctx].merge!(
         envelope: {
-          from: '',
+          from: +'',
           to: [],
-          encoding_body: '',
-          encoding_utf8: ''
+          encoding_body: +'',
+          encoding_utf8: +''
         }
       )
       # reset message data
@@ -1138,9 +1141,9 @@ module MidiSmtpServer
           received: -1,
           delivered: -1,
           bytesize: -1,
-          headers: '',
-          crlf: "\r\n",
-          data: ''
+          headers: +'',
+          crlf: +"\r\n",
+          data: +''
         }
       )
     end
