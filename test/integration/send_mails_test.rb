@@ -3,7 +3,7 @@
 require 'mail'
 
 # Unit test to check commands without TCP
-class MailSendUnitTest < Minitest::Test
+class SendMailsIntegrationTest < Minitest::Test
 
   # overloaded midi-smtp-server class for test
   class MidiSmtpServerSendMailsTest < MidiSmtpServerTest
