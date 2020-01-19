@@ -16,6 +16,9 @@ Layout/CaseIndentation:
 Layout/EmptyLinesAroundExceptionHandlingKeywords:
   Enabled: no
 
+Layout/EmptyLineAfterGuardClause:
+  Enabled: no
+
 Layout/LineLength:
   Enabled: no
 
@@ -24,6 +27,9 @@ Lint/SuppressedException:
   AllowComments: true
 
 Lint/UselessAccessModifier:
+  Enabled: no
+
+Style/AccessModifierDeclarations:
   Enabled: no
 
 Style/RedundantBegin:
