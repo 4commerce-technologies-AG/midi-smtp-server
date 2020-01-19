@@ -20,7 +20,7 @@ module MidiSmtpServer
   # class for TlsTransport
   class TlsTransport
 
-    def initialize(cert_path, key_path, ciphers, methods, cn, san, logger)
+    def initialize(cert_path, key_path, ciphers, methods, cert_cn, cert_san, logger)
       # if need to debug something while working with openssl
       # OpenSSL::debug = true
 
@@ -37,22 +37,23 @@ module MidiSmtpServer
         # if any is set, test the pathes
         raise "File \”#{@cert_path}\" does not exist or is not a regular file. Could not load certificate." unless File.file?(@cert_path.to_s)
         raise "File \”#{@key_path}\" does not exist or is not a regular file. Could not load private key." unless File.file?(@key_path.to_s)
+
         # try to load certificate and key
         @ctx.cert = OpenSSL::X509::Certificate.new(File.open(@cert_path.to_s))
         @ctx.key = OpenSSL::PKey::RSA.new(File.open(@key_path.to_s))
       else
         # if none cert_path was set, create a self signed test certificate
         # and try to setup common subject and  subject alt name(s) for cert
-        @cn = cn.to_s.strip
-        @san = san.nil? ? [] : san.uniq
+        @cert_cn = cert_cn.to_s.strip
+        @cert_san = cert_san.nil? ? [] : cert_san.uniq
         # initialize self certificate and key
-        logger.debug("SSL: using self generated test certificate! CN=#{@cn} SAN=[#{@san.join(',')}]")
+        logger.debug("SSL: using self generated test certificate! CN=#{@cert_cn} SAN=[#{@cert_san.join(',')}]")
         @ctx.key = OpenSSL::PKey::RSA.new 4096
         @ctx.cert = OpenSSL::X509::Certificate.new
         @ctx.cert.version = 2
         @ctx.cert.serial = 1
         # the subject and the issuer are identical only for test certificate
-        @ctx.cert.subject = OpenSSL::X509::Name.new [['CN', @cn]]
+        @ctx.cert.subject = OpenSSL::X509::Name.new [['CN', @cert_cn]]
         @ctx.cert.issuer = @ctx.cert.subject
         @ctx.cert.public_key = @ctx.key
         # valid for 90 days
