@@ -177,7 +177,7 @@ module MidiSmtpServer
     # Initialize SMTP Server class
     #
     # +ports+:: ports to listen on. Allows multiple ports like "2525, 3535" or "2525:3535, 2525"
-    # +hosts+:: interface ip or hostname to listen on or "*" to listen on all interfaces. Allows multiple hostnames and ip_addresses like "name.domain.com, 127.0.0.1, ::1"
+    # +hosts+:: interface ip or hostname to listen on or "*" to listen on all interfaces, allows multiple hostnames and ip_addresses like "name.domain.com, 127.0.0.1, ::1"
     # +max_processings+:: maximum number of simultaneous processed connections, this does not limit the number of concurrent TCP connections
     # +opts+:: hash with optional settings
     # +opts.max_connections+:: maximum number of connections, this does limit the number of concurrent TCP connections (not set or nil => unlimited)
@@ -194,6 +194,8 @@ module MidiSmtpServer
     # +opts.tls_key_path+:: path to tls key file
     # +opts.tls_ciphers+:: allowed ciphers for connection
     # +opts.tls_methods+:: allowed methods for protocol
+    # +opts.tls_cn+:: set subject (CN) for self signed certificate "cn.domain.com"
+    # +opts.tls_san+:: set subject alternative (SAN) for self signed certificate, allows multiple names like "alt1.domain.com, alt2.domain.com"
     # +opts.logger+:: own logger class, otherwise default logger is created
     # +opts.logger_severity+:: logger level when default logger is used
     def initialize(ports = DEFAULT_SMTPD_PORT, hosts = DEFAULT_SMTPD_HOST, max_processings = DEFAULT_SMTPD_MAX_PROCESSINGS, opts = {})
@@ -323,15 +325,28 @@ module MidiSmtpServer
         @tls = nil
       else
         require 'openssl'
-        # build generic set of "valid" self signed certificate common names
-        # use all given hosts and detected ip_addresses but not "*" wildcard
-        common_names = @hosts
-        @addresses.each do |address|
-          common_names << address.rpartition(':').first
+        # check for given CN and SAN
+        if opts.include?(:tls_cn)
+          tls_cn = opts[:tls_cn]
+          tls_san = opts[:tls_san]
+        else
+          # build generic set of "valid" self signed certificate CN and SAN
+          # using all given hosts and detected ip_addresses but not "*" wildcard
+          tls_san = ([] + @hosts + @addresses.map { |address| address.rpartition(':').first }).uniq
+          tls_san.delete('*')
+          # build generic CN based on first SAN
+          if tls_san.first =~ /^(127\.0?0?0\.0?0?0\.0?0?1|::1|localhost)$/i
+            # used generic localhost.local
+            tls_cn = 'localhost.local'
+          else
+            # use first element from detected hosts and ip_addresses
+            # drop that element from SAN
+            tls_cn = tls_san.first
+            tls_san.slice!(0)
+          end
         end
-        common_names.delete('*')
         # create ssl transport service
-        @tls = TlsTransport.new(opts[:tls_cert_path], opts[:tls_key_path], opts[:tls_ciphers], opts[:tls_methods], @hosts , @logger)
+        @tls = TlsTransport.new(opts[:tls_cert_path], opts[:tls_key_path], opts[:tls_ciphers], opts[:tls_methods], tls_cn, tls_san , @logger)
       end
     end
 
