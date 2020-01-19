@@ -1,5 +1,6 @@
-# Unit test to check commands without TCP
+# frozen_string_literal: true
 
+# Unit test to check commands without TCP
 class ProcessLineRandomUnitTest < Minitest::Test
 
   # initialize before tests

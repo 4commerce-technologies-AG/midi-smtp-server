@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # test_runner.rb will automatically include all tests and specs
 # to easily access and run all tests
 

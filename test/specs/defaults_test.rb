@@ -1,5 +1,6 @@
-# Specs to check the default properties on MidiSmtpServer class
+# frozen_string_literal: true
 
+# Specs to check the default properties on MidiSmtpServer class
 describe MidiSmtpServerTest do
   # initialize before tests
   before do

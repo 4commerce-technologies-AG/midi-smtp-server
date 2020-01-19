@@ -1,5 +1,6 @@
-# Unit test to check session content
+# frozen_string_literal: true
 
+# Unit test to check session content
 class ProcessResetSessionUnitTest < Minitest::Test
 
   # initialize before tests

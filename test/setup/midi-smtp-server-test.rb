@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # require the libraries
 require_relative '../../lib/midi-smtp-server'
 

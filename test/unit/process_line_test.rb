@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'base64'
 require 'mail'
 
@@ -160,7 +162,7 @@ class ProcessLineUnitTest < Minitest::Test
     @smtpd.process_line(@session, '', "\r\n")
     @smtpd.process_line(@session, 'Welcome to message!', "\r\n")
     @smtpd.process_line(@session, 'Have fun.', "\r\n")
-    @smtpd.process_line(@session, '..', "\r\n")
+    @smtpd.process_line(@session, '..'.dup, "\r\n")
     result = @smtpd.process_line(@session, '.', "\r\n")
     assert result.start_with?('250 ')
     assert_equal :CMD_RSET, @session[:cmd_sequence]

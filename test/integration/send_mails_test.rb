@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'mail'
 
 # Unit test to check commands without TCP
