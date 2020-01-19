@@ -20,18 +20,18 @@ module MidiSmtpServer
   # class for TlsTransport
   class TlsTransport
 
-    def initialize(cert_path, key_path, ciphers, methods, common_names, logger)
+    def initialize(cert_path, key_path, ciphers, methods, cn, san, logger)
       # if need to debug something while working with openssl
       # OpenSSL::debug = true
 
       # save references
       @logger = logger
-      @cert_path = cert_path.nil? ? nil : cert_path.strip
-      @key_path = key_path.nil? ? nil : key_path.strip
+      @cert_path = cert_path.to_s == '' ? nil : cert_path.strip
+      @key_path = key_path.to_s == '' ? nil : key_path.strip
       # create SSL context
       @ctx = OpenSSL::SSL::SSLContext.new
-      @ctx.ciphers = ciphers.to_s != '' ? ciphers : TLS_CIPHERS_ADVANCED_PLUS
-      @ctx.ssl_version = methods.to_s != '' ? methods : TLS_METHODS_ADVANCED
+      @ctx.ciphers = ciphers.to_s == '' ? TLS_CIPHERS_ADVANCED_PLUS : ciphers
+      @ctx.ssl_version = methods.to_s == '' ? TLS_METHODS_ADVANCED : methods
       # check cert_path and key_path
       if !@cert_path.nil? || !@key_path.nil?
         # if any is set, test the pathes
@@ -41,25 +41,29 @@ module MidiSmtpServer
         @ctx.cert = OpenSSL::X509::Certificate.new(File.open(@cert_path.to_s))
         @ctx.key = OpenSSL::PKey::RSA.new(File.open(@key_path.to_s))
       else
-        # if none was set, create a test cert
-        # and try to setup common subject alt name(s) for cert
-        @alias_names = (['localhost', '127.0.0.1', '::1'] + common_names).uniq
+        # if none cert_path was set, create a self signed test certificate
+        # and try to setup common subject and  subject alt name(s) for cert
+        @cn = cn.to_s.strip
+        @san = san.nil? ? [] : san.uniq
         # initialize self certificate and key
-        logger.debug('SSL: using self generated test certificate!')
+        logger.debug("SSL: using self generated test certificate! CN=#{@cn} SAN=[#{@san.join(',')}]")
         @ctx.key = OpenSSL::PKey::RSA.new 4096
         @ctx.cert = OpenSSL::X509::Certificate.new
         @ctx.cert.version = 2
         @ctx.cert.serial = 1
-        @ctx.cert.subject = OpenSSL::X509::Name.new [['CN', 'localhost.local']]
+        # the subject and the issuer are identical only for test certificate
+        @ctx.cert.subject = OpenSSL::X509::Name.new [['CN', @cn]]
         @ctx.cert.issuer = @ctx.cert.subject
         @ctx.cert.public_key = @ctx.key
+        # valid for 90 days
         @ctx.cert.not_before = Time.now
         @ctx.cert.not_after = Time.now + 60 * 60 * 24 * 90
+        # setup some cert extensions
         @ef = OpenSSL::X509::ExtensionFactory.new
         @ef.subject_certificate = @ctx.cert
         @ef.issuer_certificate = @ctx.cert
         @ctx.cert.add_extension(@ef.create_extension('basicConstraints', 'CA:FALSE', false))
-        @ctx.cert.add_extension(@ef.create_extension('keyUsage', 'Digital Signature, Non Repudiation, Key Encipherment', false))
+        @ctx.cert.add_extension(@ef.create_extension('keyUsage', 'digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment', false))
         @ctx.cert.sign @ctx.key, OpenSSL::Digest::SHA1.new
       end
     end
