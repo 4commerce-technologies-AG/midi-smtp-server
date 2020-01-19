@@ -55,7 +55,8 @@ module MidiSmtpServer
       # drop tcp_servers while raising SmtpdStopServiceException
       @connections_mutex.synchronize do
         @tcp_server_threads.each do |tcp_server_thread|
-          tcp_server_thread.raise SmtpdStopServiceException if tcp_server_thread
+          # use safe navigation (&.) to make sure that obj exists like ... if tcp_server_thread
+          tcp_server_thread&.raise SmtpdStopServiceException
         end
       end
       # wait if some connection(s) still need(s) more time to come down
@@ -105,7 +106,7 @@ module MidiSmtpServer
       return if @tcp_servers.empty?
       # wait some seconds before joininig the upcoming threads
       # and check that all TCPServers gots one thread
-      while (@tcp_server_threads.length < @tcp_servers.length) && (sleep_seconds_before_join > 0)
+      while (@tcp_server_threads.length < @tcp_servers.length) && sleep_seconds_before_join.positive?
         sleep_seconds_before_join -= 1
         sleep 1
       end
@@ -194,8 +195,8 @@ module MidiSmtpServer
     # +opts.tls_key_path+:: path to tls key file
     # +opts.tls_ciphers+:: allowed ciphers for connection
     # +opts.tls_methods+:: allowed methods for protocol
-    # +opts.tls_cn+:: set subject (CN) for self signed certificate "cn.domain.com"
-    # +opts.tls_san+:: set subject alternative (SAN) for self signed certificate, allows multiple names like "alt1.domain.com, alt2.domain.com"
+    # +opts.tls_cert_cn+:: set subject (CN) for self signed certificate "cn.domain.com"
+    # +opts.tls_cert_san+:: set subject alternative (SAN) for self signed certificate, allows multiple names like "alt1.domain.com, alt2.domain.com"
     # +opts.logger+:: own logger class, otherwise default logger is created
     # +opts.logger_severity+:: logger level when default logger is used
     def initialize(ports = DEFAULT_SMTPD_PORT, hosts = DEFAULT_SMTPD_HOST, max_processings = DEFAULT_SMTPD_MAX_PROCESSINGS, opts = {})
@@ -327,26 +328,26 @@ module MidiSmtpServer
         require 'openssl'
         # check for given CN and SAN
         if opts.include?(:tls_cn)
-          tls_cn = opts[:tls_cn]
-          tls_san = opts[:tls_san]
+          tls_cert_cn = opts[:tls_cert_cn]
+          tls_cert_san = opts[:tls_cert_san]
         else
           # build generic set of "valid" self signed certificate CN and SAN
           # using all given hosts and detected ip_addresses but not "*" wildcard
-          tls_san = ([] + @hosts + @addresses.map { |address| address.rpartition(':').first }).uniq
-          tls_san.delete('*')
+          tls_cert_san = ([] + @hosts + @addresses.map { |address| address.rpartition(':').first }).uniq
+          tls_cert_san.delete('*')
           # build generic CN based on first SAN
-          if tls_san.first =~ /^(127\.0?0?0\.0?0?0\.0?0?1|::1|localhost)$/i
+          if tls_cert_san.first =~ /^(127\.0?0?0\.0?0?0\.0?0?1|::1|localhost)$/i
             # used generic localhost.local
-            tls_cn = 'localhost.local'
+            tls_cert_cn = 'localhost.local'
           else
             # use first element from detected hosts and ip_addresses
             # drop that element from SAN
-            tls_cn = tls_san.first
-            tls_san.slice!(0)
+            tls_cert_cn = tls_cert_san.first
+            tls_cert_san.slice!(0)
           end
         end
         # create ssl transport service
-        @tls = TlsTransport.new(opts[:tls_cert_path], opts[:tls_key_path], opts[:tls_ciphers], opts[:tls_methods], tls_cn, tls_san , @logger)
+        @tls = TlsTransport.new(opts[:tls_cert_path], opts[:tls_key_path], opts[:tls_ciphers], opts[:tls_methods], tls_cert_cn, tls_cert_san, @logger)
       end
     end
 
@@ -559,9 +560,7 @@ module MidiSmtpServer
           # check active processings for new client
           @connections_mutex.synchronize do
             # when processings exceed maximum number of simultaneous allowed processings, then wait for next free slot
-            while processings >= max_processings
-              @connections_cv.wait(@connections_mutex)
-            end
+            @connections_cv.wait(@connections_mutex) until processings < max_processings
           end
 
           # append this to list of processings

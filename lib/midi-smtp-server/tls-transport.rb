@@ -37,7 +37,6 @@ module MidiSmtpServer
         # if any is set, test the pathes
         raise "File \”#{@cert_path}\" does not exist or is not a regular file. Could not load certificate." unless File.file?(@cert_path.to_s)
         raise "File \”#{@key_path}\" does not exist or is not a regular file. Could not load private key." unless File.file?(@key_path.to_s)
-
         # try to load certificate and key
         @ctx.cert = OpenSSL::X509::Certificate.new(File.open(@cert_path.to_s))
         @ctx.key = OpenSSL::PKey::RSA.new(File.open(@key_path.to_s))
