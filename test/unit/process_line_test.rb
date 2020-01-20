@@ -107,6 +107,11 @@ class ProcessLineUnitTest < Minitest::Test
     assert_equal @session[:ctx][:server][:helo], helo_str
   end
 
+  def test_01_ehlo_bad_sequence
+    helo_str = 'Process line unit test'
+    assert_raises(MidiSmtpServer::Smtpd503Exception) { @smtpd.process_line(@session, "EHLO #{helo_str}", "\r\n") }
+  end
+
   def test_10_auth_login_simulate_fail
     result = @smtpd.process_line(@session, 'AUTH LOGIN', "\r\n")
     assert_equal '334 ' + Base64.strict_encode64('Username:'), result
