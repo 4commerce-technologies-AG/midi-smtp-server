@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # to test communictaion with ssl server use gnutls-cli tool
 # > gnutls-cli --insecure -s -p 2525 127.0.0.1
 
@@ -38,8 +40,8 @@ end
 puts "#{Time.now}: Starting MySmtpd [#{MidiSmtpServer::VERSION::STRING}|#{MidiSmtpServer::VERSION::DATE}] (Encryption example) ..."
 
 # Create a new server instance listening at localhost interfaces 127.0.0.1:2525
-# and accepting a maximum of 4 simultaneous connections
-server = MySmtpd.new(MidiSmtpServer::DEFAULT_SMTPD_PORT, '', MidiSmtpServer::DEFAULT_SMTPD_MAX_PROCESSINGS, tls_mode: :TLS_OPTIONAL)
+# and accepting a maximum of 4 simultaneous connections with optional TLS Support
+server = MySmtpd.new(MidiSmtpServer::DEFAULT_SMTPD_PORT, MidiSmtpServer::DEFAULT_SMTPD_HOST, MidiSmtpServer::DEFAULT_SMTPD_MAX_PROCESSINGS, tls_mode: :TLS_OPTIONAL)
 
 # setup exit code
 at_exit do
