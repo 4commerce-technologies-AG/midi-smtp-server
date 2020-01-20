@@ -575,7 +575,7 @@ module MidiSmtpServer
           @processings << Thread.current
 
           # reply local welcome message
-          output = "220 #{session[:ctx][:server][:local_response].to_s.strip}\r\n"
+          output = +"220 #{session[:ctx][:server][:local_response].to_s.strip}\r\n"
 
           # log and show to client
           logger.debug(+'>>> ' << output)
@@ -670,7 +670,7 @@ module MidiSmtpServer
                 end
 
                 # process line and mark output as mutable
-                output = +'' << process_line(session, line, line_break)
+                output = +process_line(session, line, line_break)
 
               # defined abort channel exception
               rescue Smtpd421Exception => e
@@ -684,7 +684,7 @@ module MidiSmtpServer
                 # log error info if logging
                 logger.error("#{e}")
                 # get the given smtp dialog result
-                output = "#{e.smtpd_result}"
+                output = +"#{e.smtpd_result}"
 
               # Unknown general Exception during processing
               rescue StandardError => e
@@ -693,13 +693,13 @@ module MidiSmtpServer
                 # log error info if logging
                 logger.error("#{e}")
                 # set default smtp server dialog error
-                output = "#{Smtpd500Exception.new.smtpd_result}"
+                output = +"#{Smtpd500Exception.new.smtpd_result}"
               end
 
               # check result
               unless output.empty?
                 # log smtp dialog // message data is stored separate
-                logger.debug('>>> ' + output)
+                logger.debug(+'>>> ' << output)
                 # append line feed
                 output << "\r\n"
                 # smtp dialog response
@@ -714,7 +714,7 @@ module MidiSmtpServer
             break if (session[:cmd_sequence] == :CMD_QUIT) || io.closed? || shutdown?
           end
           # graceful end of connection
-          output = "221 Service closing transmission channel\r\n"
+          output = +"221 Service closing transmission channel\r\n"
           # smtp dialog response
           io.print(output) unless io.closed?
 
@@ -729,7 +729,7 @@ module MidiSmtpServer
           # power down connection
           # ignore IOErrors when sending final smtp abort return code 421
           begin
-            output = "#{Smtpd421Exception.new.smtpd_result}\r\n"
+            output = +"#{Smtpd421Exception.new.smtpd_result}\r\n"
             # smtp dialog response
             io.print(output) unless io.closed?
           rescue StandardError
