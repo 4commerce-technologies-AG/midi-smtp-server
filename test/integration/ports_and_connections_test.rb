@@ -3,17 +3,13 @@
 # Unit test to check commands without TCP
 class PortsAndConnectionsIntegrationTest < Minitest::Test
 
-  # overloaded midi-smtp-server class for test
-  class MidiSmtpServerPortsAndConnectionsTest < MidiSmtpServerTest
-  end
-
   # Runs tests in alphabetical order, instead of random order.
   i_suck_and_my_tests_are_order_dependent!
 
   # initialize before tests
   def setup
     # create service instance
-    @smtpd = MidiSmtpServerPortsAndConnectionsTest.new(
+    @smtpd = MidiSmtpServerTest.new(
       '5555',
       '127.0.0.1',
       1,
@@ -34,6 +30,7 @@ class PortsAndConnectionsIntegrationTest < Minitest::Test
   MSG_ABORT = "421 Service too busy or not available, closing transmission channel\r\n"
 
   def test_010_tcp_1_connect
+    # test open 1 socket and read welcome message
     channel1 = create_socket
     result1 = get_blocked_socket(channel1)
     assert_equal MSG_WELCOME, result1
@@ -41,6 +38,9 @@ class PortsAndConnectionsIntegrationTest < Minitest::Test
   end
 
   def test_020_tcp_2_simultan_connects
+    # test open 2 sockets and read welcome message
+    # channel 1 will respond while channel 2 will wait until channel 1 is closed
+    # that is in case 2 connections are allowed but only 1 simultanously processing
     channel1 = create_socket
     channel2 = create_socket
     result1 = get_blocked_socket(channel1)
@@ -53,6 +53,10 @@ class PortsAndConnectionsIntegrationTest < Minitest::Test
   end
 
   def test_030_tcp_3_simultan_connects_and_1_abort
+    # test open 3 sockets and read welcome message
+    # channel 1 will respond while channel 2 will wait until channel 1 is closed
+    # channel 3 will receive an abort message and the channel is closed by server after short period
+    # that is in case only 2 connections are allowed with only 1 simultanously processing
     channel1 = create_socket
     channel2 = create_socket
     channel3 = create_socket

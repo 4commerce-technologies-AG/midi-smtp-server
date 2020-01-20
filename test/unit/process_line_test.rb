@@ -9,36 +9,12 @@ class ProcessLineUnitTest < Minitest::Test
   # overloaded midi-smtp-server class for test
   class MidiSmtpServerProcessLineTest < MidiSmtpServerTest
 
-    # event vars to inspect
-    attr_reader :ev_auth_authentication_id
-    attr_reader :ev_auth_authentication
-    attr_reader :ev_message_data
-    attr_reader :ev_message_delivered
-    attr_reader :ev_message_bytesize
-
-    def on_auth_event(_ctx, authorization_id, authentication_id, authentication)
-      # save local event data
-      @ev_auth_authentication_id = authentication_id
-      @ev_auth_authentication = authentication
-      # return role when authenticated
-      return 'supervisor' if authorization_id == '' && authentication_id == 'administrator' && authentication == 'password'
-      # otherwise exit with authentification exception
-      raise MidiSmtpServer::Smtpd535Exception
-    end
-
     def on_message_data_start_event(ctx)
       ctx[:message][:data] << 'Received: test header' << ctx[:message][:crlf]
     end
 
     def on_message_data_headers_event(ctx)
       ctx[:message][:data] << 'X-inject: Y' << ctx[:message][:crlf]
-    end
-
-    def on_message_data_event(ctx)
-      # save local event data
-      @ev_message_data = ctx[:message][:data]
-      @ev_message_delivered = ctx[:message][:delivered]
-      @ev_message_bytesize = ctx[:message][:bytesize]
     end
 
   end
