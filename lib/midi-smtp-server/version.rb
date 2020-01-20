@@ -5,13 +5,13 @@ module MidiSmtpServer
 
   module VERSION
 
-    MAJOR = 3
-    MINOR = 0
-    TINY = 0
+    MAJOR = 2
+    MINOR = 3
+    TINY = 2
 
     STRING = [MAJOR, MINOR, TINY].compact.join('.')
 
-    DATE = '2020-01-15'
+    DATE = '2020-01-20'
 
   end
 

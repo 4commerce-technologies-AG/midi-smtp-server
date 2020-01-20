@@ -178,7 +178,7 @@ module MidiSmtpServer
     # Initialize SMTP Server class
     #
     # +ports+:: ports to listen on. Allows multiple ports like "2525, 3535" or "2525:3535, 2525"
-    # +hosts+:: interface ip or hostname to listen on or "*" to listen on all interfaces, allows multiple hostnames and ip_addresses like "name.domain.com, 127.0.0.1, ::1"
+    # +hosts+:: interface ip or hostname to listen on or "*" to listen on all interfaces, wildcard ("") is deprecated, allows multiple hostnames and ip_addresses like "name.domain.com, 127.0.0.1, ::1"
     # +max_processings+:: maximum number of simultaneous processed connections, this does not limit the number of concurrent TCP connections
     # +opts+:: hash with optional settings
     # +opts.max_connections+:: maximum number of connections, this does limit the number of concurrent TCP connections (not set or nil => unlimited)
@@ -246,7 +246,15 @@ module MidiSmtpServer
       # So for that it was a small portion of luck which address had been used then.
       # We won't support that magic anymore. If wish to bind on all local ip_addresses
       # and interfaces, use new "*" wildcard, otherwise specify ip_addresses and / or hostnames
-      raise 'Deprecated empty hosts wildcard "" is used. Please use specific hostnames and / or ip_addresses or "*" for wildcard!' if @hosts.empty? || @hosts.include?('')
+      #
+      if @hosts.empty?
+        # info and change to "*" wildcard if only "" was given as hosts
+        logger.debug('Deprecated empty hosts wildcard "" is used. Please use specific hostnames and / or ip_addresses or "*" for wildcard!')
+        @hosts << '*'
+      elsif @hosts.include?('')
+        # raise exception when founding inner wildcard like "a.b.c.d,,e.f.g.h", guess miss-coding
+        raise 'Deprecated empty hosts wildcard "" is used. Please use specific hostnames and / or ip_addresses or "*" for wildcard!'
+      end
 
       # build array of addresses for ip_addresses and ports to use
       @addresses = []
