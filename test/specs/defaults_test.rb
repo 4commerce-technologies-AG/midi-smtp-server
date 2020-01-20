@@ -31,6 +31,12 @@ describe MidiSmtpServerTest do
     end
   end
 
+  describe 'defaults addresses' do
+    it 'must respond with [127.0.0.1:2525]' do
+      @smtpd.addresses.must_equal ["#{MidiSmtpServer::DEFAULT_SMTPD_HOST}:#{MidiSmtpServer::DEFAULT_SMTPD_PORT}"]
+    end
+  end
+
   describe 'defaults max_processings' do
     it 'must respond with 4' do
       @smtpd.max_processings.must_equal 4

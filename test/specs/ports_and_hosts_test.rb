@@ -14,6 +14,9 @@ describe MidiSmtpServerTest do
     it 'must respond with [127.0.0.1, ::1]' do
       @smtpd.hosts.must_equal ['127.0.0.1', '::1']
     end
+    it 'must respond with [127.0.0.1:2525, ::1:2525]' do
+      @smtpd.addresses.must_equal ['127.0.0.1:2525', '::1:2525']
+    end
   end
 end
 
@@ -30,6 +33,9 @@ describe MidiSmtpServerTest do
     it 'must respond with [127.0.0.1, ::1]' do
       @smtpd.hosts.must_equal ['127.0.0.1', '::1']
     end
+    it 'must respond with [127.0.0.1:2525, ::1:3535]' do
+      @smtpd.addresses.must_equal ['127.0.0.1:2525', '::1:3535']
+    end
   end
 end
 
@@ -45,6 +51,9 @@ describe MidiSmtpServerTest do
     end
     it 'must respond with [127.0.0.1, ::1]' do
       @smtpd.hosts.must_equal ['127.0.0.1', '::1']
+    end
+    it 'must respond with [127.0.0.1:2525, ::1:2525, ::1:3535]' do
+      @smtpd.addresses.must_equal ['127.0.0.1:2525', '::1:2525', '::1:3535']
     end
   end
 end
