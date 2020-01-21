@@ -1102,4 +1102,4 @@ Author: [Tom Freudenberg](http://about.me/tom.freudenberg)
 
 [MidiSmtpServer Class](https://github.com/4commerce-technologies-AG/midi-smtp-server/) is inspired from [MiniSmtpServer Class](https://github.com/aarongough/mini-smtp-server) and code written by [Aaron Gough](https://github.com/aarongough) and [Peter Cooper](http://peterc.org/)
 
-Copyright (c) 2014-2018 [Tom Freudenberg](http://www.4commerce.de/), [4commerce technologies AG](http://www.4commerce.de/), released under the MIT license
+Copyright (c) 2014-2020 [Tom Freudenberg](http://www.4commerce.de/), [4commerce technologies AG](http://www.4commerce.de/), released under the MIT license
