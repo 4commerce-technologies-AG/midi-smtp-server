@@ -45,7 +45,7 @@ class PortsAndConnectionsIntegrationTest < Minitest::Test
     channel2 = create_socket
     result1 = get_blocked_socket(channel1)
     assert_equal MSG_WELCOME, result1
-    assert_raises(IO::WaitReadable) { result2 = get_nonblocked_socket(channel2) }
+    assert_raises(IO::WaitReadable) { get_nonblocked_socket(channel2) }
     close_socket(channel1)
     result2 = get_blocked_socket(channel2)
     assert_equal MSG_WELCOME, result2
@@ -62,7 +62,7 @@ class PortsAndConnectionsIntegrationTest < Minitest::Test
     channel3 = create_socket
     result1 = get_blocked_socket(channel1)
     assert_equal MSG_WELCOME, result1
-    assert_raises(IO::WaitReadable) { result2 = get_nonblocked_socket(channel2) }
+    assert_raises(IO::WaitReadable) { get_nonblocked_socket(channel2) }
     close_socket(channel1)
     result2 = get_blocked_socket(channel2)
     assert_equal MSG_WELCOME, result2
