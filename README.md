@@ -683,7 +683,7 @@ opts = { tls_ciphers: TLS_CIPHERS_LEGACY, tls_methods: TLS_METHODS_LEGACY }
 
 As long as `tls_mode` is set to `:TLS_OPTIONAL` or `:TLS_REQUIRED` and no certificate or key path is given on class initialization, the internal TlsTransport class will create a certificate by itself. This should be only used for testing or debugging purposes and not in production environments. The memory only certificate is valid for 90 days from instantiating the class.
 
-To prevent client errors like `hostname does not match` the certificate is enriched by `subjectAltNames` and will include all hostnames and addresses which were identified on initialization. The automatic certificate subject and subjectAltName may also be set by `tls_cert_cn` and `tls_cert_san` parameter.
+To prevent client errors like `hostname does not match` the certificate is enriched by `subjectAltNames` and will include all hostnames and addresses which were identified on initialization. The automatic certificate subject and subjectAltName may also be manually set by `tls_cert_cn` and `tls_cert_san` parameter.
 
 In general and for production you better should generate a certificate by your own authority or use a professional trust-center like [LetsEncrypt](https://letsencrypt.org/) and more.
 
