@@ -181,6 +181,15 @@ There are also a `ports` and `hosts` reader for this values. Please be aware tha
 <br>
 
 
+## Hosts, hosts wildcard and interface detection
+
+Since version 2.3.2 the `hosts` parameter use the new `"*"` instead of the old empty (blank) `""` wildcard. This was updated to make sure that the new `"*"` wildcard should really identifiy and service on all (local) system interfaces. The new function will identify all valid IPv4 and IPv6 addresses on all (local) system interfaces. In addition the initialization will resolve all IPv4 and IPv6 addresses for all given hostnames. During startup a debug log message will print out the information to be aware of the listening ports and addresses. If an address is defined more than once like when using `"localhost, 127.0.0.1, ::1"`, the component will raise an exception that port and address is already in use.
+
+For production usage it is highly suggested to use defined IPv4 and IPv6 addresses for your services.
+
+<br>
+
+
 ## Utilization of connections and processings
 
 The options `max_processings` and `opts { max_connections }` allows to define the utilization of the running service. The value of `max_processings` will allow to queue processings while active processings have reached the maximum value. The additional (optional) value of `max_connections` will block any additional concurrent TCP connection and respond with SMTP error code 421 on more connections.
@@ -674,11 +683,13 @@ opts = { tls_ciphers: TLS_CIPHERS_LEGACY, tls_methods: TLS_METHODS_LEGACY }
 
 As long as `tls_mode` is set to `:TLS_OPTIONAL` or `:TLS_REQUIRED` and no certificate or key path is given on class initialization, the internal TlsTransport class will create a certificate by itself. This should be only used for testing or debugging purposes and not in production environments. The memory only certificate is valid for 90 days from instantiating the class.
 
-You better should generate a certificate by yourself or use a professional trust-center like [LetsEncrypt](https://letsencrypt.org/).
+To prevent client errors like `hostname does not match` the certificate is enriched by `subjectAltNames` and will include all hostnames and addresses which were identified on initialization. The automatic certificate subject and subjectAltName may also be set by `tls_cert_cn` and `tls_cert_san` parameter.
+
+In general and for production you better should generate a certificate by your own authority or use a professional trust-center like [LetsEncrypt](https://letsencrypt.org/) and more.
 
 #### Quick guide to create a certificate
 
-If interested in detail, read the whole story at [www.thenativeweb.io](https://www.thenativeweb.io/blog/2017-12-29-11-51-the-openssl-beginners-guide-to-creating-ssl-certificates/).
+If interested in detail, read the whole story at [www.thenativeweb.io](https://www.thenativeweb.io/blog/2017-12-29-11-51-the-openssl-beginners-guide-to-creating-ssl-certificates/). Please check also the information about SSL-SAN like [support.dnsimple.com](https://support.dnsimple.com/articles/what-is-ssl-san/).
 
 ```bash
 # create a private key
