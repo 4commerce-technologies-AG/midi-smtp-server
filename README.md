@@ -835,6 +835,16 @@ We suggest everybody using MidiSmtpServer 1.x or 2.x to switch at least to lates
 
 For upgrades from version 1.x or from _Mini_SmtpServer you may follow the guides (see appendix) how to change your existing code to be compatible with the latest 2.x releases.
 
+#### 2.3.2 (2020-01-21)
+
+1. New [hosts wildcard and interface detection](https://github.com/4commerce-technologies-AG/midi-smtp-server#hosts-hosts-wildcard-and-interface-detection)
+2. Extended [Certificates](https://github.com/4commerce-technologies-AG/midi-smtp-server#certificates) with subjectAltName
+3. Bound to ruby 2.3+
+4. Full support for `# frozen_string_literal: true` optimization
+5. Updated rubocop linter
+6. Rich enhancements to tests
+
+
 #### 2.3.1 (2018-11-01)
 
 1. New [events for header inspection and addons](https://github.com/4commerce-technologies-AG/midi-smtp-server#adding-and-testing-headers)
