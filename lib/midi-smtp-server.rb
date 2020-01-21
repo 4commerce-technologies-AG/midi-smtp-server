@@ -336,8 +336,8 @@ module MidiSmtpServer
         require 'openssl'
         # check for given CN and SAN
         if opts.include?(:tls_cert_cn)
-          tls_cert_cn = opts[:tls_cert_cn]
-          tls_cert_san = opts[:tls_cert_san]
+          tls_cert_cn = opts[:tls_cert_cn].to_s.strip
+          tls_cert_san = opts[:tls_cert_san].to_s.delete(' ').split(',')
         else
           # build generic set of "valid" self signed certificate CN and SAN
           # using all given hosts and detected ip_addresses but not "*" wildcard

@@ -15,7 +15,6 @@ class MemoryOnlyCertificateIntegrationTest < BaseIntegrationTest
       do_dns_reverse_lookup: false,
       auth_mode: :AUTH_OPTIONAL,
       tls_mode: :TLS_REQUIRED,
-      tls_cert_cn: '127.0.0.1',
       pipelining_extension: false,
       internationalization_extensions: true
     )

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'resolv'
+
 # A small and highly customizable ruby SMTP-Server.
 module MidiSmtpServer
 
@@ -42,9 +44,12 @@ module MidiSmtpServer
         @ctx.key = OpenSSL::PKey::RSA.new(File.open(@key_path.to_s))
       else
         # if none cert_path was set, create a self signed test certificate
-        # and try to setup common subject and  subject alt name(s) for cert
+        # and try to setup common subject and subject alt name(s) for cert
         @cert_cn = cert_cn.to_s.strip
-        @cert_san = cert_san.nil? ? [] : cert_san.uniq
+        @cert_san = ([@cert_cn] + (cert_san.nil? ? [] : cert_san)).uniq
+        # as well as IP Address extension entries for subject alt name(s) if ipv4 or ipv6 address
+        @cert_san_ip = []
+        @cert_san.each { |san| @cert_san_ip << san if san =~ Resolv::IPv4::Regex || san =~ Resolv::IPv6::Regex }
         # initialize self certificate and key
         logger.debug("SSL: using self generated test certificate! CN=#{@cert_cn} SAN=[#{@cert_san.join(',')}]")
         @ctx.key = OpenSSL::PKey::RSA.new 4096
@@ -64,7 +69,9 @@ module MidiSmtpServer
         @ef.issuer_certificate = @ctx.cert
         @ctx.cert.add_extension(@ef.create_extension('basicConstraints', 'CA:FALSE', false))
         @ctx.cert.add_extension(@ef.create_extension('keyUsage', 'digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment', false))
-        @ctx.cert.sign @ctx.key, OpenSSL::Digest::SHA1.new
+        @ctx.cert.add_extension(@ef.create_extension('subjectAltName', (@cert_san.map { |san| "DNS:#{san}" } + @cert_san_ip.map { |ip| "IP:#{ip}" }).join(', '), false))
+        @ctx.cert.sign @ctx.key, OpenSSL::Digest::SHA256.new
+        logger.debug("SSL: generated test certificate\r\n#{@ctx.cert.to_text}")
       end
     end
 
