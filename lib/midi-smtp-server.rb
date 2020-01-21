@@ -335,7 +335,7 @@ module MidiSmtpServer
       else
         require 'openssl'
         # check for given CN and SAN
-        if opts.include?(:tls_cn)
+        if opts.include?(:tls_cert_cn)
           tls_cert_cn = opts[:tls_cert_cn]
           tls_cert_san = opts[:tls_cert_san]
         else
