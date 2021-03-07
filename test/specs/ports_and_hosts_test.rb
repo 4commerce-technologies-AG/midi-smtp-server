@@ -9,13 +9,13 @@ describe MidiSmtpServerTest do
 
   describe '1 port 2 hosts' do
     it 'must respond with [2525]' do
-      @smtpd.ports.must_equal ['2525']
+      expect(@smtpd.ports).must_equal ['2525']
     end
     it 'must respond with [127.0.0.1, ::1]' do
-      @smtpd.hosts.must_equal ['127.0.0.1', '::1']
+      expect(@smtpd.hosts).must_equal ['127.0.0.1', '::1']
     end
     it 'must respond with [127.0.0.1:2525, ::1:2525]' do
-      @smtpd.addresses.must_equal ['127.0.0.1:2525', '::1:2525']
+      expect(@smtpd.addresses).must_equal ['127.0.0.1:2525', '::1:2525']
     end
   end
 end
@@ -28,13 +28,13 @@ describe MidiSmtpServerTest do
 
   describe '2 ports 2 hosts' do
     it 'must respond with [2525, 3535]' do
-      @smtpd.ports.must_equal ['2525', '3535']
+      expect(@smtpd.ports).must_equal ['2525', '3535']
     end
     it 'must respond with [127.0.0.1, ::1]' do
-      @smtpd.hosts.must_equal ['127.0.0.1', '::1']
+      expect(@smtpd.hosts).must_equal ['127.0.0.1', '::1']
     end
     it 'must respond with [127.0.0.1:2525, ::1:3535]' do
-      @smtpd.addresses.must_equal ['127.0.0.1:2525', '::1:3535']
+      expect(@smtpd.addresses).must_equal ['127.0.0.1:2525', '::1:3535']
     end
   end
 end
@@ -47,13 +47,13 @@ describe MidiSmtpServerTest do
 
   describe '3 ports 2 hosts' do
     it 'must respond with [2525, 2525:3535]' do
-      @smtpd.ports.must_equal ['2525', '2525:3535']
+      expect(@smtpd.ports).must_equal ['2525', '2525:3535']
     end
     it 'must respond with [127.0.0.1, ::1]' do
-      @smtpd.hosts.must_equal ['127.0.0.1', '::1']
+      expect(@smtpd.hosts).must_equal ['127.0.0.1', '::1']
     end
     it 'must respond with [127.0.0.1:2525, ::1:2525, ::1:3535]' do
-      @smtpd.addresses.must_equal ['127.0.0.1:2525', '::1:2525', '::1:3535']
+      expect(@smtpd.addresses).must_equal ['127.0.0.1:2525', '::1:2525', '::1:3535']
     end
   end
 end
