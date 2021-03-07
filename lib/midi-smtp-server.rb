@@ -205,7 +205,7 @@ module MidiSmtpServer
         @logger = opts[:logger]
       else
         require 'logger'
-        @logger = Logger.new(STDOUT)
+        @logger = Logger.new($stdout)
         @logger.datetime_format = '%Y-%m-%d %H:%M:%S'
         @logger.formatter = proc { |severity, datetime, _progname, msg| "#{datetime}: [#{severity}] #{msg.chomp}\n" }
         @logger.level = opts.include?(:logger_severity) ? opts[:logger_severity] : Logger::DEBUG
