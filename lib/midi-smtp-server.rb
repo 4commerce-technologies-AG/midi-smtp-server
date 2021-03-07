@@ -921,7 +921,7 @@ module MidiSmtpServer
             session[:cmd_sequence] = :CMD_QUIT
             return ''
 
-          when (/^MAIL FROM\:/i)
+          when (/^MAIL FROM:/i)
             # MAIL
             # 250 Requested mail action okay, completed
             # 421 <domain> Service not available, closing transmission channel
@@ -938,7 +938,7 @@ module MidiSmtpServer
             # check that authentication is enabled if necessary
             raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(session[:ctx])
             # handle command
-            @cmd_data = line.gsub(/^MAIL FROM\:/i, '').strip
+            @cmd_data = line.gsub(/^MAIL FROM:/i, '').strip
             # check for BODY= parameter
             case @cmd_data
               # test for explicit 7bit
@@ -982,7 +982,7 @@ module MidiSmtpServer
             # reply ok
             return '250 OK'
 
-          when (/^RCPT TO\:/i)
+          when (/^RCPT TO:/i)
             # RCPT
             # 250 Requested mail action okay, completed
             # 251 User not local; will forward to <forward-path>
@@ -1006,7 +1006,7 @@ module MidiSmtpServer
             # check that authentication is enabled if necessary
             raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(session[:ctx])
             # handle command
-            @cmd_data = line.gsub(/^RCPT TO\:/i, '').strip
+            @cmd_data = line.gsub(/^RCPT TO:/i, '').strip
             # call event to handle data
             return_value = on_rcpt_to_event(session[:ctx], @cmd_data)
             if return_value
