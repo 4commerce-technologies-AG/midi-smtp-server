@@ -790,6 +790,7 @@ module MidiSmtpServer
             # check whether to answer as HELO or EHLO
             case line
               when (/^EHLO/i)
+                # rubocop:disable Style/StringConcatenation
                 # reply supported extensions
                 return "250-#{session[:ctx][:server][:helo_response].to_s.strip}\r\n" +
                        # respond with 8BITMIME extension
@@ -803,6 +804,7 @@ module MidiSmtpServer
                        # respond with STARTTLS if available and not already enabled
                        (@encrypt_mode == :TLS_FORBIDDEN || encrypted?(session[:ctx]) ? '' : "250-STARTTLS\r\n") +
                        '250 OK'
+                # rubocop:enable all
               else
                 # reply ok only
                 return "250 OK #{session[:ctx][:server][:helo_response].to_s.strip}".strip
@@ -871,7 +873,7 @@ module MidiSmtpServer
                   # set sequence for next command input
                   session[:cmd_sequence] = :CMD_AUTH_LOGIN_USER
                   # response code with request for Username
-                  return '334 ' + Base64.strict_encode64('Username:')
+                  return format('334 %s', Base64.strict_encode64('Username:'))
                 elsif @auth_data.length == 2
                   # handle next sequence
                   process_auth_login_user(session, @auth_data[1])
@@ -1211,7 +1213,7 @@ module MidiSmtpServer
       # set sequence for next command input
       session[:cmd_sequence] = :CMD_AUTH_LOGIN_PASS
       # response code with request for Password
-      return '334 ' + Base64.strict_encode64('Password:')
+      return format('334 %s', Base64.strict_encode64('Password:'))
     end
 
     def process_auth_login_pass(session, encoded_auth_response)
