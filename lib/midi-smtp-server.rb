@@ -47,7 +47,7 @@ module MidiSmtpServer
     end
 
     # Stop the server
-    def stop(wait_seconds_before_close = 2, gracefully = true)
+    def stop(wait_seconds_before_close: 2, gracefully: true)
       # always signal shutdown
       shutdown if gracefully
       # wait if some connection(s) need(s) more time to handle shutdown
@@ -1125,7 +1125,7 @@ module MidiSmtpServer
     end
 
     # reset the context of current smtpd dialog
-    def process_reset_session(session, connection_initialize = false)
+    def process_reset_session(session, connection_initialize: false)
       # set active command sequence info
       session[:cmd_sequence] = connection_initialize ? :CMD_HELO : :CMD_RSET
       # drop any auth challenge
