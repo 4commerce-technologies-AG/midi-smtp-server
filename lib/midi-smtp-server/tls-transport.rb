@@ -70,7 +70,7 @@ module MidiSmtpServer
         @ctx.cert.add_extension(@ef.create_extension('basicConstraints', 'CA:FALSE', false))
         @ctx.cert.add_extension(@ef.create_extension('keyUsage', 'digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment', false))
         @ctx.cert.add_extension(@ef.create_extension('subjectAltName', (@cert_san.map { |san| "DNS:#{san}" } + @cert_san_ip.map { |ip| "IP:#{ip}" }).join(', '), false))
-        @ctx.cert.sign @ctx.key, OpenSSL::Digest::SHA256.new
+        @ctx.cert.sign @ctx.key, OpenSSL::Digest.new('SHA256')
         logger.debug("SSL: generated test certificate\r\n#{@ctx.cert.to_text}")
       end
     end
