@@ -22,6 +22,8 @@ module MidiSmtpServer
   # class for TlsTransport
   class TlsTransport
 
+    attr_reader :ssl_context
+
     def initialize(cert_path, key_path, ciphers, methods, cert_cn, cert_san, logger)
       # if need to debug something while working with openssl
       # OpenSSL::debug = true
@@ -31,17 +33,17 @@ module MidiSmtpServer
       @cert_path = cert_path.to_s == '' ? nil : cert_path.strip
       @key_path = key_path.to_s == '' ? nil : key_path.strip
       # create SSL context
-      @ctx = OpenSSL::SSL::SSLContext.new
-      @ctx.ciphers = ciphers.to_s == '' ? TLS_CIPHERS_ADVANCED_PLUS : ciphers
-      @ctx.ssl_version = methods.to_s == '' ? TLS_METHODS_ADVANCED : methods
+      @ssl_context = OpenSSL::SSL::SSLContext.new
+      @ssl_context.ciphers = ciphers.to_s == '' ? TLS_CIPHERS_ADVANCED_PLUS : ciphers
+      @ssl_context.ssl_version = methods.to_s == '' ? TLS_METHODS_ADVANCED : methods
       # check cert_path and key_path
       if !@cert_path.nil? || !@key_path.nil?
         # if any is set, test the pathes
         raise "File \”#{@cert_path}\" does not exist or is not a regular file. Could not load certificate." unless File.file?(@cert_path.to_s)
         raise "File \”#{@key_path}\" does not exist or is not a regular file. Could not load private key." unless File.file?(@key_path.to_s)
         # try to load certificate and key
-        @ctx.cert = OpenSSL::X509::Certificate.new(File.open(@cert_path.to_s))
-        @ctx.key = OpenSSL::PKey::RSA.new(File.open(@key_path.to_s))
+        @ssl_context.cert = OpenSSL::X509::Certificate.new(File.open(@cert_path.to_s))
+        @ssl_context.key = OpenSSL::PKey::RSA.new(File.open(@key_path.to_s))
       else
         # if none cert_path was set, create a self signed test certificate
         # and try to setup common subject and subject alt name(s) for cert
@@ -52,33 +54,33 @@ module MidiSmtpServer
         @cert_san.each { |san| @cert_san_ip << san if san =~ Resolv::IPv4::Regex || san =~ Resolv::IPv6::Regex }
         # initialize self certificate and key
         logger.debug("SSL: using self generated test certificate! CN=#{@cert_cn} SAN=[#{@cert_san.join(',')}]")
-        @ctx.key = OpenSSL::PKey::RSA.new 4096
-        @ctx.cert = OpenSSL::X509::Certificate.new
-        @ctx.cert.version = 2
-        @ctx.cert.serial = 1
+        @ssl_context.key = OpenSSL::PKey::RSA.new 4096
+        @ssl_context.cert = OpenSSL::X509::Certificate.new
+        @ssl_context.cert.version = 2
+        @ssl_context.cert.serial = 1
         # the subject and the issuer are identical only for test certificate
-        @ctx.cert.subject = OpenSSL::X509::Name.new [['CN', @cert_cn]]
-        @ctx.cert.issuer = @ctx.cert.subject
-        @ctx.cert.public_key = @ctx.key
+        @ssl_context.cert.subject = OpenSSL::X509::Name.new [['CN', @cert_cn]]
+        @ssl_context.cert.issuer = @ssl_context.cert.subject
+        @ssl_context.cert.public_key = @ssl_context.key
         # valid for 90 days
-        @ctx.cert.not_before = Time.now
-        @ctx.cert.not_after = Time.now + 60 * 60 * 24 * 90
+        @ssl_context.cert.not_before = Time.now
+        @ssl_context.cert.not_after = Time.now + 60 * 60 * 24 * 90
         # setup some cert extensions
-        @ef = OpenSSL::X509::ExtensionFactory.new
-        @ef.subject_certificate = @ctx.cert
-        @ef.issuer_certificate = @ctx.cert
-        @ctx.cert.add_extension(@ef.create_extension('basicConstraints', 'CA:FALSE', false))
-        @ctx.cert.add_extension(@ef.create_extension('keyUsage', 'digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment', false))
-        @ctx.cert.add_extension(@ef.create_extension('subjectAltName', (@cert_san.map { |san| "DNS:#{san}" } + @cert_san_ip.map { |ip| "IP:#{ip}" }).join(', '), false))
-        @ctx.cert.sign @ctx.key, OpenSSL::Digest.new('SHA256')
-        logger.debug("SSL: generated test certificate\r\n#{@ctx.cert.to_text}")
+        x509_extension_factory = OpenSSL::X509::ExtensionFactory.new
+        x509_extension_factory.subject_certificate = @ssl_context.cert
+        x509_extension_factory.issuer_certificate = @ssl_context.cert
+        @ssl_context.cert.add_extension(x509_extension_factory.create_extension('basicConstraints', 'CA:FALSE', false))
+        @ssl_context.cert.add_extension(x509_extension_factory.create_extension('keyUsage', 'digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment', false))
+        @ssl_context.cert.add_extension(x509_extension_factory.create_extension('subjectAltName', (@cert_san.map { |san| "DNS:#{san}" } + @cert_san_ip.map { |ip| "IP:#{ip}" }).join(', '), false))
+        @ssl_context.cert.sign @ssl_context.key, OpenSSL::Digest.new('SHA256')
+        logger.debug("SSL: generated test certificate\r\n#{@ssl_context.cert.to_text}")
       end
     end
 
     # start ssl connection over existing tcpserver socket
     def start(io)
       # start SSL negotiation
-      ssl = OpenSSL::SSL::SSLSocket.new(io, @ctx)
+      ssl = OpenSSL::SSL::SSLSocket.new(io, @ssl_context)
       # connect to server socket
       ssl.accept
       # make sure to close also the underlying io
