@@ -849,7 +849,7 @@ module MidiSmtpServer
             # check that not already authenticated
             raise Smtpd503Exception if authenticated?(session[:ctx])
             # handle command line
-            @auth_data = line.gsub(/^AUTH\ /i, '').strip.gsub(/\s+/, ' ').split(' ')
+            @auth_data = line.gsub(/^AUTH\ /i, '').strip.gsub(/\s+/, ' ').split
             # handle auth command
             case @auth_data[0]
 
