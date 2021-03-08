@@ -149,6 +149,11 @@ module MidiSmtpServer
       @addresses.dup
     end
 
+    # return a copy of the TLS OpenSSL::SSL::SSLContext if available
+    def ssl_context
+      @tls.ssl_context if @tls
+    end
+
     # Maximum number of simultaneous processed connections, this does not limit the TCP connections itself, as a FixNum
     attr_reader :max_processings
     # Maximum number of allowed connections, this does limit the TCP connections, as a FixNum
