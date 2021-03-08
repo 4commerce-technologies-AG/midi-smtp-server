@@ -26,7 +26,11 @@ class BaseIntegrationTest < Minitest::Test
     # use Net::SMTP to connect and send message
     smtp = Net::SMTP.new('127.0.0.1', 5555)
     smtp.enable_starttls if tls_enabled
-    smtp.start('Integration Test client', authentication_id, password, auth_type) do
+
+    store = OpenSSL::X509::Store.new
+    store.add_cert(@smtpd.ssl_context.cert) if @smtpd.ssl_context
+
+    smtp.start('Integration Test client', authentication_id, password, auth_type, ssl_context_params: { cert_store: store, verify_mode: OpenSSL::SSL::VERIFY_PEER }) do
       # when sending mails, send one additional crlf to safe the original linebreaks
       smtp.send_message(message_data + "\r\n", envelope_mail_from, envelope_rcpt_to)
     end
@@ -34,7 +38,20 @@ class BaseIntegrationTest < Minitest::Test
 
   def mikel_mail_send_mail(_envelope_mail_from, _envelope_rcpt_to, message_data, authentication_id = nil, password = nil, enable_starttls = false)
     m = Mail.read_from_string(message_data + "\r\n")
-    m.delivery_method :smtp, address: '127.0.0.1', user_name: authentication_id, password: password, port: 5555, enable_starttls_auto: false, enable_starttls: enable_starttls, openssl_verify_mode: 'NONE'
+
+    store = OpenSSL::X509::Store.new
+    store.add_cert(@smtpd.ssl_context.cert) if @smtpd.ssl_context
+
+    m.delivery_method :smtp,
+      address: '127.0.0.1',
+      user_name: authentication_id,
+      password: password,
+      port: 5555,
+      enable_starttls_auto: false,
+      enable_starttls: enable_starttls,
+      openssl_verify_mode: OpenSSL::SSL::VERIFY_NONE,
+      ssl_context_params: { cert_store: store, verify_mode: OpenSSL::SSL::VERIFY_PEER }
+
     m.deliver
   end
 
