@@ -2,7 +2,7 @@ site_name: MidiSmtpServer
 
 site_description: "The highly customizable ruby SMTP-Service library."
 
-copyright: "Copyright &copy; 2014 - 2020 Tom Freudenberg, 4commerce technologies AG"
+copyright: "Copyright &copy; 2014 - 2021 Tom Freudenberg, 4commerce technologies AG"
 
 docs_dir: mkdocs
 
