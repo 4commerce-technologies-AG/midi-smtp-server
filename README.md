@@ -197,7 +197,7 @@ The options `max_processings` and `opts { max_connections }` allows to define th
 E.g.:
 
 ``` ruby
-  server = MySmtpd.new('2525', '127.0.0.1', 4, {max_connections: 100})
+  server = MySmtpd.new('2525', '127.0.0.1', 4, max_connections: 100)
 ```
 
 In this example the service will allow 100 concurrent TCP connections but just process 4 of them simultaneously until all connections have been handled. If there are more than 100 concurrent TCP connections, those will be closed by error `421 Service too busy or not available`. That error code will _normally_ ensure, that the sender would try again after a while.
@@ -654,7 +654,7 @@ For security reasons check the "Table of the ciphers (and their priorities)" on 
 You may change ciphers and methods on your server class like:
 
 ```ruby
-server = MySmtpd.new(2525, '127.0.0.1', 4, { tls_mode: :TLS_OPTIONAL, tls_ciphers: TLS_CIPHERS_ADVANCED_PLUS, tls_methods: TLS_METHODS_ADVANCED })
+server = MySmtpd.new(2525, '127.0.0.1', 4, tls_mode: :TLS_OPTIONAL, tls_ciphers: TLS_CIPHERS_ADVANCED_PLUS, tls_methods: TLS_METHODS_ADVANCED)
 ```
 
 Predefined ciphers and methods strings are available as CONSTs:
@@ -703,7 +703,7 @@ openssl x509 -in csr.pem -out cert.pem -req -signkey key.pem -days 90
 You may use your certificate and key on your server class like:
 
 ```ruby
-server = MySmtpd.new(2525, '127.0.0.1', 4, { tls_mode: :TLS_OPTIONAL, tls_cert_path: 'cert.pem', tls_key_path: 'key.pem' })
+server = MySmtpd.new(2525, '127.0.0.1', 4, tls_mode: :TLS_OPTIONAL, tls_cert_path: 'cert.pem', tls_key_path: 'key.pem')
 ```
 
 <br>
@@ -719,6 +719,26 @@ gnutls-cli --insecure -s -p 2525 127.0.0.1
 ```
 
 After launching `gnutls-cli` start the SMTP dialog by sending `EHLO` and `STARTSSL` commands. Next press Ctrl-D on your keyboard to run the handshake for SSL communication between `gnutls-cli` and your server. When ready you may follow up with the delivery dialog for SMTP.
+
+<br>
+
+
+## Expose TLS SSL-Context
+
+To access the current daemon's TLS SSL-Context (OpenSSL::SSL::SSLContext), e.g. for adding self signed certificate to a client connection's cert_store, the property is exposed.
+
+```ruby
+  # taken from test suite
+  smtp = Net::SMTP.new('127.0.0.1', 5555)
+
+  store = OpenSSL::X509::Store.new
+  store.add_cert(@smtpd.ssl_context.cert) if @smtpd.ssl_context
+
+  smtp.start('Integration Test client', authentication_id, password, auth_type, ssl_context_params: { cert_store: store, verify_mode: OpenSSL::SSL::VERIFY_PEER }) do
+    # when sending mails, send one additional crlf to safe the original linebreaks
+    smtp.send_message(message_data + "\r\n", envelope_mail_from, envelope_rcpt_to)
+  end
+```
 
 <br>
 
@@ -835,6 +855,16 @@ We suggest everybody using MidiSmtpServer 1.x or 2.x to switch at least to lates
 
 For upgrades from version 1.x or from _Mini_SmtpServer you may follow the guides (see appendix) how to change your existing code to be compatible with the latest 2.x releases.
 
+#### 3.0.0 (2020-03-08)
+
+1. Enable support for Ruby 3.0
+2. Bound to ruby 2.6+
+3. Updated rubocop linter and code styles
+4. Fix tests for Net/Smtp of Ruby 3.0 ([check PR 22 on Net/Smtp](https://github.com/ruby/net-smtp/pull/22))
+5. Fix tests for minitest 6 deprecated warnings `obj.must_equal`
+6. New exposed [TLS ssl_context](https://github.com/4commerce-technologies-AG/midi-smtp-server#expose-tls-ssl-context)
+
+
 #### 2.3.2 (2020-01-21)
 
 1. New [hosts wildcard and interface detection](https://github.com/4commerce-technologies-AG/midi-smtp-server#hosts-hosts-wildcard-and-interface-detection)
@@ -906,6 +936,11 @@ For upgrades from version 1.x or from _Mini_SmtpServer you may follow the guides
 4. Use logger to log several messages from severity :debug up to :fatal
 
 <br>
+
+
+## Upgrade to 3.x
+
+If you are already using MidiSmtpServer 2.x it is a forward path to get your code ready for MidiSmtpServer version 3.x. Most important that the 3.x release is bound to Ruby 2.6+.
 
 
 ## Upgrade to 2.x
@@ -1045,7 +1080,7 @@ If you are already using MidiSmtpServer it might be only some straight forward w
   def new_message_event(message_hash)
   # message_hash[:from]
   # message_hash[:to]
-  # message_hash[:data]  
+  # message_hash[:data]
 ```
 
 ##### MidiSmtpServer
@@ -1102,4 +1137,4 @@ Author: [Tom Freudenberg](http://about.me/tom.freudenberg)
 
 [MidiSmtpServer Class](https://github.com/4commerce-technologies-AG/midi-smtp-server/) is inspired from [MiniSmtpServer Class](https://github.com/aarongough/mini-smtp-server) and code written by [Aaron Gough](https://github.com/aarongough) and [Peter Cooper](http://peterc.org/)
 
-Copyright (c) 2014-2020 [Tom Freudenberg](http://www.4commerce.de/), [4commerce technologies AG](http://www.4commerce.de/), released under the MIT license
+Copyright (c) 2014-2021 [Tom Freudenberg](http://www.4commerce.de/), [4commerce technologies AG](http://www.4commerce.de/), released under the MIT license
