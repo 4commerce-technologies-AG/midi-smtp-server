@@ -867,18 +867,22 @@ module MidiSmtpServer
 
               when (/LOGIN/i)
                 # check if auth_id was sent too
-                if @auth_data.length == 1
-                  # reset auth_challenge
-                  session[:auth_challenge] = {}
-                  # set sequence for next command input
-                  session[:cmd_sequence] = :CMD_AUTH_LOGIN_USER
-                  # response code with request for Username
-                  return format('334 %s', Base64.strict_encode64('Username:'))
-                elsif @auth_data.length == 2
-                  # handle next sequence
-                  process_auth_login_user(session, @auth_data[1])
-                else
-                  raise Smtpd500Exception
+                case @auth_data.length
+
+                  when 1
+                    # reset auth_challenge
+                    session[:auth_challenge] = {}
+                    # set sequence for next command input
+                    session[:cmd_sequence] = :CMD_AUTH_LOGIN_USER
+                    # response code with request for Username
+                    return format('334 %s', Base64.strict_encode64('Username:'))
+
+                  when 2
+                    # handle next sequence
+                    process_auth_login_user(session, @auth_data[1])
+
+                  else
+                    raise Smtpd500Exception
                 end
 
               # not supported in case of also unencrypted data delivery
