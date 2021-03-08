@@ -2,7 +2,8 @@ require:
   - rubocop-performance
 
 AllCops:
-  TargetRubyVersion: 2.3
+  TargetRubyVersion: 2.6
+  NewCops: enable
 
 Layout/EmptyLinesAroundModuleBody:
   EnforcedStyle: empty_lines
@@ -28,6 +29,9 @@ Lint/SuppressedException:
 
 Lint/UselessAccessModifier:
   Enabled: no
+
+Style/AccessorGrouping:
+  EnforcedStyle: separated
 
 Style/AccessModifierDeclarations:
   Enabled: no
