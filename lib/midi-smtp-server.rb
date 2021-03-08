@@ -151,7 +151,7 @@ module MidiSmtpServer
 
     # return a copy of the TLS OpenSSL::SSL::SSLContext if available
     def ssl_context
-      @tls.ssl_context if @tls
+      @tls&.ssl_context
     end
 
     # Maximum number of simultaneous processed connections, this does not limit the TCP connections itself, as a FixNum
