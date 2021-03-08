@@ -650,7 +650,7 @@ module MidiSmtpServer
 
                   when :CRLF_LEAVE
                     # use input line_break for line_break
-                    line_break = line[-2..-1] == "\r\n" ? "\r\n" : "\n"
+                    line_break = line[-2..] == "\r\n" ? "\r\n" : "\n"
                     # check to override session crlf info, only when CRLF_LEAVE is used and in DATA mode
                     session[:ctx][:message][:crlf] = line_break if session[:cmd_sequence] == :CMD_DATA
                     # remove any line_break from line
@@ -660,7 +660,7 @@ module MidiSmtpServer
 
                   when :CRLF_STRICT
                     # check line ends up by \r\n
-                    raise Smtpd500CrLfSequenceException unless line[-2..-1] == "\r\n"
+                    raise Smtpd500CrLfSequenceException unless line[-2..] == "\r\n"
                     # remove any line_break from line
                     line.chomp!
                     # check line for additional \r
