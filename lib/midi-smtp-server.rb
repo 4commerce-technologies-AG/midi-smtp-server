@@ -344,7 +344,7 @@ module MidiSmtpServer
           tls_cert_san = ([] + @hosts + @addresses.map { |address| address.rpartition(':').first }).uniq
           tls_cert_san.delete('*')
           # build generic CN based on first SAN
-          if tls_cert_san.first =~ /^(127\.0?0?0\.0?0?0\.0?0?1|::1|localhost)$/i
+          if tls_cert_san.first.match?(/^(127\.0?0?0\.0?0?0\.0?0?1|::1|localhost)$/i)
             # used generic localhost.local
             tls_cert_cn = 'localhost.local'
           else
