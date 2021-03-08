@@ -545,7 +545,7 @@ module MidiSmtpServer
           # 220 <domain> Service ready
           # 421 <domain> Service not available, closing transmission channel
           # Reset and initialize message
-          process_reset_session(session, true)
+          process_reset_session(session, connection_initialize: true)
 
           # get local address info
           _, session[:ctx][:server][:local_port], session[:ctx][:server][:local_host], session[:ctx][:server][:local_ip] = @do_dns_reverse_lookup ? io.addr(:hostname) : io.addr(:numeric)

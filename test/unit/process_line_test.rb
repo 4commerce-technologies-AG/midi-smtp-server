@@ -52,7 +52,7 @@ class ProcessLineUnitTest < Minitest::Test
     # rubocop:disable Style/ClassVars
     @@session = {}
     # rubocop:enable Style/ClassVars
-    @@smtpd.process_reset_session(@@session, true)
+    @@smtpd.process_reset_session(@@session, connection_initialize: true)
     # enter some valid status
     @@session[:ctx][:server][:local_host] = 'localhost.local'
     @@session[:ctx][:server][:local_ip] = '127.0.0.1'

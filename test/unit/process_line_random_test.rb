@@ -18,7 +18,7 @@ class ProcessLineRandomUnitTest < Minitest::Test
   end
 
   def setup_session
-    @smtpd.process_reset_session(@session, true)
+    @smtpd.process_reset_session(@session, connection_initialize: true)
     @session[:ctx][:server][:helo_response] = 'Process line test - Greeting'
   end
 
