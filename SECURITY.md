@@ -7,6 +7,7 @@ with security updates.
 
 | Version | Supported          |
 | ------- | ------------------ |
+| 3.x.y   | Yes                |
 | 2.3.x   | Yes                |
 | < 2.3   | No                 |
 
