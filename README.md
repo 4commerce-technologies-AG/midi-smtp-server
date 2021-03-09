@@ -940,7 +940,7 @@ For upgrades from version 1.x or from _Mini_SmtpServer you may follow the guides
 
 ## Upgrade to 3.x
 
-If you are already using MidiSmtpServer 2.x it is a forward path to get your code ready for MidiSmtpServer version 3.x. Most important that the 3.x release is bound to Ruby 2.6+.
+If you are already using MidiSmtpServer 2.x it is an easy forward path to get your code ready for MidiSmtpServer version 3.x. Most important that the 3.x release is bound to Ruby 2.6+.
 
 
 ## Upgrade to 2.x
