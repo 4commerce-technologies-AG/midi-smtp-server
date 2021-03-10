@@ -7,6 +7,7 @@ group :development do
   gem 'openssl'
   gem 'rubocop'
   gem 'rubocop-performance'
+  gem 'rubocop-minitest'
 end
 
 # stuff useful while testing

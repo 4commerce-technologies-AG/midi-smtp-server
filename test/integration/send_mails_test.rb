@@ -39,19 +39,19 @@ class SendMailsIntegrationTest < BaseIntegrationTest
   end
 
   def test_net_smtp_auth_plain_and_simple_send_1_mail
-    net_smtp_send_mail @envelope_mail_from, @envelope_rcpt_to, @doc_simple_mail, 'administrator', 'password', :plain
+    net_smtp_send_mail @envelope_mail_from, @envelope_rcpt_to, @doc_simple_mail, authentication_id: 'administrator', password: 'password', auth_type: :plain
     assert_equal @doc_simple_mail, @smtpd.ev_message_data
     assert_equal 'supervisor', @smtpd.ev_auth_authorization_id
   end
 
   def test_net_smtp_auth_login_and_simple_send_1_mail
-    net_smtp_send_mail @envelope_mail_from, @envelope_rcpt_to, @doc_simple_mail, 'administrator', 'password', :login
+    net_smtp_send_mail @envelope_mail_from, @envelope_rcpt_to, @doc_simple_mail, authentication_id: 'administrator', password: 'password', auth_type: :login
     assert_equal @doc_simple_mail, @smtpd.ev_message_data
     assert_equal 'supervisor', @smtpd.ev_auth_authorization_id
   end
 
   def test_net_smtp_auth_plain_fail
-    assert_raises(Net::SMTPAuthenticationError) { net_smtp_send_mail @envelope_mail_from, @envelope_rcpt_to, @doc_simple_mail, 'administrator', 'error_password', :plain }
+    assert_raises(Net::SMTPAuthenticationError) { net_smtp_send_mail @envelope_mail_from, @envelope_rcpt_to, @doc_simple_mail, authentication_id: 'administrator', password: 'error_password', auth_type: :plain }
   end
 
   def test_mikel_mail_simple_send_1_mail
@@ -60,7 +60,7 @@ class SendMailsIntegrationTest < BaseIntegrationTest
   end
 
   def test_mikel_mail_simple_send_1_mail_starttls
-    mikel_mail_send_mail @envelope_mail_from, @envelope_rcpt_to, @doc_simple_mail, 'administrator', 'password', true
+    mikel_mail_send_mail @envelope_mail_from, @envelope_rcpt_to, @doc_simple_mail, authentication_id: 'administrator', password: 'password', enable_starttls: true
     assert_equal @doc_simple_mail, @smtpd.ev_message_data
     assert_equal 'supervisor', @smtpd.ev_auth_authorization_id
   end

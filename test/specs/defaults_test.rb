@@ -10,14 +10,14 @@ describe MidiSmtpServerTest do
   describe 'defaults exception on empty hosts' do
     it 'must raise no hosts defined!' do
       err = expect { MidiSmtpServer::Smtpd.new(2525, '') }.must_raise RuntimeError
-      assert_match(/No hosts defined!/ ,err.message)
+      assert_match(/No hosts defined!/, err.message)
     end
   end
 
   describe 'defaults exception on empty host in hosts' do
     it 'must raise empty host defined!' do
       err = expect { MidiSmtpServer::Smtpd.new(2525, '1.2.3.4,,5.6.7.8') }.must_raise RuntimeError
-      assert_match(/Detected an empty identifier in given hosts!/ ,err.message)
+      assert_match(/Detected an empty identifier in given hosts!/, err.message)
     end
   end
 

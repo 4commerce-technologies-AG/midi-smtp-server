@@ -26,7 +26,7 @@ class InvalidCertificateNameIntegrationTest < BaseIntegrationTest
   ### TEST SUITE
 
   def test_net_smtp_auth_login_and_simple_send_1_mail_with_ssl
-    assert_raises(OpenSSL::SSL::SSLError) { net_smtp_send_mail @envelope_mail_from, @envelope_rcpt_to, @doc_simple_mail, 'administrator', 'password', :login, true }
+    assert_raises(OpenSSL::SSL::SSLError) { net_smtp_send_mail @envelope_mail_from, @envelope_rcpt_to, @doc_simple_mail, authentication_id: 'administrator', password: 'password', auth_type: :login, tls_enabled: true }
   end
 
 end
