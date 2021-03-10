@@ -81,12 +81,12 @@ at_exit do
     # Output for debug
     server.logger.info('Ctrl-C interrupted, exit now...') if flag_status_ctrl_c_pressed
     # info about shutdown
-    server.logger.info("Shutdown MySmtpd...")
+    server.logger.info('Shutdown MySmtpd...')
     # stop all threads and connections gracefully
     server.stop
   end
   # Output for debug
-  server.logger.info("MySmtpd down!")
+  server.logger.info('MySmtpd down!')
 end
 
 # Start the server
