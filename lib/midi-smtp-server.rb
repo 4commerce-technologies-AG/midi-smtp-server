@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'logger'
 require 'socket'
 require 'resolv'
 require 'base64'
@@ -10,6 +11,7 @@ module MidiSmtpServer
   # import sources
   require 'midi-smtp-server/version'
   require 'midi-smtp-server/exceptions'
+  require 'midi-smtp-server/logger'
   require 'midi-smtp-server/tls-transport'
 
   # default values
@@ -214,16 +216,19 @@ module MidiSmtpServer
       logger: nil,
       logger_severity: nil
     )
-      # logging
+      # create an exposed logger to forward loggings to the on_logging_event
+      @logger = MidiSmtpServer::ForwardingLogger.new(method(:on_logging_event))
+
+      # external logging
       if logger.nil?
-        require 'logger'
-        @logger = Logger.new($stdout)
-        @logger.datetime_format = '%Y-%m-%d %H:%M:%S'
-        @logger.formatter = proc { |severity, datetime, _progname, msg| "#{datetime}: [#{severity}] #{msg.chomp}\n" }
-        @logger.level = logger_severity.nil? ? Logger::DEBUG : logger_severity
+        @logger_protected = Logger.new($stdout)
+        @logger_protected.datetime_format = '%Y-%m-%d %H:%M:%S'
+        @logger_protected.formatter = proc { |severity, datetime, _progname, msg| "#{datetime}: [#{severity}] #{msg.chomp}\n" }
+        @logger_protected.level = logger_severity.nil? ? Logger::DEBUG : logger_severity
       else
-        @logger = logger
-        @logger.level = logger_severity unless logger_severity.nil?
+        @logger_protected = logger
+        @logger_protected.level = logger_severity unless logger_severity.nil?
+        logger.warn('Deprecated: "logger" was set on new! Please use "on_logging_event" instead.')
       end
 
       # list of TCPServers
@@ -368,18 +373,39 @@ module MidiSmtpServer
       end
     end
 
+    # event on any logging message
+    # the exposed logger property is from new class ForwardingLogger
+    # and pushes an logging message to the on_logging_event.
+    # if logging occurs from inside session, the _ctx should be not nil
+    # if logging occurs from an error, the err object should be filled
+    def on_logging_event(_ctx, severity, msg, err: nil)
+      case severity
+        when Logger::INFO
+          @logger_protected.info(msg)
+        when Logger::WARN
+          @logger_protected.warn(msg)
+        when Logger::ERROR
+          @logger_protected.error(msg)
+        when Logger::FATAL
+          @logger_protected.fatal(msg)
+          err.backtrace.each { |log| @logger_protected.fatal("#{log}") }
+        else
+          @logger_protected.debug(msg)
+      end
+    end
+
     # event on CONNECTION
     # you may change the ctx[:server][:local_response] and
     # you may change the ctx[:server][:helo_response] in here so
     # that these will be used as local welcome and greeting strings
     # the values are not allowed to return CR nor LF chars and will be stripped
     def on_connect_event(ctx)
-      logger.debug("Client connect from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} to #{ctx[:server][:local_ip]}:#{ctx[:server][:local_port]}")
+      on_logging_event(ctx, Logger::DEBUG, "Client connect from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} to #{ctx[:server][:local_ip]}:#{ctx[:server][:local_port]}")
     end
 
     # event before DISONNECT
     def on_disconnect_event(ctx)
-      logger.debug("Client disconnect from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} on #{ctx[:server][:local_ip]}:#{ctx[:server][:local_port]}")
+      on_logging_event(ctx, Logger::DEBUG, "Client disconnect from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} on #{ctx[:server][:local_ip]}:#{ctx[:server][:local_port]}")
     end
 
     # event on HELO/EHLO
@@ -395,7 +421,7 @@ module MidiSmtpServer
       # if authentification is used, override this event
       # and implement your own user management.
       # otherwise all authentifications are blocked per default
-      logger.debug("Deny access from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} for #{authentication_id}" + (authorization_id == '' ? '' : "/#{authorization_id}") + " with #{authentication}")
+      on_logging_event(ctx, Logger::DEBUG, "Deny access from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} for #{authentication_id}" + (authorization_id == '' ? '' : "/#{authorization_id}") + " with #{authentication}")
       raise Smtpd535Exception
     end
 
@@ -491,8 +517,7 @@ module MidiSmtpServer
                 # ignore this exception due to service shutdown
               rescue StandardError => e
                 # log fatal error while handling connection
-                logger.fatal("#{e} (#{e.class})".strip)
-                e.backtrace.each { |log| logger.fatal("#{log}") }
+                on_logging_event(nil, Logger::FATAL, "#{e} (#{e.class})".strip, err: e.clone)
               ensure
                 begin
                   # always gracefully shutdown connection.
@@ -519,8 +544,7 @@ module MidiSmtpServer
           # ignore this exception due to service shutdown
         rescue StandardError => e
           # log fatal error while starting new thread
-          logger.fatal("#{e} (#{e.class})".strip)
-          e.backtrace.each { |log| logger.fatal("#{log}") }
+          on_logging_event(nil, Logger::FATAL, "#{e} (#{e.class})".strip, err: e.clone)
         ensure
           begin
             # drop the service
@@ -589,7 +613,7 @@ module MidiSmtpServer
           output = +"220 #{session[:ctx][:server][:local_response].to_s.strip}\r\n"
 
           # log and show to client
-          logger.debug(+'>>> ' << output)
+          on_logging_event(session[:ctx], Logger::DEBUG, +'>>> ' << output)
           io.print output unless io.closed?
 
           # initialize \r\n for line_break, this is used for CRLF_ENSURE and CRLF_STRICT and mark as mutable
@@ -657,7 +681,7 @@ module MidiSmtpServer
                     # remove any \r or \n occurence from line
                     line.delete!("\r\n")
                     # log line, verbosity based on log severity and command sequence
-                    logger.debug(+'<<< ' << line << "\n") if session[:cmd_sequence] != :CMD_DATA
+                    on_logging_event(session[:ctx], Logger::DEBUG, +'<<< ' << line << "\n") if session[:cmd_sequence] != :CMD_DATA
 
                   when :CRLF_LEAVE
                     # use input line_break for line_break
@@ -667,7 +691,7 @@ module MidiSmtpServer
                     # remove any line_break from line
                     line.chomp!
                     # log line, verbosity based on log severity and command sequence
-                    logger.debug(+'<<< ' << line.gsub("\r", '[\r]') << "\n") if session[:cmd_sequence] != :CMD_DATA
+                    on_logging_event(session[:ctx], Logger::DEBUG, +'<<< ' << line.gsub("\r", '[\r]') << "\n") if session[:cmd_sequence] != :CMD_DATA
 
                   when :CRLF_STRICT
                     # check line ends up by \r\n
@@ -677,7 +701,7 @@ module MidiSmtpServer
                     # check line for additional \r
                     raise Smtpd500Exception, 'Line contains additional CR chars!' if line.index("\r")
                     # log line, verbosity based on log severity and command sequence
-                    logger.debug(+'<<< ' << line << "\n") if session[:cmd_sequence] != :CMD_DATA
+                    on_logging_event(session[:ctx], Logger::DEBUG, +'<<< ' << line << "\n") if session[:cmd_sequence] != :CMD_DATA
                 end
 
                 # process line and mark output as mutable
@@ -695,7 +719,7 @@ module MidiSmtpServer
                 # save clone of error object to context
                 session[:ctx][:server][:errors].push(e.clone)
                 # log error info if logging
-                logger.error("#{e} (#{e.class})".strip)
+                on_logging_event(session[:ctx], Logger::ERROR, "#{e} (#{e.class})".strip, err: e)
                 # get the given smtp dialog result
                 output = +"#{e.smtpd_result}"
 
@@ -706,7 +730,7 @@ module MidiSmtpServer
                 # save clone of error object to context
                 session[:ctx][:server][:errors].push(e.clone)
                 # log error info if logging
-                logger.error("#{e} (#{e.class})".strip)
+                on_logging_event(session[:ctx], Logger::ERROR, "#{e} (#{e.class})".strip, err: e)
                 # set default smtp server dialog error
                 output = +"#{Smtpd500Exception.new.smtpd_result}"
               end
@@ -714,7 +738,7 @@ module MidiSmtpServer
               # check result
               unless output.empty?
                 # log smtp dialog // message data is stored separate
-                logger.debug(+'>>> ' << output)
+                on_logging_event(session[:ctx], Logger::DEBUG, +'>>> ' << output)
                 # append line feed
                 output << "\r\n"
                 # smtp dialog response
@@ -734,9 +758,9 @@ module MidiSmtpServer
           io.print(output) unless io.closed?
 
         # connection was simply closed / aborted by remote closing socket
-        rescue EOFError
+        rescue EOFError => e
           # log info but only while debugging otherwise ignore message
-          logger.debug('EOFError - Connection lost due abort by client!')
+          on_logging_event(session[:ctx], Logger::DEBUG, 'Connection lost due abort by client! (EOFError)', err: e)
 
         rescue StandardError => e
           # inc number of detected exceptions during this session
@@ -744,15 +768,15 @@ module MidiSmtpServer
           # save clone of error object to context
           session[:ctx][:server][:errors].push(e.clone)
           # log error info if logging
-          logger.error("#{e} (#{e.class})".strip)
+          on_logging_event(session[:ctx], Logger::ERROR, "#{e} (#{e.class})".strip, err: e)
           # power down connection
           # ignore IOErrors when sending final smtp abort return code 421
           begin
             output = +"#{Smtpd421Exception.new.smtpd_result}\r\n"
             # smtp dialog response
             io.print(output) unless io.closed?
-          rescue StandardError
-            logger.debug('IOError - Can\'t send 421 abort code!')
+          rescue StandardError => e
+            on_logging_event(session[:ctx], Logger::DEBUG, 'Can\'t send 421 abort code! (IOError)', err: e)
           end
         end
 
