@@ -16,6 +16,7 @@ Gem::Specification.new do |s|
     'lib/midi-smtp-server.rb',
     'lib/midi-smtp-server/version.rb',
     'lib/midi-smtp-server/exceptions.rb',
+    'lib/midi-smtp-server/logger.rb',
     'lib/midi-smtp-server/tls-transport.rb'
   ]
   s.metadata = {
