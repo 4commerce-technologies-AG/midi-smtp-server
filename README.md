@@ -709,6 +709,17 @@ server = MySmtpd.new(2525, '127.0.0.1', 4, tls_mode: :TLS_OPTIONAL, tls_cert_pat
 <br>
 
 
+## Expose active SSLContext
+
+To access the current daemon´s SSL-Context (OpenSSL::SSL::SSLContext), e.g. for inspecting the self signed certificate, this object is exposed as property `ssl_context`.
+
+```ruby
+  cert = my_smtpd.ssl_context&.cert
+```
+
+<br>
+
+
 ## Test encrypted communication
 
 While working with encrypted communication it is sometimes hard to test and check during development or debugging. Therefore you should look at the GNU tool `gnutls-cli`. Use this tool to connect to your running SMTP-server and proceed with encrypted communication.
@@ -719,26 +730,6 @@ gnutls-cli --insecure -s -p 2525 127.0.0.1
 ```
 
 After launching `gnutls-cli` start the SMTP dialog by sending `EHLO` and `STARTSSL` commands. Next press Ctrl-D on your keyboard to run the handshake for SSL communication between `gnutls-cli` and your server. When ready you may follow up with the delivery dialog for SMTP.
-
-<br>
-
-
-## Expose TLS SSL-Context
-
-To access the current daemon's TLS SSL-Context (OpenSSL::SSL::SSLContext), e.g. for adding self signed certificate to a client connection's cert_store, the property is exposed.
-
-```ruby
-  # taken from test suite
-  smtp = Net::SMTP.new('127.0.0.1', 5555)
-
-  store = OpenSSL::X509::Store.new
-  store.add_cert(@smtpd.ssl_context.cert) if @smtpd.ssl_context
-
-  smtp.start('Integration Test client', authentication_id, password, auth_type, ssl_context_params: { cert_store: store, verify_mode: OpenSSL::SSL::VERIFY_PEER }) do
-    # when sending mails, send one additional crlf to safe the original linebreaks
-    smtp.send_message(message_data + "\r\n", envelope_mail_from, envelope_rcpt_to)
-  end
-```
 
 <br>
 
@@ -862,10 +853,11 @@ For upgrades from version 1.x or from _Mini_SmtpServer you may follow the guides
 3. Updated rubocop linter and code styles
 4. Fix tests for Net/Smtp of Ruby 3.0 ([check PR 22 on Net/Smtp](https://github.com/ruby/net-smtp/pull/22))
 5. Fix tests for minitest 6 deprecated warnings `obj.must_equal`
-6. New exposed [TLS ssl_context](https://github.com/4commerce-technologies-AG/midi-smtp-server#expose-tls-ssl-context)
+6. New exposed [active SSLContext](https://github.com/4commerce-technologies-AG/midi-smtp-server#expose-active-sslcontext)
 7. Dropped deprecated method `host` - please use `hosts.join(', ')` instead
 8. Dropped deprecated method `port` - please use `ports.join(', ')` instead
 9. Dropped deprecated empty wildcard `""` support on initialize - please use specific hostnames and / or ip-addresses or star wildcard `"*"` only
+10. Align tests with Rubocop style and coding enforcements
 
 
 #### 2.3.2 (2020-01-21)
