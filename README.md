@@ -19,7 +19,7 @@ MidiSmtpServer is the highly customizable ruby SMTP-Server and SMTP-Service libr
 
 As a library it is mainly designed to be integrated into your projects as serving a SMTP-Server service. The lib will do nothing with your mail and you have to create your own event functions to handle and operate on incoming mails. We are using this in conjunction with [Mikel Lindsaar](https://github.com/mikel) great Mail component (https://github.com/mikel/mail). Time to run your own SMTP-Server service.
 
-Checkout all the features and improvements (2.3.x Multiple ports and addresses, 2.2.x Encryption [StartTLS], 2.1.0 Authentication [AUTH], 2.1.1 significant speed improvement, etc.) and get more details from section [changes and updates](https://github.com/4commerce-technologies-AG/midi-smtp-server#changes-and-updates).
+Checkout all the features and improvements (3.0.0 Logging enhancement, 2.3.x Multiple ports and addresses, 2.2.x Encryption [StartTLS], 2.1.0 Authentication [AUTH], 2.1.1 significant speed improvement, etc.) and get more details from section [changes and updates](https://github.com/4commerce-technologies-AG/midi-smtp-server#changes-and-updates).
 
 MidiSmtpServer is an extremely flexible library and almost any aspect of SMTP communications can be handled by deriving its events and using its configuration options.
 
@@ -92,6 +92,13 @@ Use the component in your project sources by:
 MidiSmtpServer can be easily customized via subclassing. Simply subclass the `MidiSmtpServer` class as given in the example above and re-define event handlers:
 
 ```ruby
+  # event on any logging message
+  # the exposed logger property is from class MidiSmtpServer::ForwardingLogger
+  # and pushes any logging message to the on_logging_event.
+  # if logging occurs from inside session, the _ctx should be not nil
+  # if logging occurs from an error, the err object should be filled
+  def on_logging_event(ctx, severity, msg, err: nil)
+
   # event on CONNECTION
   # you may change the ctx[:server][:local_response] and
   # you may change the ctx[:server][:helo_response] in here so
@@ -426,6 +433,8 @@ You can access some important client and server values by using the `ctx` array 
 
   # counter (int) of exceptions / unknown commands
   ctx[:server][:exceptions]
+  # array with catched exception`s error objects
+  ctx[:server][:errors]
 
   # authentification infos
   ctx[:server][:authorization_id]
@@ -827,6 +836,31 @@ To understand the modes in details:
 <br>
 
 
+## Extended logging
+
+Starting from version 3.0.0 there are enhanced logging capabilities. Instead only set a individual logger there is a new exposed event method called `on_logging_event`. When using the `logger` property all messages are forwarded to the new event and could be catched from there. As an example you could post additional log content to monitoring services like sentry:
+
+```ruby
+def on_logging_event(ctx, severity, msg, err: nil)
+  # Sentry.capture_message(msg) if !err && msg # just an example
+  # And even, do some scoping, tagging etc.
+  # As having separate access to logger, now attach individual email data (like user/ email) to the sentry context.
+  if err
+    Sentry.set_tags(ip: ctx[:server][:remote_ip], from: ctx[:envelope][:from], to: ctx[:envelope][:to])
+    # Or use `Sentry.set_extras`
+    Sentry.capture_exception(err)
+    # or use `Sentry.configure_scope do |scope|...`
+  end
+  SemanticLogger['Distributer'].error msg, { user: 1, some_ctx_info: {...} }, err if severity >= 1
+  super
+end
+```
+
+To allow complete access to all log messages any logging output has to be send via `logger` property and methods like `logger.info()` or directly as event to `on_logging_event(ctx or nil, severity, msg, error object or nil)`. Checkout also the [Examples](https://github.com/4commerce-technologies-AG/midi-smtp-server/tree/master/examples) and [Cookbook](https://github.com/4commerce-technologies-AG/midi-smtp-server/tree/master/cookbook) sources.
+
+<br>
+
+
 ## Reliable code
 
 Since version 2.3 implementation and integration tests by minitest framework are added to this repository. While the implementation tests are mostly checking the components, the integration tests try to verify the correct exchange of messages for different scenarios.
@@ -864,14 +898,15 @@ For upgrades from version 1.x or from _Mini_SmtpServer you may follow the guides
 
 1. Enable support for Ruby 3.0
 2. Bound to ruby 2.6+
-3. Updated rubocop linter and code styles
-4. Fix tests for Net/Smtp of Ruby 3.0 ([check PR 22 on Net/Smtp](https://github.com/ruby/net-smtp/pull/22))
-5. Fix tests for minitest 6 deprecated warnings `obj.must_equal`
-6. New exposed [active SSLContext](https://github.com/4commerce-technologies-AG/midi-smtp-server#expose-active-sslcontext)
-7. Dropped deprecated method `host` - please use `hosts.join(', ')` instead
-8. Dropped deprecated method `port` - please use `ports.join(', ')` instead
-9. Dropped deprecated empty wildcard `""` support on initialize - please use specific hostnames and / or ip-addresses or star wildcard `"*"` only
-10. Align tests with Rubocop style and coding enforcements
+3. New [extended logging capabilities](https://github.com/4commerce-technologies-AG/midi-smtp-server#extended-logging)
+4. Updated rubocop linter and code styles
+5. Fix tests for Net/Smtp of Ruby 3.0 ([check PR 22 on Net/Smtp](https://github.com/ruby/net-smtp/pull/22))
+6. Fix tests for minitest 6 deprecated warnings `obj.must_equal`
+7. New exposed [active SSLContext](https://github.com/4commerce-technologies-AG/midi-smtp-server#expose-active-sslcontext)
+8. Dropped deprecated method `host` - please use `hosts.join(', ')` instead
+9. Dropped deprecated method `port` - please use `ports.join(', ')` instead
+10. Dropped deprecated empty wildcard `""` support on initialize - please use specific hostnames and / or ip-addresses or star wildcard `"*"` only
+11. Align tests with Rubocop style and coding enforcements
 
 
 #### 2.3.2 (2020-01-21)
