@@ -374,8 +374,8 @@ module MidiSmtpServer
     end
 
     # event on any logging message
-    # the exposed logger property is from new class ForwardingLogger
-    # and pushes an logging message to the on_logging_event.
+    # the exposed logger property is from class MidiSmtpServer::ForwardingLogger
+    # and pushes any logging message to the on_logging_event.
     # if logging occurs from inside session, the _ctx should be not nil
     # if logging occurs from an error, the err object should be filled
     def on_logging_event(_ctx, severity, msg, err: nil)
