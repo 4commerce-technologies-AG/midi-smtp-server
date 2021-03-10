@@ -693,7 +693,7 @@ module MidiSmtpServer
                 # inc number of detected exceptions during this session
                 session[:ctx][:server][:exceptions] += 1
                 # log error info if logging
-                logger.error("#{e}")
+                logger.error("#{e} (#{e.class})".strip)
                 # get the given smtp dialog result
                 output = +"#{e.smtpd_result}"
 
@@ -702,7 +702,7 @@ module MidiSmtpServer
                 # inc number of detected exceptions during this session
                 session[:ctx][:server][:exceptions] += 1
                 # log error info if logging
-                logger.error("#{e}")
+                logger.error("#{e} (#{e.class})".strip)
                 # set default smtp server dialog error
                 output = +"#{Smtpd500Exception.new.smtpd_result}"
               end
@@ -735,8 +735,10 @@ module MidiSmtpServer
           logger.debug('EOFError - Connection lost due abort by client!')
 
         rescue StandardError => e
+          # inc number of detected exceptions during this session
+          session[:ctx][:server][:exceptions] += 1
           # log error info if logging
-          logger.error("#{e}")
+          logger.error("#{e} (#{e.class})".strip)
           # power down connection
           # ignore IOErrors when sending final smtp abort return code 421
           begin
