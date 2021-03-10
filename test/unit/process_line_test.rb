@@ -35,9 +35,9 @@ class ProcessLineUnitTest < Minitest::Test
   def preliminary_setup_smtpd
     # rubocop:disable Style/ClassVars
     @@smtpd = MidiSmtpServerProcessLineTest.new(
-      '2525',
-      '127.0.0.1',
-      1,
+      ports: '2525',
+      hosts: '127.0.0.1',
+      max_processings: 1,
       auth_mode: :AUTH_OPTIONAL,
       tls_mode: :TLS_OPTIONAL,
       pipelining_extension: false,

@@ -9,9 +9,9 @@ class MemoryOnlyCertificateIntegrationTest < BaseIntegrationTest
     super
     # create service instance
     @smtpd = MidiSmtpServerTest.new(
-      '5555',
-      '127.0.0.1',
-      1,
+      ports: '5555',
+      hosts: '127.0.0.1',
+      max_processings: 1,
       do_dns_reverse_lookup: false,
       auth_mode: :AUTH_OPTIONAL,
       tls_mode: :TLS_REQUIRED,

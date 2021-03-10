@@ -6,9 +6,9 @@ class ProcessLineRandomUnitTest < Minitest::Test
   # initialize before tests
   def setup
     @smtpd = MidiSmtpServerTest.new(
-      '2525',
-      '127.0.0.1',
-      1,
+      ports: '2525',
+      hosts: '127.0.0.1',
+      max_processings: 1,
       auth_mode: :AUTH_OPTIONAL,
       tls_mode: :TLS_FORBIDDEN,
       pipelining_extension: true,

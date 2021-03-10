@@ -6,11 +6,59 @@ require_relative '../../lib/midi-smtp-server'
 # overloaded midi-smtp-server class for test
 class MidiSmtpServerTest < MidiSmtpServer::Smtpd
 
-  def initialize(ports = MidiSmtpServer::DEFAULT_SMTPD_PORT, hosts = MidiSmtpServer::DEFAULT_SMTPD_HOST, max_processings = MidiSmtpServer::DEFAULT_SMTPD_MAX_PROCESSINGS, opts = {})
+  def initialize(
+    ports: MidiSmtpServer::DEFAULT_SMTPD_PORT,
+    hosts: MidiSmtpServer::DEFAULT_SMTPD_HOST,
+    max_processings: MidiSmtpServer::DEFAULT_SMTPD_MAX_PROCESSINGS,
+    max_connections: nil,
+    crlf_mode: nil,
+    do_dns_reverse_lookup: nil,
+    io_cmd_timeout: nil,
+    io_buffer_chunk_size: nil,
+    io_buffer_max_size: nil,
+    pipelining_extension: nil,
+    internationalization_extensions: nil,
+    auth_mode: nil,
+    tls_mode: nil,
+    tls_cert_path: nil,
+    tls_key_path: nil,
+    tls_ciphers: nil,
+    tls_methods: nil,
+    tls_cert_cn: nil,
+    tls_cert_san: nil,
+    logger: nil,
+    logger_severity: nil
+  )
+
+    # rubocop:disable Lint/ShadowedArgument
     # disable DEBUG log output
-    opts[:logger_severity] = 5 # Logger::UNKNOWN
+    logger_severity = 5 # Logger::UNKNOWN
+    # rubocop:enable Lint/ShadowedArgument
+
     # initialize
-    super(ports, hosts, max_processings, opts)
+    super(
+      ports: ports,
+      hosts: hosts,
+      max_processings: max_processings,
+      max_connections: max_connections,
+      crlf_mode: crlf_mode,
+      do_dns_reverse_lookup: do_dns_reverse_lookup,
+      io_cmd_timeout: io_cmd_timeout,
+      io_buffer_chunk_size: io_buffer_chunk_size,
+      io_buffer_max_size: io_buffer_max_size,
+      pipelining_extension: pipelining_extension,
+      internationalization_extensions: internationalization_extensions,
+      auth_mode: auth_mode,
+      tls_mode: tls_mode,
+      tls_cert_path: tls_cert_path,
+      tls_key_path: tls_key_path,
+      tls_ciphers: tls_ciphers,
+      tls_methods: tls_methods,
+      tls_cert_cn: tls_cert_cn,
+      tls_cert_san: tls_cert_san,
+      logger: logger,
+      logger_severity: logger_severity
+    )
   end
 
   # change visibilty for testing

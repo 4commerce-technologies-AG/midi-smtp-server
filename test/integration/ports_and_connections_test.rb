@@ -10,9 +10,9 @@ class PortsAndConnectionsIntegrationTest < Minitest::Test
   def setup
     # create service instance
     @smtpd = MidiSmtpServerTest.new(
-      '5555',
-      '127.0.0.1',
-      1,
+      ports: '5555',
+      hosts: '127.0.0.1',
+      max_processings: 1,
       max_connections: 2,
       do_dns_reverse_lookup: false
     )
