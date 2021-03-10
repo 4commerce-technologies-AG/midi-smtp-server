@@ -863,6 +863,9 @@ For upgrades from version 1.x or from _Mini_SmtpServer you may follow the guides
 4. Fix tests for Net/Smtp of Ruby 3.0 ([check PR 22 on Net/Smtp](https://github.com/ruby/net-smtp/pull/22))
 5. Fix tests for minitest 6 deprecated warnings `obj.must_equal`
 6. New exposed [TLS ssl_context](https://github.com/4commerce-technologies-AG/midi-smtp-server#expose-tls-ssl-context)
+7. Dropped deprecated method `host` - please use `hosts.join(', ')` instead
+8. Dropped deprecated method `port` - please use `ports.join(', ')` instead
+9. Dropped deprecated empty wildcard `""` support on initialize - please use specific hostnames and / or ip-addresses or star wildcard `"*"` only
 
 
 #### 2.3.2 (2020-01-21)
