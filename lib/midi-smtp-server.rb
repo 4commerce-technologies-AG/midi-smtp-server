@@ -101,7 +101,7 @@ module MidiSmtpServer
     # Join with the server thread(s)
     # before joining the server threads, check and wait optionally a few seconds
     # to let the service(s) come up
-    def join(sleep_seconds_before_join = 1)
+    def join(sleep_seconds_before_join: 1)
       # check already existing TCPServers
       return if @tcp_servers.empty?
       # wait some seconds before joininig the upcoming threads
@@ -173,35 +173,57 @@ module MidiSmtpServer
     # +ports+:: ports to listen on. Allows multiple ports like "2525, 3535" or "2525:3535, 2525"
     # +hosts+:: interface ip or hostname to listen on or "*" to listen on all interfaces, allows multiple hostnames and ip_addresses like "name.domain.com, 127.0.0.1, ::1"
     # +max_processings+:: maximum number of simultaneous processed connections, this does not limit the number of concurrent TCP connections
-    # +opts+:: hash with optional settings
-    # +opts.max_connections+:: maximum number of connections, this does limit the number of concurrent TCP connections (not set or nil => unlimited)
-    # +opts.crlf_mode+:: CRLF handling support (:CRLF_ENSURE [default], :CRLF_LEAVE, :CRLF_STRICT)
-    # +opts.do_dns_reverse_lookup+:: flag if this smtp server should do reverse DNS lookups on incoming connections
-    # +opts.io_cmd_timeout+:: time in seconds to wait until complete line of data is expected (DEFAULT_IO_CMD_TIMEOUT, nil => disabled test)
-    # +opts.io_buffer_chunk_size+:: size of chunks (bytes) to read non-blocking from socket (DEFAULT_IO_BUFFER_CHUNK_SIZE)
-    # +opts.io_buffer_max_size+:: max size of buffer (max line length) until \lf ist expected (DEFAULT_IO_BUFFER_MAX_SIZE, nil => disabled test)
-    # +opts.pipelining_extension+:: set to true for support of SMTP PIPELINING extension (DEFAULT_PIPELINING_EXTENSION_ENABLED)
-    # +opts.internationalization_extensions+:: set to true for support of SMTP 8BITMIME and SMTPUTF8 extensions (DEFAULT_INTERNATIONALIZATION_EXTENSIONS_ENABLED)
-    # +opts.auth_mode+:: enable builtin authentication support (:AUTH_FORBIDDEN [default], :AUTH_OPTIONAL, :AUTH_REQUIRED)
-    # +opts.tls_mode+:: enable builtin TLS support (:TLS_FORBIDDEN [default], :TLS_OPTIONAL, :TLS_REQUIRED)
-    # +opts.tls_cert_path+:: path to tls cerificate chain file
-    # +opts.tls_key_path+:: path to tls key file
-    # +opts.tls_ciphers+:: allowed ciphers for connection
-    # +opts.tls_methods+:: allowed methods for protocol
-    # +opts.tls_cert_cn+:: set subject (CN) for self signed certificate "cn.domain.com"
-    # +opts.tls_cert_san+:: set subject alternative (SAN) for self signed certificate, allows multiple names like "alt1.domain.com, alt2.domain.com"
-    # +opts.logger+:: own logger class, otherwise default logger is created
-    # +opts.logger_severity+:: logger level when default logger is used
-    def initialize(ports = DEFAULT_SMTPD_PORT, hosts = DEFAULT_SMTPD_HOST, max_processings = DEFAULT_SMTPD_MAX_PROCESSINGS, opts = {})
+    # +max_connections+:: maximum number of connections, this does limit the number of concurrent TCP connections (not set or nil => unlimited)
+    # +crlf_mode+:: CRLF handling support (:CRLF_ENSURE [default], :CRLF_LEAVE, :CRLF_STRICT)
+    # +do_dns_reverse_lookup+:: flag if this smtp server should do reverse DNS lookups on incoming connections
+    # +io_cmd_timeout+:: time in seconds to wait until complete line of data is expected (DEFAULT_IO_CMD_TIMEOUT, nil => disabled test)
+    # +io_buffer_chunk_size+:: size of chunks (bytes) to read non-blocking from socket (DEFAULT_IO_BUFFER_CHUNK_SIZE)
+    # +io_buffer_max_size+:: max size of buffer (max line length) until \lf ist expected (DEFAULT_IO_BUFFER_MAX_SIZE, nil => disabled test)
+    # +pipelining_extension+:: set to true for support of SMTP PIPELINING extension (DEFAULT_PIPELINING_EXTENSION_ENABLED)
+    # +internationalization_extensions+:: set to true for support of SMTP 8BITMIME and SMTPUTF8 extensions (DEFAULT_INTERNATIONALIZATION_EXTENSIONS_ENABLED)
+    # +auth_mode+:: enable builtin authentication support (:AUTH_FORBIDDEN [default], :AUTH_OPTIONAL, :AUTH_REQUIRED)
+    # +tls_mode+:: enable builtin TLS support (:TLS_FORBIDDEN [default], :TLS_OPTIONAL, :TLS_REQUIRED)
+    # +tls_cert_path+:: path to tls cerificate chain file
+    # +tls_key_path+:: path to tls key file
+    # +tls_ciphers+:: allowed ciphers for connection
+    # +tls_methods+:: allowed methods for protocol
+    # +tls_cert_cn+:: set subject (CN) for self signed certificate "cn.domain.com"
+    # +tls_cert_san+:: set subject alternative (SAN) for self signed certificate, allows multiple names like "alt1.domain.com, alt2.domain.com"
+    # +logger+:: own logger class, otherwise default logger is created
+    # +logger_severity+:: logger level when default logger is used
+    def initialize(
+      ports: DEFAULT_SMTPD_PORT,
+      hosts: DEFAULT_SMTPD_HOST,
+      max_processings: DEFAULT_SMTPD_MAX_PROCESSINGS,
+      max_connections: nil,
+      crlf_mode: nil,
+      do_dns_reverse_lookup: nil,
+      io_cmd_timeout: nil,
+      io_buffer_chunk_size: nil,
+      io_buffer_max_size: nil,
+      pipelining_extension: nil,
+      internationalization_extensions: nil,
+      auth_mode: nil,
+      tls_mode: nil,
+      tls_cert_path: nil,
+      tls_key_path: nil,
+      tls_ciphers: nil,
+      tls_methods: nil,
+      tls_cert_cn: nil,
+      tls_cert_san: nil,
+      logger: nil,
+      logger_severity: nil
+    )
       # logging
-      if opts.include?(:logger)
-        @logger = opts[:logger]
-      else
+      if logger.nil?
         require 'logger'
         @logger = Logger.new($stdout)
         @logger.datetime_format = '%Y-%m-%d %H:%M:%S'
         @logger.formatter = proc { |severity, datetime, _progname, msg| "#{datetime}: [#{severity}] #{msg.chomp}\n" }
-        @logger.level = opts.include?(:logger_severity) ? opts[:logger_severity] : Logger::DEBUG
+        @logger.level = logger_severity.nil? ? Logger::DEBUG : logger_severity
+      else
+        @logger = logger
+        @logger.level = logger_severity unless logger_severity.nil?
       end
 
       # list of TCPServers
@@ -286,45 +308,43 @@ module MidiSmtpServer
 
       # read max_processings
       @max_processings = max_processings
+      raise 'Number of simultaneous processings (max_processings) must be a positive integer!' unless @max_processings.is_a?(Integer) && @max_processings.positive?
       # check max_connections
-      @max_connections = opts.include?(:max_connections) ? opts[:max_connections] : nil
+      @max_connections = max_connections
       raise 'Number of concurrent connections is lower than number of simultaneous processings!' if @max_connections && @max_connections < @max_processings
 
       # check for crlf mode
-      @crlf_mode = opts.include?(:crlf_mode) ? opts[:crlf_mode] : DEFAULT_CRLF_MODE
-      raise "Unknown CRLF mode #{@crlf_mode} was given by opts!" unless CRLF_MODES.include?(@crlf_mode)
+      @crlf_mode = crlf_mode.nil? ? DEFAULT_CRLF_MODE : crlf_mode
+      raise "Unknown CRLF mode #{@crlf_mode} was given!" unless CRLF_MODES.include?(@crlf_mode)
 
       # always prevent auto resolving hostnames to prevent a delay on socket connect
       BasicSocket.do_not_reverse_lookup = true
       # do reverse lookups manually if enabled by io.addr and io.peeraddr
-      @do_dns_reverse_lookup = opts.include?(:do_dns_reverse_lookup) ? opts[:do_dns_reverse_lookup] : true
+      @do_dns_reverse_lookup = do_dns_reverse_lookup.nil? ? true : do_dns_reverse_lookup
 
       # io and buffer settings
-      @io_cmd_timeout = opts.include?(:io_cmd_timeout) ? opts[:io_cmd_timeout] : DEFAULT_IO_CMD_TIMEOUT
-      @io_buffer_chunk_size = opts.include?(:io_buffer_chunk_size) ? opts[:io_buffer_chunk_size] : DEFAULT_IO_BUFFER_CHUNK_SIZE
-      @io_buffer_max_size = opts.include?(:io_buffer_max_size) ? opts[:io_buffer_max_size] : DEFAULT_IO_BUFFER_MAX_SIZE
+      @io_cmd_timeout = io_cmd_timeout.nil? ? DEFAULT_IO_CMD_TIMEOUT : io_cmd_timeout
+      @io_buffer_chunk_size = io_buffer_chunk_size.nil? ? DEFAULT_IO_BUFFER_CHUNK_SIZE : io_buffer_chunk_size
+      @io_buffer_max_size = io_buffer_max_size.nil? ? DEFAULT_IO_BUFFER_MAX_SIZE : io_buffer_max_size
 
       # smtp extensions
-      @pipelining_extension = opts.include?(:pipelining_extension) ? opts[:pipelining_extension] : DEFAULT_PIPELINING_EXTENSION_ENABLED
-      @internationalization_extensions = opts.include?(:internationalization_extensions) ? opts[:internationalization_extensions] : DEFAULT_INTERNATIONALIZATION_EXTENSIONS_ENABLED
+      @pipelining_extension = pipelining_extension.nil? ? DEFAULT_PIPELINING_EXTENSION_ENABLED : pipelining_extension
+      @internationalization_extensions = internationalization_extensions.nil? ? DEFAULT_INTERNATIONALIZATION_EXTENSIONS_ENABLED : internationalization_extensions
 
       # check for authentification
-      @auth_mode = opts.include?(:auth_mode) ? opts[:auth_mode] : DEFAULT_AUTH_MODE
-      raise "Unknown authentification mode #{@auth_mode} was given by opts!" unless AUTH_MODES.include?(@auth_mode)
+      @auth_mode = auth_mode.nil? ? DEFAULT_AUTH_MODE : auth_mode
+      raise "Unknown authentification mode #{@auth_mode} was given!" unless AUTH_MODES.include?(@auth_mode)
 
       # check for encryption
-      @encrypt_mode = opts.include?(:tls_mode) ? opts[:tls_mode] : DEFAULT_ENCRYPT_MODE
-      raise "Unknown encryption mode #{@encrypt_mode} was given by opts!" unless ENCRYPT_MODES.include?(@encrypt_mode)
+      @encrypt_mode = tls_mode.nil? ? DEFAULT_ENCRYPT_MODE : tls_mode
+      raise "Unknown encryption mode #{@encrypt_mode} was given!" unless ENCRYPT_MODES.include?(@encrypt_mode)
       # SSL transport layer for STARTTLS
       if @encrypt_mode == :TLS_FORBIDDEN
         @tls = nil
       else
         require 'openssl'
         # check for given CN and SAN
-        if opts.include?(:tls_cert_cn)
-          tls_cert_cn = opts[:tls_cert_cn].to_s.strip
-          tls_cert_san = opts[:tls_cert_san].to_s.delete(' ').split(',')
-        else
+        if tls_cert_cn.nil?
           # build generic set of "valid" self signed certificate CN and SAN
           # using all given hosts and detected ip_addresses but not "*" wildcard
           tls_cert_san = ([] + @hosts + @addresses.map { |address| address.rpartition(':').first }).uniq
@@ -339,9 +359,12 @@ module MidiSmtpServer
             tls_cert_cn = tls_cert_san.first
             tls_cert_san.slice!(0)
           end
+        else
+          tls_cert_cn = tls_cert_cn.to_s.strip
+          tls_cert_san = tls_cert_san.to_s.delete(' ').split(',')
         end
         # create ssl transport service
-        @tls = TlsTransport.new(opts[:tls_cert_path], opts[:tls_key_path], opts[:tls_ciphers], opts[:tls_methods], tls_cert_cn, tls_cert_san, @logger)
+        @tls = TlsTransport.new(tls_cert_path, tls_key_path, tls_ciphers, tls_methods, tls_cert_cn, tls_cert_san, @logger)
       end
     end
 
