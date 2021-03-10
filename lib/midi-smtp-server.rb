@@ -491,7 +491,7 @@ module MidiSmtpServer
                 # ignore this exception due to service shutdown
               rescue StandardError => e
                 # log fatal error while handling connection
-                logger.fatal(e.backtrace.join("\n"))
+                logger.fatal(e.backtrace.dup.insert(0, "#{e}").join("\n"))
               ensure
                 begin
                   # always gracefully shutdown connection.
@@ -518,7 +518,7 @@ module MidiSmtpServer
           # ignore this exception due to service shutdown
         rescue StandardError => e
           # log fatal error while starting new thread
-          logger.fatal(e.backtrace.join("\n"))
+          logger.fatal(e.backtrace.dup.insert(0, "#{e}").join("\n"))
         ensure
           begin
             # drop the service
