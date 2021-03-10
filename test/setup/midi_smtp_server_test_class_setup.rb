@@ -30,10 +30,8 @@ class MidiSmtpServerTest < MidiSmtpServer::Smtpd
     logger_severity: nil
   )
 
-    # rubocop:disable Lint/ShadowedArgument
-    # disable DEBUG log output
-    logger_severity = 5 # Logger::UNKNOWN
-    # rubocop:enable Lint/ShadowedArgument
+    # disable DEBUG log output as default
+    logger_severity = 5 if logger_severity.nil? # Logger::UNKNOWN
 
     # initialize
     super(
