@@ -33,6 +33,7 @@ class ProcessResetSessionUnitTest < Minitest::Test
     assert_equal '', @session[:ctx][:server][:helo_response]
     assert_equal '', @session[:ctx][:server][:connected]
     assert_equal 0, @session[:ctx][:server][:exceptions]
+    assert_equal 0, @session[:ctx][:server][:errors].length
     assert_equal '', @session[:ctx][:server][:authorization_id]
     assert_equal '', @session[:ctx][:server][:authentication_id]
     assert_equal '', @session[:ctx][:server][:authenticated]
