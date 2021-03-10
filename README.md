@@ -269,7 +269,7 @@ To make it easier for processing addresses, you are able to normalize them like:
     # we believe in downcased addresses
     rcpt_to_data.downcase!
     # Output for debug
-    puts "Normalized to: [#{rcpt_to_data}]..."
+    logger.debug("Normalized to: [#{rcpt_to_data}]...")
     # return address
     rcpt_to_data
   end
@@ -606,11 +606,11 @@ def on_rcpt_to_event(ctx, rcpt_to_data)
   # check if this session was authenticated already
   if authenticated?(ctx)
     # yes
-    puts "Proceed with authorized id: #{ctx[:server][:authorization_id]}"
-    puts "and authentication id: #{ctx[:server][:authentication_id]}"
+    logger.debug("Proceed with authorized id: #{ctx[:server][:authorization_id]}")
+    logger.debug("and authentication id: #{ctx[:server][:authentication_id]}")
   else
     # no
-    puts "Proceed with anonymoous credentials"
+    logger.debug("Proceed with anonymoous credentials")
   end
 end
 ```
