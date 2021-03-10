@@ -11,7 +11,11 @@ module Mail
   class SMTP
 
     def start_smtp_session(&block)
-      build_smtp_session.start(settings[:domain], settings[:user_name], settings[:password], settings[:authentication], ssl_context_params: settings[:ssl_context_params], &block)
+      if Net::SMTP.const_defined?('VERSION') && (Net::SMTP::VERSION > '0.2.1')
+        build_smtp_session.start(settings[:domain], settings[:user_name], settings[:password], settings[:authentication], ssl_context_params: settings[:ssl_context_params], &block)
+      else
+        build_smtp_session.start(settings[:domain], settings[:user_name], settings[:password], settings[:authentication], &block)
+      end
     end
 
   end

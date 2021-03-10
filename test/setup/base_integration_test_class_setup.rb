@@ -30,9 +30,16 @@ class BaseIntegrationTest < Minitest::Test
     store = OpenSSL::X509::Store.new
     store.add_cert(@smtpd.ssl_context.cert) if @smtpd.ssl_context
 
-    smtp.start('Integration Test client', authentication_id, password, auth_type, ssl_context_params: { cert_store: store, verify_mode: OpenSSL::SSL::VERIFY_PEER }) do
-      # when sending mails, send one additional crlf to safe the original linebreaks
-      smtp.send_message("#{message_data}\r\n", envelope_mail_from, envelope_rcpt_to)
+    if Net::SMTP.const_defined?('VERSION') && (Net::SMTP::VERSION > '0.2.1')
+      smtp.start('Integration Test client', authentication_id, password, auth_type, ssl_context_params: { cert_store: store, verify_mode: OpenSSL::SSL::VERIFY_PEER }) do
+        # when sending mails, send one additional crlf to safe the original linebreaks
+        smtp.send_message("#{message_data}\r\n", envelope_mail_from, envelope_rcpt_to)
+      end
+    else
+      smtp.start('Integration Test client', authentication_id, password, auth_type) do
+        # when sending mails, send one additional crlf to safe the original linebreaks
+        smtp.send_message("#{message_data}\r\n", envelope_mail_from, envelope_rcpt_to)
+      end
     end
   end
 
