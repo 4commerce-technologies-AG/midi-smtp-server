@@ -30,30 +30,39 @@ class MySmtpd < MidiSmtpServer::Smtpd
 
 end
 
+# Create a new server instance for listening at localhost interfaces 127.0.0.1:2525
+# and accepting a maximum of 4 simultaneous connections per default
+server = MySmtpd.new(tls_mode: :TLS_OPTIONAL)
+
+# save flag for Ctrl-C pressed
+flag_status_ctrl_c_pressed = false
+
 # try to gracefully shutdown on Ctrl-C
 trap('INT') do
-  puts 'Interrupted, exit now...'
+  # print an empty line right after ^C
+  puts
+  # notify flag about Ctrl-C was pressed
+  flag_status_ctrl_c_pressed = true
+  # signal exit to app
   exit 0
 end
 
 # Output for debug
-puts "#{Time.now}: Starting MySmtpd [#{MidiSmtpServer::VERSION::STRING}|#{MidiSmtpServer::VERSION::DATE}] (Encryption example) ..."
-
-# Create a new server instance listening at localhost interfaces 127.0.0.1:2525
-# and accepting a maximum of 4 simultaneous connections with optional TLS Support
-server = MySmtpd.new(tls_mode: :TLS_OPTIONAL)
+server.logger.info("Starting MySmtpd [#{MidiSmtpServer::VERSION::STRING}|#{MidiSmtpServer::VERSION::DATE}] (Encryption example) ...")
 
 # setup exit code
 at_exit do
   # check to shutdown connection
   if server
     # Output for debug
-    puts "#{Time.now}: Shutdown MySmtpd..."
+    server.logger.info('Ctrl-C interrupted, exit now...') if flag_status_ctrl_c_pressed
+    # info about shutdown
+    server.logger.info("Shutdown MySmtpd...")
     # stop all threads and connections gracefully
     server.stop
   end
   # Output for debug
-  puts "#{Time.now}: MySmtpd down!\n"
+  server.logger.info("MySmtpd down!")
 end
 
 # Start the server
