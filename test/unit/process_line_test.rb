@@ -90,9 +90,9 @@ class ProcessLineUnitTest < Minitest::Test
 
   def test_10_auth_login_simulate_fail
     result = @smtpd.process_line(@session, 'AUTH LOGIN', "\r\n")
-    assert_equal +'' << '334 ' << Base64.strict_encode64('Username:'), result
+    assert_equal (+'') << '334 ' << Base64.strict_encode64('Username:'), result
     result = @smtpd.process_line(@session, Base64.strict_encode64('administrator'), "\r\n")
-    assert_equal +'' << '334 ' << Base64.strict_encode64('Password:'), result
+    assert_equal (+'') << '334 ' << Base64.strict_encode64('Password:'), result
     assert_raises(MidiSmtpServer::Smtpd535Exception) { @smtpd.process_line(@session, Base64.strict_encode64('error_password'), "\r\n") }
     assert_equal 'administrator', @smtpd.ev_auth_authentication_id
     assert_equal 'error_password', @smtpd.ev_auth_authentication
