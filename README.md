@@ -163,20 +163,18 @@ Since version 2.3.0 you may define multiple ports and hosts or ip addresses at o
 
 ``` ruby
   # use port 2525 on all addresses
-  server = MySmtpd.new('2525', '127.0.0.1, ::1, 192.168.0.1')
+  server = MySmtpd.new(ports: '2525', hosts: '127.0.0.1, ::1, 192.168.0.1')
   # use ports 2525 and 3535 on all addresses
-  server = MySmtpd.new('2525:3535', '127.0.0.1, ::1, 192.168.0.1')
+  server = MySmtpd.new(ports: '2525:3535', hosts: '127.0.0.1, ::1, 192.168.0.1')
   # use port 2525 on first address 127.0.0.1 and port 3535 on second address (and above)
-  server = MySmtpd.new('2525, 3535', '127.0.0.1, ::1, 192.168.0.1')
+  server = MySmtpd.new(ports: '2525, 3535', hosts: '127.0.0.1, ::1, 192.168.0.1')
   # use port 2525 on first address, port 3535 on second address, port 2525 on third
-  server = MySmtpd.new('2525, 3535, 2525', '127.0.0.1, ::1, 192.168.0.1')
+  server = MySmtpd.new(ports: '2525, 3535, 2525', hosts: '127.0.0.1, ::1, 192.168.0.1')
   # use port 2525 on first address, ports 2525 and 3535 on second address, port 2525 on third
-  server = MySmtpd.new('2525, 2525:3535, 2525', '127.0.0.1, ::1, 192.168.0.1')
+  server = MySmtpd.new(ports: '2525, 2525:3535, 2525', hosts: '127.0.0.1, ::1, 192.168.0.1')
 ```
 
-You may write any combination of ports and addresses that should be served. That allows complex servers with optionally different services identified by different ports and addresses.
-
-There are also a `ports` and `hosts` reader for this values. Please be aware that we will drop the old attributes of `port` and `host` within the next minor release.
+You may write any combination of ports and addresses that should be served. That allows complex servers with optionally different services identified by different ports and addresses. There are also `ports` and `hosts` reader for this values available.
 
 <br>
 
@@ -192,12 +190,12 @@ For production usage it is highly suggested to use only specific IPv4 and IPv6 a
 
 ## Utilization of connections and processings
 
-The options `max_processings` and `opts { max_connections }` allows to define the utilization of the running service. The value of `max_processings` will allow to queue processings while active processings have reached the maximum value. The additional (optional) value of `max_connections` will block any additional concurrent TCP connection and respond with SMTP error code 421 on more connections.
+The options `max_processings` and `max_connections` allows to define the utilization of the running service. The value of `max_processings` will allow to queue processings while active processings have reached the maximum value. The additional (optional) value of `max_connections` will block any additional concurrent TCP connection and respond with SMTP error code 421 on more connections.
 
 E.g.:
 
 ``` ruby
-  server = MySmtpd.new('2525', '127.0.0.1', 4, max_connections: 100)
+  server = MySmtpd.new(ports: '2525', hosts: '127.0.0.1', max_processings: 4, max_connections: 100)
 ```
 
 In this example the service will allow 100 concurrent TCP connections but just process 4 of them simultaneously until all connections have been handled. If there are more than 100 concurrent TCP connections, those will be closed by error `421 Service too busy or not available`. That error code will _normally_ ensure, that the sender would try again after a while.
@@ -479,10 +477,10 @@ With release 2.2.3 there is an extended control about incoming data before proce
 
 ```ruby
 # timeout in seconds before a data line has to be completely sent by client or connection abort
-opts = { io_cmd_timeout: DEFAULT_IO_CMD_TIMEOUT }
+io_cmd_timeout: DEFAULT_IO_CMD_TIMEOUT
 
 # maximum size in bytes to read in buffer for a complete data line from client or connection abort
-opts = { io_buffer_max_size: DEFAULT_IO_BUFFER_MAX_SIZE }
+io_buffer_max_size: DEFAULT_IO_BUFFER_MAX_SIZE
 ```
 
 There are new events `on_process_line_unknown_event` and `on_message_data_receiving_event` to handle the incoming transmission of unknown commands and message data.
@@ -532,7 +530,7 @@ The extensions are disabled by default and could be enabled by:
 
 ```ruby
 # enable internationalization SMTP extensions
-opts = { internationalization_extensions: true }
+internationalization_extensions: true
 ```
 
 When enabled and sender is using the 8BITMIME and SMTPUTF8 capabilities, the given enconding information about body and message encoding are set by `MAIL FROM` command. The encodings are read by MidiSmtpServer and published at context vars `ctx[:envelope][:encoding_body]` and `ctx[:envelope][:encoding_utf8]`.
@@ -555,25 +553,25 @@ Even when `"8bitmime"` was set, you have to decide the correct encoding like `ut
 
 ## Authentication support
 
-There is built-in authentication support for `AUTH LOGIN` and `AUTH PLAIN` since release `2.1.0`. If you want to enable authentication you have to set the appropriate value to `auth_mode` opts.
+There is built-in authentication support for `AUTH LOGIN` and `AUTH PLAIN` since release `2.1.0`. If you want to enable authentication you have to set the appropriate value to `auth_mode` option.
 
 Allowed values are:
 
 ```ruby
 # no authentication is allowed (mostly for internal services)
-opts = { auth_mode: :AUTH_FORBIDDEN }
+auth_mode: :AUTH_FORBIDDEN
 
 # authentication is optional (you may grant higher possibilities if authenticated)
-opts = { auth_mode: :AUTH_OPTIONAL }
+auth_mode: :AUTH_OPTIONAL
 
 # session must be authenticated before service may be used for mail transport
-opts = { auth_mode: :AUTH_REQUIRED }
+auth_mode: :AUTH_REQUIRED
 ```
 
 You may initialize your server class like:
 
 ```ruby
-server = MySmtpd.new(2525, '127.0.0.1', 4, auth_mode: :AUTH_REQUIRED)
+server = MySmtpd.new(ports: 2525, hosts: '127.0.0.1', auth_mode: :AUTH_REQUIRED)
 ```
 
 If you have enabled authentication you should provide your own user and access methods to grant access to your server. The default event method will deny all access per default.
@@ -624,25 +622,25 @@ end
 ## Encryption
 
 Since release `2.2.1` the SMTP-Server supports STARTTLS by using `openssl` gem.
-If you want to enable encryption you have to set the appropriate value to `tls_mode` opts.
+If you want to enable encryption you have to set the appropriate value to `tls_mode` option.
 
 Allowed values are:
 
 ```ruby
 # no encryption is allowed (mostly for internal services)
-opts = { tls_mode: :TLS_FORBIDDEN }
+tls_mode: :TLS_FORBIDDEN
 
 # encryption is optional
-opts = { tls_mode: :TLS_OPTIONAL }
+tls_mode: :TLS_OPTIONAL
 
 # client must initialize encryption before service may be used for mail exchange
-opts = { tls_mode: :TLS_REQUIRED }
+tls_mode: :TLS_REQUIRED
 ```
 
 You may enable TLS on your server class like:
 
 ```ruby
-server = MySmtpd.new(2525, '127.0.0.1', 4, tls_mode: :TLS_OPTIONAL)
+server = MySmtpd.new(ports: 2525, hosts: '127.0.0.1', tls_mode: :TLS_OPTIONAL)
 ```
 
 Do not forget to also install or require the `openssl` gem if you want to enable encryption.
@@ -654,26 +652,31 @@ For security reasons check the "Table of the ciphers (and their priorities)" on 
 You may change ciphers and methods on your server class like:
 
 ```ruby
-server = MySmtpd.new(2525, '127.0.0.1', 4, tls_mode: :TLS_OPTIONAL, tls_ciphers: TLS_CIPHERS_ADVANCED_PLUS, tls_methods: TLS_METHODS_ADVANCED)
+server = MySmtpd.new(ports: 2525, hosts: '127.0.0.1', tls_mode: :TLS_OPTIONAL, tls_ciphers: TLS_CIPHERS_ADVANCED_PLUS, tls_methods: TLS_METHODS_ADVANCED)
 ```
 
 Predefined ciphers and methods strings are available as CONSTs:
 
 ```ruby
 # Advanced+ (A+) _Default_
-opts = { tls_ciphers: TLS_CIPHERS_ADVANCED_PLUS, tls_methods: TLS_METHODS_ADVANCED }
+tls_ciphers: TLS_CIPHERS_ADVANCED_PLUS
+tls_methods: TLS_METHODS_ADVANCED
 
 # Advanced (A)
-opts = { tls_ciphers: TLS_CIPHERS_ADVANCED, tls_methods: TLS_METHODS_ADVANCED }
+tls_ciphers: TLS_CIPHERS_ADVANCED
+tls_methods: TLS_METHODS_ADVANCED
 
 # Broad Compatibility (B)
-opts = { tls_ciphers: TLS_CIPHERS_BROAD, tls_methods: TLS_METHODS_ADVANCED }
+tls_ciphers: TLS_CIPHERS_BROAD
+tls_methods: TLS_METHODS_ADVANCED
 
 # Widest Compatibility (C)
-opts = { tls_ciphers: TLS_CIPHERS_WIDEST, tls_methods: TLS_METHODS_LEGACY }
+tls_ciphers: TLS_CIPHERS_WIDEST
+tls_methods: TLS_METHODS_LEGACY
 
 # Legacy (C-)
-opts = { tls_ciphers: TLS_CIPHERS_LEGACY, tls_methods: TLS_METHODS_LEGACY }
+tls_ciphers: TLS_CIPHERS_LEGACY
+tls_methods: TLS_METHODS_LEGACY
 ```
 
 <br>
@@ -703,7 +706,7 @@ openssl x509 -in csr.pem -out cert.pem -req -signkey key.pem -days 90
 You may use your certificate and key on your server class like:
 
 ```ruby
-server = MySmtpd.new(2525, '127.0.0.1', 4, tls_mode: :TLS_OPTIONAL, tls_cert_path: 'cert.pem', tls_key_path: 'key.pem')
+server = MySmtpd.new(ports: 2525, hosts: '127.0.0.1', tls_mode: :TLS_OPTIONAL, tls_cert_path: 'cert.pem', tls_key_path: 'key.pem')
 ```
 
 <br>
@@ -748,7 +751,7 @@ Be aware that with enabled option of [PIPELINING](https://tools.ietf.org/html/rf
 
 ```ruby
 # PIPELINING ist not allowed (false) per _Default_
-opts = { pipelining_extension: DEFAULT_PIPELINING_EXTENSION }
+pipelining_extension: DEFAULT_PIPELINING_EXTENSION
 ```
 
 <br>
@@ -768,13 +771,13 @@ Since version 2.3.0 the component allows to decide by option `crlf_mode` how to 
 
 ```ruby
 # Allow CRLF and LF but always make sure that CRLF is added to message data. _Default_
-opts = { crlf_mode: CRLF_ENSURE }
+crlf_mode: CRLF_ENSURE
 
 # Allow CRLF and LF and do not change the incoming data.
-opts = { crlf_mode: CRLF_LEAVE }
+crlf_mode: CRLF_LEAVE
 
 # Only allow CRLF otherwise raise an exception
-opts = { crlf_mode: CRLF_STRICT }
+crlf_mode: CRLF_STRICT
 ```
 
 To understand the modes in details:
@@ -973,7 +976,7 @@ If you are already using MidiSmtpServer it might be only some straight forward w
 ##### 2.x
 
 ```ruby
-  def initialize(ports = DEFAULT_SMTPD_PORT, hosts = DEFAULT_SMTPD_HOST, max_connections = 4, opts = {})
+  def initialize(ports = DEFAULT_SMTPD_PORT, hosts = DEFAULT_SMTPD_HOST, max_processings = 4, opts = {})
   # opts may include
   opts = { do_dns_reverse_lookup: true }
   opts = { logger: myLoggerObject }
@@ -1061,7 +1064,7 @@ If you are already using MidiSmtpServer it might be only some straight forward w
 ##### MidiSmtpServer
 
 ```ruby
-  def initialize(ports = DEFAULT_SMTPD_PORT, hosts = DEFAULT_SMTPD_HOST, max_connections = 4, opts = {})
+  def initialize(ports = DEFAULT_SMTPD_PORT, hosts = DEFAULT_SMTPD_HOST, max_processings = 4, opts = {})
   # opts may include
   opts = { do_dns_reverse_lookup: true }
   opts = { logger: myLoggerObject }
