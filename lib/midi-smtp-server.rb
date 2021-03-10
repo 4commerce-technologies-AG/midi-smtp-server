@@ -692,6 +692,8 @@ module MidiSmtpServer
               rescue SmtpdException => e
                 # inc number of detected exceptions during this session
                 session[:ctx][:server][:exceptions] += 1
+                # save clone of error object to context
+                session[:ctx][:server][:errors].push(e.clone)
                 # log error info if logging
                 logger.error("#{e} (#{e.class})".strip)
                 # get the given smtp dialog result
@@ -701,6 +703,8 @@ module MidiSmtpServer
               rescue StandardError => e
                 # inc number of detected exceptions during this session
                 session[:ctx][:server][:exceptions] += 1
+                # save clone of error object to context
+                session[:ctx][:server][:errors].push(e.clone)
                 # log error info if logging
                 logger.error("#{e} (#{e.class})".strip)
                 # set default smtp server dialog error
@@ -737,6 +741,8 @@ module MidiSmtpServer
         rescue StandardError => e
           # inc number of detected exceptions during this session
           session[:ctx][:server][:exceptions] += 1
+          # save clone of error object to context
+          session[:ctx][:server][:errors].push(e.clone)
           # log error info if logging
           logger.error("#{e} (#{e.class})".strip)
           # power down connection
@@ -1169,6 +1175,7 @@ module MidiSmtpServer
             helo_response: +'',
             connected: +'',
             exceptions: 0,
+            errors: [],
             authorization_id: +'',
             authentication_id: +'',
             authenticated: +'',
