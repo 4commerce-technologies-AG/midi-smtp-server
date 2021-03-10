@@ -125,22 +125,10 @@ module MidiSmtpServer
       @ports.dup
     end
 
-    # New but deprecated method to access the old port attr for compatibility reasons
-    def port
-      logger.debug('Deprecated method port is used. Please update to ports.join() etc.')
-      ports.join(', ')
-    end
-
     # Array of hosts / ip_addresses on which to bind, set as string seperated by commata like 'name.domain.com, 127.0.0.1, ::1'
     def hosts
       # prevent original array from being changed
       @hosts.dup
-    end
-
-    # New but deprecated method to access the old host attr for compatibility reasons
-    def host
-      logger.debug('Deprecated method host is used. Please update to hosts.join() etc.')
-      hosts.join(', ')
     end
 
     # Array of ip_address:port which get bound and build up from given hosts and ports
@@ -183,7 +171,7 @@ module MidiSmtpServer
     # Initialize SMTP Server class
     #
     # +ports+:: ports to listen on. Allows multiple ports like "2525, 3535" or "2525:3535, 2525"
-    # +hosts+:: interface ip or hostname to listen on or "*" to listen on all interfaces, wildcard ("") is deprecated, allows multiple hostnames and ip_addresses like "name.domain.com, 127.0.0.1, ::1"
+    # +hosts+:: interface ip or hostname to listen on or "*" to listen on all interfaces, allows multiple hostnames and ip_addresses like "name.domain.com, 127.0.0.1, ::1"
     # +max_processings+:: maximum number of simultaneous processed connections, this does not limit the number of concurrent TCP connections
     # +opts+:: hash with optional settings
     # +opts.max_connections+:: maximum number of connections, this does limit the number of concurrent TCP connections (not set or nil => unlimited)
@@ -240,8 +228,6 @@ module MidiSmtpServer
       # build array of hosts
       # split string into array to instantiate multiple servers
       @hosts = hosts.to_s.delete(' ').split(',')
-      # Deprecated default if empty bind to (first found) local host ip_address
-      # Check that not also the '' wildcard for hosts is added somewhere to the list
       #
       # Check source of TCPServer.c at https://github.com/ruby/ruby/blob/trunk/ext/socket/tcpserver.c#L25-L31
       # * Internally, TCPServer.new calls getaddrinfo() function to obtain ip_addresses.
@@ -252,14 +238,9 @@ module MidiSmtpServer
       # We won't support that magic anymore. If wish to bind on all local ip_addresses
       # and interfaces, use new "*" wildcard, otherwise specify ip_addresses and / or hostnames
       #
-      if @hosts.empty?
-        # info and change to "*" wildcard if only "" was given as hosts
-        logger.debug('Deprecated empty hosts wildcard "" is used. Please use specific hostnames and / or ip_addresses or "*" for wildcard!')
-        @hosts << '*'
-      elsif @hosts.include?('')
-        # raise exception when founding inner wildcard like "a.b.c.d,,e.f.g.h", guess miss-coding
-        raise 'Deprecated empty hosts wildcard "" is used. Please use specific hostnames and / or ip_addresses or "*" for wildcard!'
-      end
+      # raise exception when found empty or inner empty hosts specification like "" or "a.b.c.d,,e.f.g.h", guess miss-coding
+      raise 'No hosts defined! Please use specific hostnames and / or ip_addresses or "*" for wildcard!' if @hosts.empty?
+      raise 'Detected an empty identifier in given hosts! Please use specific hostnames and / or ip_addresses or "*" for wildcard!' if @hosts.include?('')
 
       # build array of addresses for ip_addresses and ports to use
       @addresses = []
@@ -458,7 +439,7 @@ module MidiSmtpServer
       # log information
       logger.info("Starting service on #{ip_address}:#{port}")
       # check that there is a specific ip_address defined
-      raise 'Deprecated wildcard "" ist not allowed anymore to start a listener on!' if ip_address.empty?
+      raise 'Unable to start TCP listener on missing or empty ip_address!' if ip_address.empty?
       # instantiate the service for ip_address and port
       tcp_server = TCPServer.new(ip_address, port)
       # append this server to the list of TCPServers
