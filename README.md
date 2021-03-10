@@ -183,9 +183,9 @@ There are also a `ports` and `hosts` reader for this values. Please be aware tha
 
 ## Hosts, hosts wildcard and interface detection
 
-Since version 2.3.2 the `hosts` parameter use the new `"*"` instead of the old empty (blank) `""` wildcard. This was updated to make sure that the new `"*"` wildcard should really identifiy and service on all (local) system interfaces. The new function will identify all valid IPv4 and IPv6 addresses on all (local) system interfaces. In addition the initialization will resolve all IPv4 and IPv6 addresses for all given hostnames. During startup a debug log message will print out the information to be aware of the listening ports and addresses. If an address is defined more than once like when using `"localhost, 127.0.0.1, ::1"`, the component will raise an exception that port and address is already in use.
+Since version 2.3.2 the `hosts` parameter allows the `"*"` wildcard to make sure that this wildcard should really identifiy and service on all (local) system interfaces. The initialization will identify all valid IPv4 and IPv6 addresses on all (local) system interfaces. In addition the initialization will resolve all IPv4 and IPv6 addresses for all given hostnames. During startup a debug log message will print out the information to be aware of the listening ports and addresses. If an address is defined more than once like when using `"localhost, 127.0.0.1, ::1"`, the component will raise an exception that port and address is already in use.
 
-For production usage it is highly suggested to use defined IPv4 and IPv6 addresses for your services.
+For production usage it is highly suggested to use only specific IPv4 and IPv6 addresses for your services.
 
 <br>
 
