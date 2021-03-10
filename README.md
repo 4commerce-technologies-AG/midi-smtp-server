@@ -92,12 +92,13 @@ Use the component in your project sources by:
 MidiSmtpServer can be easily customized via subclassing. Simply subclass the `MidiSmtpServer` class as given in the example above and re-define event handlers:
 
 ```ruby
-  # event on any logging message
+  # event on LOGGING
   # the exposed logger property is from class MidiSmtpServer::ForwardingLogger
-  # and pushes any logging message to the on_logging_event.
+  # and pushes any logging message to this on_logging_event.
   # if logging occurs from inside session, the _ctx should be not nil
   # if logging occurs from an error, the err object should be filled
   def on_logging_event(ctx, severity, msg, err: nil)
+  end
 
   # event on CONNECTION
   # you may change the ctx[:server][:local_response] and
