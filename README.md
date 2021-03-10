@@ -864,7 +864,7 @@ To allow complete access to all log messages any logging output has to be send v
 
 ## Reliable code
 
-Since version 2.3 implementation and integration tests by minitest framework are added to this repository. While the implementation tests are mostly checking the components, the integration tests try to verify the correct exchange of messages for different scenarios.
+Since version 2.3 implementation and integration tests by minitest framework are added to this repository. While the implementation tests are mostly checking the components, the integration tests try to verify the correct exchange of messages for different scenarios. In addtion all sources are checked by rubocop to ensure they fit to the style guides.
 
 You may run all tests through the `test_runner.rb` helper:
 
@@ -884,7 +884,14 @@ To just run some selected (by regular expression) tests, you may use the `-n fil
   ruby -I lib test/test_runner.rb -v -n /connections/
 ```
 
-Be aware that the filter is case sensitive.
+_Be aware that the filter is case sensitive._
+
+#### Style guide links
+
+1. [Ruby style guide](https://rubystyle.guide)
+2. [Minitest style guide](https://minitest.rubystyle.guide)
+3. [Rubocop/Cop documentation](https://docs.rubocop.org)
+4. [Rubocop/Minitest](https://docs.rubocop.org/rubocop-minitest/)
 
 <br>
 
