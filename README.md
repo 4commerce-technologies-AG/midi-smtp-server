@@ -19,8 +19,7 @@ MidiSmtpServer is the highly customizable ruby SMTP-Server and SMTP-Service libr
 
 As a library it is mainly designed to be integrated into your projects as serving a SMTP-Server service. The lib will do nothing with your mail and you have to create your own event functions to handle and operate on incoming mails. We are using this in conjunction with [Mikel Lindsaar](https://github.com/mikel) great Mail component (https://github.com/mikel/mail). Time to run your own SMTP-Server service.
 
-With version 2 the library gots a lot of improvements (2.3.x Multiple ports and addresses, 2.2.x Encryption [StartTLS], 2.1.0 Authentication [AUTH], 2.1.1 significant speed improvement, etc.).
-Please checkout section [changes and updates](https://github.com/4commerce-technologies-AG/midi-smtp-server#changes-and-updates) to get the news.
+Checkout all the features and improvements (2.3.x Multiple ports and addresses, 2.2.x Encryption [StartTLS], 2.1.0 Authentication [AUTH], 2.1.1 significant speed improvement, etc.) and get more details from section [changes and updates](https://github.com/4commerce-technologies-AG/midi-smtp-server#changes-and-updates).
 
 MidiSmtpServer is an extremely flexible library and almost any aspect of SMTP communications can be handled by deriving its events and using its configuration options.
 
@@ -652,7 +651,13 @@ For security reasons check the "Table of the ciphers (and their priorities)" on 
 You may change ciphers and methods on your server class like:
 
 ```ruby
-server = MySmtpd.new(ports: 2525, hosts: '127.0.0.1', tls_mode: :TLS_OPTIONAL, tls_ciphers: TLS_CIPHERS_ADVANCED_PLUS, tls_methods: TLS_METHODS_ADVANCED)
+server = MySmtpd.new(
+  ports: 2525,
+  hosts: '127.0.0.1',
+  tls_mode: :TLS_OPTIONAL,
+  tls_ciphers: TLS_CIPHERS_ADVANCED_PLUS,
+  tls_methods: TLS_METHODS_ADVANCED
+)
 ```
 
 Predefined ciphers and methods strings are available as CONSTs:
@@ -706,7 +711,13 @@ openssl x509 -in csr.pem -out cert.pem -req -signkey key.pem -days 90
 You may use your certificate and key on your server class like:
 
 ```ruby
-server = MySmtpd.new(ports: 2525, hosts: '127.0.0.1', tls_mode: :TLS_OPTIONAL, tls_cert_path: 'cert.pem', tls_key_path: 'key.pem')
+server = MySmtpd.new(
+  ports: 2525,
+  hosts: '127.0.0.1',
+  tls_mode: :TLS_OPTIONAL,
+  tls_cert_path: 'cert.pem',
+  tls_key_path: 'key.pem'
+)
 ```
 
 <br>
