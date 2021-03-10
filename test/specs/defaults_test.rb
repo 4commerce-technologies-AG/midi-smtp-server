@@ -7,9 +7,23 @@ describe MidiSmtpServerTest do
     @smtpd = MidiSmtpServerTest.new
   end
 
-  describe 'defaults (deprecated) port' do
-    it 'must respond with 2525' do
-      expect(@smtpd.port).must_equal MidiSmtpServer::DEFAULT_SMTPD_PORT.to_s
+  describe 'defaults exception on empty hosts' do
+    it 'must raise no hosts defined!' do
+      err = expect { MidiSmtpServer::Smtpd.new(2525, '') }.must_raise RuntimeError
+      assert_match(/No hosts defined!/ ,err.message)
+    end
+  end
+
+  describe 'defaults exception on empty host in hosts' do
+    it 'must raise empty host defined!' do
+      err = expect { MidiSmtpServer::Smtpd.new(2525, '1.2.3.4,,5.6.7.8') }.must_raise RuntimeError
+      assert_match(/Detected an empty identifier in given hosts!/ ,err.message)
+    end
+  end
+
+  describe 'defaults must not respond to port method' do
+    it 'must raise NoMethodError' do
+      refute_respond_to(@smtpd, 'port')
     end
   end
 
@@ -19,9 +33,9 @@ describe MidiSmtpServerTest do
     end
   end
 
-  describe 'defaults (deprecated) host' do
-    it 'must respond with 127.0.0.1' do
-      expect(@smtpd.host).must_equal MidiSmtpServer::DEFAULT_SMTPD_HOST
+  describe 'defaults must not respond to host method' do
+    it 'must raise NoMethodError' do
+      refute_respond_to(@smtpd, 'host')
     end
   end
 
