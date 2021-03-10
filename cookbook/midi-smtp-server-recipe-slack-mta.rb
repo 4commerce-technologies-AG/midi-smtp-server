@@ -1,10 +1,12 @@
+# frozen_string_literal: true
+
 require 'midi-smtp-server'
 require 'slack-notifier'
 require 'mail'
 require 'oga'
 
 # get the slack endpoint from ENV var
-SLACK_WEBHOOK = ENV['SLACK_WEBHOOK'].freeze
+SLACK_WEBHOOK = ENV['SLACK_WEBHOOK']
 
 # check for valid settings
 raise 'Missing SLACK_WEBHOOK env setting for startup.' if SLACK_WEBHOOK.to_s == ''
@@ -58,30 +60,39 @@ class MySlackGateway < MidiSmtpServer::Smtpd
 
 end
 
+# Create a new server instance for listening at localhost interfaces 127.0.0.1:2525
+# and accepting a maximum of 4 simultaneous connections per default
+server = MySlackGateway.new
+
+# save flag for Ctrl-C pressed
+flag_status_ctrl_c_pressed = false
+
 # try to gracefully shutdown on Ctrl-C
 trap('INT') do
-  puts 'Interrupted, exit now...'
+  # print an empty line right after ^C
+  puts
+  # notify flag about Ctrl-C was pressed
+  flag_status_ctrl_c_pressed = true
+  # signal exit to app
   exit 0
 end
 
 # Output for debug
-puts "#{Time.now}: Starting MySlackGateway [#{MidiSmtpServer::VERSION::STRING}|#{MidiSmtpServer::VERSION::DATE}] ..."
-
-# Create a new server instance listening at localhost interfaces 127.0.0.1:2525
-# and accepting a maximum of 4 simultaneous connections
-server = MySlackGateway.new
+server.logger.info("Starting MySlackGateway [#{MidiSmtpServer::VERSION::STRING}|#{MidiSmtpServer::VERSION::DATE}] ...")
 
 # setup exit code
 at_exit do
   # check to shutdown connection
   if server
     # Output for debug
-    puts "#{Time.now}: Shutdown MySlackGateway..."
+    server.logger.info('Ctrl-C interrupted, exit now...') if flag_status_ctrl_c_pressed
+    # info about shutdown
+    server.logger.info('Shutdown MySlackGateway...')
     # stop all threads and connections gracefully
     server.stop
   end
   # Output for debug
-  puts "#{Time.now}: MySlackGateway down!\n"
+  server.logger.info('MySlackGateway down!')
 end
 
 # Start the server
