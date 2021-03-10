@@ -898,7 +898,7 @@ _Be aware that the filter is case sensitive._
 
 ## Changes and updates
 
-We suggest everybody using MidiSmtpServer 1.x or 2.x to switch at least to latest 2.3.y. The update is painless and without any source code changes if already using some 2.x release :sunglasses:
+We suggest everybody using MidiSmtpServer 1.x or 2.x to switch at least to latest 2.3.y. or best to 3.x. The update is painless and without any source code changes if already using some 2.x release :sunglasses:
 
 For upgrades from version 1.x or from _Mini_SmtpServer you may follow the guides (see appendix) how to change your existing code to be compatible with the latest 2.x releases.
 
