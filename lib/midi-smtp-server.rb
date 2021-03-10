@@ -861,7 +861,7 @@ module MidiSmtpServer
                     # set sequence for next command input
                     session[:cmd_sequence] = :CMD_AUTH_LOGIN_USER
                     # response code with request for Username
-                    return format('334 %s', Base64.strict_encode64('Username:'))
+                    return +'' << '334 ' << Base64.strict_encode64('Username:')
 
                   when 2
                     # handle next sequence
@@ -1204,7 +1204,7 @@ module MidiSmtpServer
       # set sequence for next command input
       session[:cmd_sequence] = :CMD_AUTH_LOGIN_PASS
       # response code with request for Password
-      return format('334 %s', Base64.strict_encode64('Password:'))
+      return +'' << '334 ' << Base64.strict_encode64('Password:')
     end
 
     def process_auth_login_pass(session, encoded_auth_response)
