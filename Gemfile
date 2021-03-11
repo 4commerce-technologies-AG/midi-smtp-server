@@ -4,7 +4,6 @@ gemspec
 
 # stuff useful while development
 group :development do
-  gem 'openssl'
   gem 'rubocop'
   gem 'rubocop-performance'
   gem 'rubocop-minitest'
