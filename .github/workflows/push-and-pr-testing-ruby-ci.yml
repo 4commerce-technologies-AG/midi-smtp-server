@@ -1,0 +1,49 @@
+# This workflow enables CI checks based on Alpine and Ruby versions.
+# Images used: ruby:a.b-alpine
+
+name: Ruby
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    runs-on: "ubuntu-latest"
+    strategy:
+      matrix:
+        container_tag:
+        - 3.0-alpine
+        - 2.7-alpine
+        - 2.6-alpine
+    container:
+      image: ruby:${{ matrix.container_tag }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install dependencies
+      run: |
+        apk update
+        apk upgrade --force
+        # when using ruby 2.x some gems need to get built
+        [ $(ruby -e "printf(RUBY_VERSION[0..0])") == "2" ] && apk add alpine-sdk openssl-dev
+        # get git to use gems from github as well
+        apk add git
+    - name: Update rubygems & bundler
+      run: |
+        ruby -v
+        gem update --system | head -n 8
+        gem install bundler
+    - name: Install gems
+      run: |
+        # handle IPv6 issues with bundler
+        echo ":ipv4_fallback_enabled: true" > .gemrc
+        export GEMRC=".gemrc"
+        bundle install
+    - name: Run rubocop
+      run: |
+        bundle exec rubocop lib/ test/ examples/ cookbook/
+    - name: Run minitest
+      run: |
+        bundle exec ruby test/test_runner.rb -v
