@@ -992,7 +992,29 @@ For upgrades from version 1.x or from _Mini_SmtpServer you may follow the guides
 
 ## Upgrade to 3.x
 
-If you are already using MidiSmtpServer 2.x it is an easy forward path to get your code ready for MidiSmtpServer version 3.x. Most important that the 3.x release is bound to Ruby 2.6+.
+If you are already using MidiSmtpServer 2.x it is an easy forward path to get your code ready for MidiSmtpServer version 3.x. Most important for the 3.x release:
+
+* bound to Ruby 2.6+
+* supports Ruby 3+
+* method arguments for `new`, `join`, `stop` are defined as keyword arguments
+
+#### MINOR INCOMPATIBILITY to 2.x.
+
+All arguments for `new`, `join`, `stop` must be named.
+
+Please use:
+
+```ruby
+daemon = MySmtpd.new(ports: '2525', hosts: '127.0.0.1', max_processings: 4)
+```
+
+instead of:
+
+```ruby
+daemon = MySmtpd.new('2525', '127.0.0.1', 4)
+```
+
+Anything else is still compatible to previous releases >=2.3.0.
 
 
 ## Upgrade to 2.x
