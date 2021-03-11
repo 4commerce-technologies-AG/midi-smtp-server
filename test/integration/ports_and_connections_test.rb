@@ -70,7 +70,9 @@ class PortsAndConnectionsIntegrationTest < Minitest::Test
     result3 = get_blocked_socket(channel3)
     assert_equal MSG_ABORT, result3
     assert_raises(Errno::EPIPE) { 100.times { send_blocked_socket(channel3, "NOOP\r\n") } }
-    assert_raises(Errno::ECONNRESET) { 100.times { get_nonblocked_socket(channel3, 1000) } }
+    result3 = +''
+    100.times { result3 << get_state_ignored_socket(channel3, 1000, 0.1) }
+    assert_empty result3
     close_socket(channel3)
   end
 
@@ -92,6 +94,14 @@ class PortsAndConnectionsIntegrationTest < Minitest::Test
   def get_nonblocked_socket(channel, count = 1, timeout = 0.25)
     sleep(timeout)
     channel.recv_nonblock(count)
+  end
+
+  def get_state_ignored_socket(channel, count = 1, timeout = 0.25)
+    begin
+      get_nonblocked_socket(channel, count, timeout)
+    rescue Errno::EPIPE, Errno::ECONNRESET
+      ''
+    end
   end
 
   def send_blocked_socket(channel, msg)
