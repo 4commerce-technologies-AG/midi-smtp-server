@@ -43,7 +43,7 @@ jobs:
         bundle install
     - name: Run rubocop
       run: |
-        bundle exec rubocop lib/ test/ examples/ cookbook/
+        bundle exec rake rubocop
     - name: Run minitest
       run: |
-        bundle exec ruby test/test_runner.rb -v
+        bundle exec rake test:all V=1
