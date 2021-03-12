@@ -902,7 +902,7 @@ We suggest everybody using MidiSmtpServer 1.x or 2.x to switch at least to lates
 
 For upgrades from version 1.x or from _Mini_SmtpServer you may follow the guides (see appendix) how to change your existing code to be compatible with the latest 2.x releases.
 
-#### 3.0.0 (2020-03-08)
+#### 3.0.0 (2020-03-12)
 
 1. Enable support for Ruby 3.0
 2. Bound to ruby 2.6+
