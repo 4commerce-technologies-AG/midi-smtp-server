@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # require the libraries
-require_relative '../../lib/midi-smtp-server'
+require 'midi-smtp-server'
 
 # overloaded midi-smtp-server class for test
 class MidiSmtpServerTest < MidiSmtpServer::Smtpd

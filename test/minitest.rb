@@ -16,19 +16,3 @@ require 'minitest/autorun'
 
 # Enables rainbow-coloured test output.
 require 'minitest/pride'
-
-# require all test suite files
-test_suite_files = []
-
-# search relative test folder
-Dir.chdir(File.dirname(__FILE__)) do
-  test_suite_files += Dir.glob('setup/**/*.rb')
-  test_suite_files += Dir.glob('specs/**/*_test.rb')
-  test_suite_files += Dir.glob('unit/**/*_test.rb')
-  test_suite_files += Dir.glob('integration/**/*_test.rb')
-end
-
-# require each test
-test_suite_files.each do |test_suite_file|
-  require_relative test_suite_file
-end

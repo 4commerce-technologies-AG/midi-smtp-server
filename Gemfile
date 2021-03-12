@@ -4,6 +4,8 @@ gemspec
 
 # stuff useful while development
 group :development do
+  gem 'bundler'
+  gem 'rake'
   gem 'rubocop'
   gem 'rubocop-performance'
   gem 'rubocop-minitest'
