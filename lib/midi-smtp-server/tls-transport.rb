@@ -22,6 +22,7 @@ module MidiSmtpServer
   # class for TlsTransport
   class TlsTransport
 
+    # current TLS OpenSSL::SSL::SSLContext
     attr_reader :ssl_context
 
     def initialize(cert_path, key_path, ciphers, methods, cert_cn, cert_san, logger)

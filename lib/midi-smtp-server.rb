@@ -139,7 +139,7 @@ module MidiSmtpServer
       @addresses.dup
     end
 
-    # return a copy of the TLS OpenSSL::SSL::SSLContext if available
+    # Current TLS OpenSSL::SSL::SSLContext when initalized by :TLS_OPTIONAL, :TLS_REQUIRED
     def ssl_context
       @tls&.ssl_context
     end
@@ -191,8 +191,8 @@ module MidiSmtpServer
     # +tls_methods+:: allowed methods for protocol
     # +tls_cert_cn+:: set subject (CN) for self signed certificate "cn.domain.com"
     # +tls_cert_san+:: set subject alternative (SAN) for self signed certificate, allows multiple names like "alt1.domain.com, alt2.domain.com"
-    # +logger+:: own logger class, otherwise default logger is created
-    # +logger_severity+:: logger level when default logger is used
+    # +logger+:: own logger class, otherwise default logger is created (DEPRECATED: use on_logging_event for special needs on logging)
+    # +logger_severity+:: set or override the logger level if given
     def initialize(
       ports: DEFAULT_SMTPD_PORT,
       hosts: DEFAULT_SMTPD_HOST,
