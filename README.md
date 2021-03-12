@@ -19,7 +19,7 @@ MidiSmtpServer is the highly customizable ruby SMTP-Server and SMTP-Service libr
 
 As a library it is mainly designed to be integrated into your projects as serving a SMTP-Server service. The lib will do nothing with your mail and you have to create your own event functions to handle and operate on incoming mails. We are using this in conjunction with [Mikel Lindsaar](https://github.com/mikel) great Mail component (https://github.com/mikel/mail). Time to run your own SMTP-Server service.
 
-Checkout all the features and improvements (3.0.0 Logging enhancement, 2.3.x Multiple ports and addresses, 2.2.x Encryption [StartTLS], 2.1.0 Authentication [AUTH], 2.1.1 significant speed improvement, etc.) and get more details from section [changes and updates](https://github.com/4commerce-technologies-AG/midi-smtp-server#changes-and-updates).
+Checkout all the features and improvements (3.0.1 Logging enhancement, 2.3.x Multiple ports and addresses, 2.2.x Encryption [StartTLS], 2.1.0 Authentication [AUTH], 2.1.1 significant speed improvement, etc.) and get more details from section [changes and updates](https://github.com/4commerce-technologies-AG/midi-smtp-server#changes-and-updates).
 
 MidiSmtpServer is an extremely flexible library and almost any aspect of SMTP communications can be handled by deriving its events and using its configuration options.
 
@@ -839,7 +839,7 @@ To understand the modes in details:
 
 ## Extended logging
 
-Starting from version 3.0.0 there are enhanced logging capabilities. Instead only set a individual logger there is a new exposed event method called `on_logging_event`. When using the `logger` property all messages are forwarded to the new event and could be catched from there. As an example you could post additional log content to monitoring services like sentry:
+Starting from version 3.0.1 there are enhanced logging capabilities. Instead only set a individual logger there is a new exposed event method called `on_logging_event`. When using the `logger` property all messages are forwarded to the new event and could be catched from there. As an example you could post additional log content to monitoring services like sentry:
 
 ```ruby
 def on_logging_event(ctx, severity, msg, err: nil)
@@ -902,7 +902,7 @@ We suggest everybody using MidiSmtpServer 1.x or 2.x to switch at least to lates
 
 For upgrades from version 1.x or from _Mini_SmtpServer you may follow the guides (see appendix) how to change your existing code to be compatible with the latest 2.x releases.
 
-#### 3.0.0 (2020-03-12)
+#### 3.0.1 (2020-03-12)
 
 1. Enable support for Ruby 3.0
 2. Bound to ruby 2.6+
