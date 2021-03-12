@@ -172,9 +172,9 @@ module MidiSmtpServer
 
     # Initialize SMTP Server class
     #
-    # +ports+:: ports to listen on. Allows multiple ports like "2525, 3535" or "2525:3535, 2525"
-    # +hosts+:: interface ip or hostname to listen on or "*" to listen on all interfaces, allows multiple hostnames and ip_addresses like "name.domain.com, 127.0.0.1, ::1"
-    # +max_processings+:: maximum number of simultaneous processed connections, this does not limit the number of concurrent TCP connections
+    # +ports+:: ports to listen on. Allows multiple ports like "2525, 3535" or "2525:3535, 2525". Default value = DEFAULT_SMTPD_PORT
+    # +hosts+:: interface ip or hostname to listen on or "*" to listen on all interfaces, allows multiple hostnames and ip_addresses like "name.domain.com, 127.0.0.1, ::1". Default value = DEFAULT_SMTPD_HOST
+    # +max_processings+:: maximum number of simultaneous processed connections, this does not limit the number of concurrent TCP connections. Default value = DEFAULT_SMTPD_MAX_PROCESSINGS
     # +max_connections+:: maximum number of connections, this does limit the number of concurrent TCP connections (not set or nil => unlimited)
     # +crlf_mode+:: CRLF handling support (:CRLF_ENSURE [default], :CRLF_LEAVE, :CRLF_STRICT)
     # +do_dns_reverse_lookup+:: flag if this smtp server should do reverse DNS lookups on incoming connections
