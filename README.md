@@ -916,6 +916,7 @@ For upgrades from version 1.x or from _Mini_SmtpServer you may follow the guides
 10. Dropped deprecated empty wildcard `""` support on initialize - please use specific hostnames and / or ip-addresses or star wildcard `"*"` only
 11. Align tests with Rubocop style and coding enforcements
 12. Added `rake` tasks for testing and linting, checkout `bundle exec rake -T`
+13. Re-defined arguments of methods `new`, `join`, `stop` as keyword arguments, check [minor incompatability: upgrade to 3.x](https://github.com/4commerce-technologies-AG/midi-smtp-server#minor-incompatibility-to-2x)
 
 
 #### 2.3.2 (2020-01-21)
