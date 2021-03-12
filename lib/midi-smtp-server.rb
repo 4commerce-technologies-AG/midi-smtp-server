@@ -347,7 +347,13 @@ module MidiSmtpServer
       if @encrypt_mode == :TLS_FORBIDDEN
         @tls = nil
       else
-        require 'openssl'
+        # try to load openssl gem now
+        begin
+          require 'openssl'
+        rescue LoadError
+        end
+        # check for openssl gem when enabling  TLS / SSL
+        raise 'The openssl library gem is not installed!' unless defined?(OpenSSL)
         # check for given CN and SAN
         if tls_cert_cn.nil?
           # build generic set of "valid" self signed certificate CN and SAN
