@@ -1,0 +1,9 @@
+# frozen_string_literal: true
+
+source 'https://rubygems.org'
+
+gem 'mail'
+gem 'midi-smtp-server', '>=3.0.1'
+gem 'oga'
+gem 'openssl'
+gem 'slack-ruby-client'
