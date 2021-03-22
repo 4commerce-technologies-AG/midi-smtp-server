@@ -11,20 +11,26 @@ $ gem install midi-smtp-server
 If you'd rather install MidiSmtpServer using `bundler`, you may require it in your `Gemfile`:
 
 ```rb
-gem 'midi-smtp-server', '~> 2.3.0'
+gem 'midi-smtp-server', '~> 3.0.1'
 ```
 
-In case that you want to enable TLS support or run tests, you have to add also the `openssl` gem to your environment:
+In case that you want to enable TLS support or run tests, you may have to add also the `openssl` gem to your environment:
 
 ```sh
 $ gem install openssl
+```
+
+or your `Gemfile`:
+
+```rb
+gem 'openssl', '~> 2.1.0'
 ```
 
 <br>
 
 !!! Note
 
-    We suggest everybody using MidiSmtpServer 1.x or 2.x to switch at least to latest 2.3.y. The update is always painless. If already using some 2.x release, it's fully compatible to your existing source codes.
+    We suggest everybody using MidiSmtpServer to switch at least to latest 2.3.y. or best to 3.x. The update is painless and if already using some 2.x release, it's mostly full compatible to your existing source codes.
 
 <br>
 

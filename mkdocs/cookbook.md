@@ -1,4 +1,4 @@
-<h2>Cookbook</h2>
+<h2>Cookbook recipes</h2>
 
 To give some real life operation purpose we have added some recipes for MidiSmtpServer to the repository. Each recipe has its additional documentation at the **Recipes** section.
 
@@ -10,8 +10,8 @@ To give some real life operation purpose we have added some recipes for MidiSmtp
 
 <br>
 
-### Recipes
+<h2>Recipes</h2>
 
-Please checkout the **Recipes** section from the sidebar. All currently available recipes are listed there and on [Github](https://github.com/4commerce-technologies-AG/midi-smtp-server/tree/master/cookbook).
+Please checkout the **Recipes** section from the sidebar. All currently available **recipes** are listed there and on [Github](https://github.com/4commerce-technologies-AG/midi-smtp-server/tree/master/cookbook).
 
 <br>

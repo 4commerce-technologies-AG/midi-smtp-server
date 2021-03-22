@@ -274,6 +274,6 @@ You may send now emails via smtp mail client or bridge to _localhost:2525_ to fo
 
 !!! Warning
 
-    To run MySlackMailGw server you have to install `midi-smtp-server`, `slack-notifier`, `mail` and `oga` gems via `gem install` or `bundler`.
+    To run MySlackMailGw server in your own environment, you may need to install the additional gems via `gem install` or `bundle install`.
 
 <br>
