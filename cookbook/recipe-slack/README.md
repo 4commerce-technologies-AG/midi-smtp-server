@@ -1,3 +1,9 @@
+<p align="center" style="margin-bottom: 2em">
+  <img src="https://cdn.brandfolder.io/5H442O3W/at/pl546j-7le8zk-838dm2/Slack_RGB.svg" alt="Slack Logo" width="40%"/>
+</p>
+
+<br>
+
 ## Slack Mail Gateway Service
 
 This is a cookbook recipe that makes use of [midi-smtp-server](https://github.com/4commerce-technologies-AG/midi-smtp-server) and
