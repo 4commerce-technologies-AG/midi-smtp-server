@@ -190,7 +190,11 @@ You may write any combination of ports and addresses that should be served. That
 
 Since version 2.3.2 the `hosts` parameter allows the `"*"` wildcard to make sure that this wildcard should really identifiy and service on all (local) system interfaces. The initialization will identify all valid IPv4 and IPv6 addresses on all (local) system interfaces. In addition the initialization will resolve all IPv4 and IPv6 addresses for all given hostnames. During startup a debug log message will print out the information to be aware of the listening ports and addresses. If an address is defined more than once like when using `"localhost, 127.0.0.1, ::1"`, the component will raise an exception that port and address is already in use.
 
-For production usage it is highly suggested to use only specific IPv4 and IPv6 addresses for your services.
+Remember that your service will start a seperate TCP Thread for any given unique IP address. This helps routing and message verification while optionally checking the incoming message endpoints.
+
+The IP address `0.0.0.0` is defined as _ANY ADDRESS_ and for that special address, your service will be bound with only _one_ Thread but to all local IP addresses. This could be used for easy Docker configuration when a port should be exposed to the host. But also here it is suggested to use a specific port and address e.g. set via `--env ENV=""` arguments to Docker and your service.
+
+For production usage it is highly suggested to use only specific IPv4 and IPv6 addresses for your services and not a wildcard or the ANY address.
 
 <br>
 
@@ -917,6 +921,7 @@ For upgrades from previous versions or outdated _MiniSmtpServer_ gem you may fol
 11. Align tests with Rubocop style and coding enforcements
 12. Added `rake` tasks for testing and linting, checkout `bundle exec rake -T`
 13. Re-defined arguments of methods `new`, `join`, `stop` as keyword arguments, check [minor incompatability: upgrade to 3.x](https://github.com/4commerce-technologies-AG/midi-smtp-server#minor-incompatibility-to-2x)
+14. Enhance the slack recipe in cookbook for [Docker usage](https://github.com/4commerce-technologies-AG/midi-smtp-server/tree/master/cookbook/recipe-slack)
 
 
 #### 2.3.2 (2020-01-21)
