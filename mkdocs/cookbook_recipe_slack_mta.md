@@ -32,7 +32,7 @@ You need to **Add** _OAuth Scopes_ and **Install To Workspace** (page top).
 
 ![Screen slack add scopes](img/cookbook/recipe_slack_mta/005-api_slack_com_apps_myslackmailgw_add_scopes.png)
 
-Select **Add** _write:chat_ and _write:chat:public_ to the scopes.
+Select **Add** _chat:write_ and _chat:write:public_ to the scopes.
 
 ![Screen slack added scopes](img/cookbook/recipe_slack_mta/006-api_slack_com_apps_myslackmailgw_scopes.png)
 
@@ -42,7 +42,7 @@ The API gets an **authorization** to the workspace when **Installed**.
 
 Apply the **authorization** to publish messages to the selected **workspace**.
 
-![Screen slack authorize API](img/cookbook/008-api_slack_com_apps_myslackmailgw_authorize_workspace.png)
+![Screen slack authorize API](img/cookbook/recipe_slack_mta/008-api_slack_com_apps_myslackmailgw_authorize_workspace.png)
 
 When finished the above, you will get the **API token** and may copy it to clipboard. The token is necessary on follow-up.
 
