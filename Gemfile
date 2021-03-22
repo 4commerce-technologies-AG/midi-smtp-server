@@ -15,6 +15,6 @@ end
 group :testing do
   gem 'openssl'
   gem 'minitest'
-  gem 'net-smtp', github: 'TomFreudenberg/net-smtp', tag: 'master'
+  gem 'net-smtp', github: 'TomFreudenberg/net-smtp', branch: 'master'
   gem 'mail'
 end
