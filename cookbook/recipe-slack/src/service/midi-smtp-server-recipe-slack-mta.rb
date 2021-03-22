@@ -15,7 +15,7 @@ end
 raise 'Missing env SLACK_POST_CHANNEL setting for startup!' if ENV['SLACK_POST_CHANNEL'].to_s.empty?
 
 # Server class
-class MySlackGateway < MidiSmtpServer::Smtpd
+class MySlackMailGw < MidiSmtpServer::Smtpd
 
   # to get a readable source code, use the nbsp method
   def nbsp
@@ -112,7 +112,7 @@ class MySlackGateway < MidiSmtpServer::Smtpd
           ],
           text: '',
           thumb_url: 'https://4commerce-technologies-ag.github.io/midi-smtp-server/img/midi-smtp-server-logo.png',
-          footer: 'MySlackGateway',
+          footer: 'MySlackMailGw',
           ts: @mail.date.to_time.to_i - @mail.date.to_time.utc_offset
         }
       ]
@@ -127,7 +127,7 @@ end
 # Create a new server instance for listening
 # If no ENV settings use default interfaces 127.0.0.1:2525
 # Attention: 127.0.0.1 is not accessible in Docker container even when ports are exposed
-server = MySlackGateway.new(
+server = MySlackMailGw.new(
   ports: ENV['SLACK_GW_PORTS'] || MidiSmtpServer::DEFAULT_SMTPD_PORT,
   hosts: ENV['SLACK_GW_HOSTS'] || MidiSmtpServer::DEFAULT_SMTPD_HOST,
   max_processings: ENV['SLACK_GW_MAX_PROCESSINGS'].to_s.empty? ? MidiSmtpServer::DEFAULT_SMTPD_MAX_PROCESSINGS : ENV['SLACK_GW_MAX_PROCESSINGS'].to_i,
@@ -150,7 +150,7 @@ trap('INT') do
 end
 
 # Output for debug
-server.logger.info("Starting MySlackGateway [#{MidiSmtpServer::VERSION::STRING}|#{MidiSmtpServer::VERSION::DATE}] ...")
+server.logger.info("Starting MySlackMailGw [#{MidiSmtpServer::VERSION::STRING}|#{MidiSmtpServer::VERSION::DATE}] ...")
 
 # setup exit code
 at_exit do
@@ -159,12 +159,12 @@ at_exit do
     # Output for debug
     server.logger.info('Ctrl-C interrupted, exit now...') if flag_status_ctrl_c_pressed
     # info about shutdown
-    server.logger.info('Shutdown MySlackGateway...')
+    server.logger.info('Shutdown MySlackMailGw...')
     # stop all threads and connections gracefully
     server.stop
   end
   # Output for debug
-  server.logger.info('MySlackGateway down!')
+  server.logger.info('MySlackMailGw down!')
 end
 
 # Start the server
