@@ -44,14 +44,14 @@ module MidiSmtpServer
         raise "File \”#{@key_path}\" does not exist or is not a regular file. Could not load private key." unless File.file?(@key_path.to_s)
         # try to load certificate and key
         cert_lines = File.read(@cert_path.to_s).lines
-        cert_indexes = cert_lines.each_with_index.map{|line, index| index if line.match?(/BEGIN CERT/)}.compact
+        cert_indexes = cert_lines.each_with_index.map { |line, index| index if line.include?('BEGIN CERT') }.compact
         certs = []
         cert_indexes.each_with_index do |cert_index, current_index|
           end_index = (cert_indexes[current_index + 1] || 0) - 1
           certs << OpenSSL::X509::Certificate.new(cert_lines[cert_index..end_index].join)
         end
         @ssl_context.cert = certs[0]
-        @ssl_context.extra_chain_cert = certs[1..-1]
+        @ssl_context.extra_chain_cert = certs[1..]
         @ssl_context.key = OpenSSL::PKey::RSA.new(File.open(@key_path.to_s))
       else
         # if none cert_path was set, create a self signed test certificate
