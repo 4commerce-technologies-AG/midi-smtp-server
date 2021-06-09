@@ -51,7 +51,7 @@ module MidiSmtpServer
           certs << OpenSSL::X509::Certificate.new(cert_lines[cert_index..end_index].join)
         end
         @ssl_context.cert = certs.first
-        @ssl_context.chain = certs
+        @ssl_context.extra_chain_cert = certs
         @ssl_context.key = OpenSSL::PKey::RSA.new(File.open(@key_path.to_s))
       else
         # if none cert_path was set, create a self signed test certificate
