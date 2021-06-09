@@ -44,7 +44,7 @@ module MidiSmtpServer
         raise "File \”#{@key_path}\" does not exist or is not a regular file. Could not load private key." unless File.file?(@key_path.to_s)
         # try to load certificate and key
         cert_lines = File.read(@cert_path.to_s).lines
-        cert_indexes = cert_lines.each_with_index.map { |line, index| index if line.include?('BEGIN CERT') }.compact
+        cert_indexes = cert_lines.each_with_index.map { |line, index| index if line.downcase.include?('begin cert') }.compact
         certs = []
         cert_indexes.each_with_index do |cert_index, current_index|
           end_index = (cert_indexes[current_index + 1] || 0) - 1
