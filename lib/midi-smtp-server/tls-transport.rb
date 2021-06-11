@@ -38,22 +38,7 @@ module MidiSmtpServer
       @ssl_context.ciphers = ciphers.to_s == '' ? TLS_CIPHERS_ADVANCED_PLUS : ciphers
       @ssl_context.ssl_version = methods.to_s == '' ? TLS_METHODS_ADVANCED : methods
       # check cert_path and key_path
-      if !@cert_path.nil? || !@key_path.nil?
-        # if any is set, test the pathes
-        raise "File \”#{@cert_path}\" does not exist or is not a regular file. Could not load certificate." unless File.file?(@cert_path.to_s)
-        raise "File \”#{@key_path}\" does not exist or is not a regular file. Could not load private key." unless File.file?(@key_path.to_s)
-        # try to load certificate and key
-        cert_lines = File.read(@cert_path.to_s).lines
-        cert_indexes = cert_lines.each_with_index.map { |line, index| index if line.downcase.include?('begin cert') }.compact
-        certs = []
-        cert_indexes.each_with_index do |cert_index, current_index|
-          end_index = current_index + 1 < cert_indexes.length ? cert_indexes[current_index + 1] : -1
-          certs << OpenSSL::X509::Certificate.new(cert_lines[cert_index..end_index].join)
-        end
-        @ssl_context.cert = certs.first
-        @ssl_context.extra_chain_cert = certs
-        @ssl_context.key = OpenSSL::PKey::RSA.new(File.open(@key_path.to_s))
-      else
+      if @cert_path.nil?
         # if none cert_path was set, create a self signed test certificate
         # and try to setup common subject and subject alt name(s) for cert
         @cert_cn = cert_cn.to_s.strip
@@ -83,6 +68,31 @@ module MidiSmtpServer
         @ssl_context.cert.add_extension(x509_extension_factory.create_extension('subjectAltName', (@cert_san.map { |san| "DNS:#{san}" } + @cert_san_ip.map { |ip| "IP:#{ip}" }).join(', '), false))
         @ssl_context.cert.sign @ssl_context.key, OpenSSL::Digest.new('SHA256')
         logger.debug("SSL: generated test certificate\r\n#{@ssl_context.cert.to_text}")
+      else
+        # if any is set, test the pathes
+        raise "File \”#{@cert_path}\" does not exist or is not a regular file. Could not load certificate." unless File.file?(@cert_path.to_s)
+        raise "File \”#{@key_path}\" does not exist or is not a regular file. Could not load private key." unless @key_path.nil? || File.file?(@key_path.to_s)
+        # try to load certificate and key
+        cert_lines = File.read(@cert_path.to_s).lines
+        # check if the cert file contains a chain of certs
+        cert_indexes = cert_lines.each_with_index.map { |line, index| index if line.downcase.include?('-begin certificate-') }.compact
+        # create each cert in the chain
+        certs = []
+        cert_indexes.each_with_index do |cert_index, current_index|
+          end_index = current_index + 1 < cert_indexes.length ? cert_indexes[current_index + 1] : -1
+          certs << OpenSSL::X509::Certificate.new(cert_lines[cert_index..end_index].join)
+        end
+        # add the cert and optional found chain to context
+        @ssl_context.cert = certs.first
+        @ssl_context.extra_chain_cert = certs[1..]
+        # check if key was given by separate file or should be included in cert
+        if @key_path.nil?
+          key_index = cert_lines.index { |line| line =~ /-begin[^-]+key-/i }
+          end_index = cert_lines.index { |line| line =~ /-end[^-]+key-/i }
+          @ssl_context.key = OpenSSL::PKey::RSA.new(cert_lines[key_index..end_index].join)
+        else
+          @ssl_context.key = OpenSSL::PKey::RSA.new(File.open(@key_path.to_s))
+        end
       end
     end
 
