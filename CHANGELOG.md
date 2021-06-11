@@ -4,7 +4,7 @@ We suggest everybody using MidiSmtpServer to switch at least to latest 2.3.y. or
 
 For upgrades from previous versions or outdated _MiniSmtpServer_ gem you may follow the guides at [Appendix Upgrade](https://midi-smtp-server.readthedocs.io/appendix_upgrade/) to get your code ready for the latest releases.
 
-#### 3.0.1 (2020-03-12)
+#### 3.0.1 (2021-03-12)
 
 1. Enable support for Ruby 3.0
 2. Bound to ruby 2.6+
