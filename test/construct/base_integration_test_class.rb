@@ -34,7 +34,7 @@ class BaseIntegrationTest < Minitest::Test
       @smtpd.ssl_context.extra_chain_cert&.each { |c| store.add_cert(c) }
     end
 
-    if Net::SMTP.const_defined?('VERSION') && (Net::SMTP::VERSION > '0.2.1')
+    if Net::SMTP.const_defined?('VERSION') && (Net::SMTP::VERSION >= '0.2.1')
       smtp.start('Integration Test client', authentication_id, password, auth_type, ssl_context_params: { cert_store: store, verify_mode: OpenSSL::SSL::VERIFY_PEER }) do
         # when sending mails, send one additional crlf to safe the original linebreaks
         smtp.send_message("#{message_data}\r\n", envelope_mail_from, envelope_rcpt_to)
@@ -51,7 +51,10 @@ class BaseIntegrationTest < Minitest::Test
     m = Mail.read_from_string("#{message_data}\r\n")
 
     store = OpenSSL::X509::Store.new
-    store.add_cert(@smtpd.ssl_context.cert) if @smtpd.ssl_context
+    if @smtpd.ssl_context
+      store.add_cert(@smtpd.ssl_context.cert)
+      @smtpd.ssl_context.extra_chain_cert&.each { |c| store.add_cert(c) }
+    end
 
     m.delivery_method \
       :smtp,
