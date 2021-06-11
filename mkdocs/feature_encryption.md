@@ -103,6 +103,12 @@ server = MySmtpd.new(
 
 <br>
 
+### Using .pem with trust chain and private key
+
+Since release 3.0.2 the parameter `tls_cert_path` allows usage of combined .pem certificates with optional included private keys like described on [digicert](https://www.digicert.com/kb/ssl-support/pem-ssl-creation.htm). In the case of an already included private key, the paramter `tls_key_path` may be left `nil`.
+
+<br>
+
 ### Expose active SSLContext
 
 To access the current daemon´s SSL-Context (OpenSSL::SSL::SSLContext), e.g. for inspecting the self signed certificate, this object is exposed as property `ssl_context`.
