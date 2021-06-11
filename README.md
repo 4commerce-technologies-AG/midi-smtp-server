@@ -98,25 +98,37 @@ Read the [MidiSmtpServer Documentation](https://midi-smtp-server.readthedocs.io/
 
 Since version 2.3 implementation and integration tests by minitest framework are added to this repository. While the implementation tests are mostly checking the components, the integration tests try to verify the correct exchange of messages for different scenarios. In addtion all sources are checked by rubocop to ensure they fit to the style guides.
 
-You may run all tests through the `test_runner.rb` helper:
+You may run all rubocop tests through the `rake` helper:
 
 ``` bash
-  ruby -I lib test/test_runner.rb
+  bundle exec rake rubocop
+```
+
+You may also run all tests through the `rake` helper:
+
+``` bash
+  bundle exec rake test:all
 ```
 
 or with more verbose output:
 
 ``` bash
-  ruby -I lib test/test_runner.rb -v
+  bundle exec rake test:all v=1
 ```
 
-To just run some selected (by regular expression) tests, you may use the `-n filter` option. The example will run only the tests and specs containing the word _connections_ in their method_name or describe_text:
+To just run just a part of the tests, you may select the `specs`, `unit` or `integration` tests:
 
 ``` bash
-  ruby -I lib test/test_runner.rb -v -n /connections/
+  bundle exec rake test:specs
 ```
 
-_Be aware that the filter is case sensitive._
+To just run some selected (by regular expression) tests, you may use the `T=filter` option. The example will run only the tests and specs containing the word _connections_ in their method_name or describe_text:
+
+``` bash
+  bundle exec rake test:all v=1 T=connections
+```
+
+_Be aware that the parameters and filter are case sensitive._
 
 #### Style guide links
 
