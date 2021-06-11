@@ -11,7 +11,7 @@ class SelfSignedCertificateIntegrationTest < CertificateIntegrationTest
   end
 
   def test_net_smtp_auth_login_and_simple_send_1_mail_with_ssl
-    helper_do_net_smtp_auth_login_and_simple_send_1_mail_with_ssl
+    helper_net_smtp_auth_login_and_simple_send_1_mail_with_ssl
   end
 
 end
@@ -27,7 +27,7 @@ class SelfSignedChainCertificateIntegrationTest < CertificateIntegrationTest
   end
 
   def test_net_smtp_auth_login_and_simple_send_1_mail_with_ssl
-    helper_do_net_smtp_auth_login_and_simple_send_1_mail_with_ssl
+    helper_net_smtp_auth_login_and_simple_send_1_mail_with_ssl
   end
 
 end
@@ -43,7 +43,7 @@ class SelfSignedChainAndKeyCertificateIntegrationTest < CertificateIntegrationTe
   end
 
   def test_net_smtp_auth_login_and_simple_send_1_mail_with_ssl
-    helper_do_net_smtp_auth_login_and_simple_send_1_mail_with_ssl
+    helper_net_smtp_auth_login_and_simple_send_1_mail_with_ssl
   end
 
 end

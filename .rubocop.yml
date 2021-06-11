@@ -76,3 +76,6 @@ Lint/Void:
 
 Minitest/MultipleAssertions:
   Enabled: no
+
+Minitest/TestMethodName:
+  Enabled: no
