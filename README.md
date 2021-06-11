@@ -158,7 +158,7 @@ A complete list of updates and features can be read in the [CHANGELOG](https://g
 <br>
 
 
-## Upgrading from previous releases
+## Upgrading from previous releases :small_red_triangle:
 
 Checkout the [Appendix Upgrade](https://midi-smtp-server.readthedocs.io/appendix_upgrade/) to get your code ready for the latest releases and read about any incompatibilities.
 
