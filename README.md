@@ -146,22 +146,9 @@ We suggest everybody using MidiSmtpServer to switch at least to latest 2.3.y. or
 
 For upgrades from previous versions or outdated _MiniSmtpServer_ gem you may follow the guides (see appendix) how to change your existing code to be compatible with the latest releases.
 
-#### Latest release: 3.0.1 (2021-03-12)
+#### Latest release: 3.0.2 (2021-06-11)
 
-1. Enable support for Ruby 3.0
-2. Bound to ruby 2.6+
-3. New [extended logging capabilities](https://midi-smtp-server.readthedocs.io/feature_logging/)
-4. Updated rubocop linter and code styles
-5. Fix tests for Net/Smtp of Ruby 3.0 ([check PR 22 on Net/Smtp](https://github.com/ruby/net-smtp/pull/22))
-6. Fix tests for minitest 6 deprecated warnings `obj.must_equal`
-7. New exposed [active SSLContext](https://midi-smtp-server.readthedocs.io/feature_encryption/#expose-active-sslcontext)
-8. Dropped deprecated method `host` - please use `hosts.join(', ')` instead
-9. Dropped deprecated method `port` - please use `ports.join(', ')` instead
-10. Dropped deprecated empty wildcard `""` support on initialize - please use specific hostnames and / or ip-addresses or star wildcard `"*"` only
-11. Align tests with Rubocop style and coding enforcements
-12. Added `rake` tasks for testing and linting, checkout `bundle exec rake -T`
-13. Re-defined arguments of methods `new`, `join`, `stop` as keyword arguments, check [minor incompatability: upgrade to 3.x](https://midi-smtp-server.readthedocs.io/appendix_upgrade/#upgrade-to-3x)
-14. Enhance the slack recipe in cookbook for [Docker usage](https://github.com/4commerce-technologies-AG/midi-smtp-server/tree/master/cookbook/recipe-slack)
+1. Enable support for certificate chain PEM files
 
 
 #### Changelog history

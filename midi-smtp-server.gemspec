@@ -12,6 +12,7 @@ Gem::Specification.new do |s|
   s.license     = 'MIT'
   s.files       = [
     'README.md',
+    'CHANGELOG.md',
     'MIT-LICENSE.txt',
     'lib/midi-smtp-server.rb',
     'lib/midi-smtp-server/version.rb',

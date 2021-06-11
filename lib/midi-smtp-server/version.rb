@@ -7,11 +7,11 @@ module MidiSmtpServer
 
     MAJOR = 3
     MINOR = 0
-    TINY = 1
+    TINY = 2
 
     STRING = [MAJOR, MINOR, TINY].compact.join('.')
 
-    DATE = '2021-03-12'
+    DATE = '2021-06-11'
 
   end
 
