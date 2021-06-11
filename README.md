@@ -160,7 +160,7 @@ A complete list of updates and features can be read in the [CHANGELOG](https://g
 
 ## Upgrading from previous releases
 
-Checkout the [Appendix Upgrade](https://midi-smtp-server.readthedocs.io/appendix_upgrade/) to get your code ready for the latest releases.
+Checkout the [Appendix Upgrade](https://midi-smtp-server.readthedocs.io/appendix_upgrade/) to get your code ready for the latest releases and read about any incompatibilities.
 
 <br>
 
