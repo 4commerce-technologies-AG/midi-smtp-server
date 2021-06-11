@@ -27,8 +27,12 @@ class BaseIntegrationTest < Minitest::Test
     smtp = Net::SMTP.new('127.0.0.1', 5555)
     smtp.enable_starttls if tls_enabled
 
+    # to verify peer from self signed certificates put the certificate and chain into the client store
     store = OpenSSL::X509::Store.new
-    store.add_cert(@smtpd.ssl_context.cert) if @smtpd.ssl_context
+    if @smtpd.ssl_context
+      store.add_cert(@smtpd.ssl_context.cert)
+      @smtpd.ssl_context.extra_chain_cert&.each { |c| store.add_cert(c) }
+    end
 
     if Net::SMTP.const_defined?('VERSION') && (Net::SMTP::VERSION > '0.2.1')
       smtp.start('Integration Test client', authentication_id, password, auth_type, ssl_context_params: { cert_store: store, verify_mode: OpenSSL::SSL::VERIFY_PEER }) do
