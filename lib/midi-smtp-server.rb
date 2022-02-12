@@ -898,25 +898,25 @@ module MidiSmtpServer
             # check that not already authenticated
             raise Smtpd503Exception if authenticated?(session[:ctx])
             # handle command line
-            @auth_data = line.gsub(/^AUTH\ /i, '').strip.gsub(/\s+/, ' ').split
+            auth_data = line.gsub(/^AUTH\ /i, '').strip.gsub(/\s+/, ' ').split
             # handle auth command
-            case @auth_data[0]
+            case auth_data[0]
 
               when (/PLAIN/i)
                 # check if only command was given
-                if @auth_data.length == 1
+                if auth_data.length == 1
                   # set sequence for next command input
                   session[:cmd_sequence] = :CMD_AUTH_PLAIN_VALUES
                   # response code include post ending with a space
                   return '334 '
                 else
                   # handle authentication with given auth_id and password
-                  process_auth_plain(session, @auth_data.length == 2 ? @auth_data[1] : [])
+                  process_auth_plain(session, auth_data.length == 2 ? auth_data[1] : [])
                 end
 
               when (/LOGIN/i)
                 # check if auth_id was sent too
-                case @auth_data.length
+                case auth_data.length
 
                   when 1
                     # reset auth_challenge
@@ -928,7 +928,7 @@ module MidiSmtpServer
 
                   when 2
                     # handle next sequence
-                    process_auth_login_user(session, @auth_data[1])
+                    process_auth_login_user(session, auth_data[1])
 
                   else
                     raise Smtpd500Exception
