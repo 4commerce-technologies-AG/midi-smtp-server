@@ -829,11 +829,11 @@ module MidiSmtpServer
             # check valid command sequence
             raise Smtpd503Exception if session[:cmd_sequence] != :CMD_HELO
             # handle command
-            @cmd_data = line.gsub(/^(HELO|EHLO)\ /i, '').strip
+            cmd_data = line.gsub(/^(HELO|EHLO)\ /i, '').strip
             # call event to handle data
-            on_helo_event(session[:ctx], @cmd_data)
+            on_helo_event(session[:ctx], cmd_data)
             # if no error raised, append to message hash
-            session[:ctx][:server][:helo] = @cmd_data
+            session[:ctx][:server][:helo] = cmd_data
             # set sequence state as RSET
             session[:cmd_sequence] = :CMD_RSET
             # check whether to answer as HELO or EHLO
@@ -994,9 +994,9 @@ module MidiSmtpServer
             # check that authentication is enabled if necessary
             raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(session[:ctx])
             # handle command
-            @cmd_data = line.gsub(/^MAIL FROM:/i, '').strip
+            cmd_data = line.gsub(/^MAIL FROM:/i, '').strip
             # check for BODY= parameter
-            case @cmd_data
+            case cmd_data
               # test for explicit 7bit
               when (/\sBODY=7BIT(\s|$)/i)
                 # raise exception if not supported
@@ -1015,7 +1015,7 @@ module MidiSmtpServer
                 raise Smtpd501Exception
             end
             # check for SMTPUTF8 parameter
-            case @cmd_data
+            case cmd_data
               # test for explicit 7bit
               when (/\sSMTPUTF8(\s|$)/i)
                 # raise exception if not supported
@@ -1024,15 +1024,15 @@ module MidiSmtpServer
                 session[:ctx][:envelope][:encoding_utf8] = 'utf8'
             end
             # drop any BODY= and SMTPUTF8 content
-            @cmd_data = @cmd_data.gsub(/\sBODY=(7BIT|8BITMIME)/i, '').gsub(/\sSMTPUTF8/i, '').strip if @internationalization_extensions
+            cmd_data = cmd_data.gsub(/\sBODY=(7BIT|8BITMIME)/i, '').gsub(/\sSMTPUTF8/i, '').strip if @internationalization_extensions
             # call event to handle data
-            return_value = on_mail_from_event(session[:ctx], @cmd_data)
+            return_value = on_mail_from_event(session[:ctx], cmd_data)
             if return_value
               # overwrite data with returned value
-              @cmd_data = return_value
+              cmd_data = return_value
             end
             # if no error raised, append to message hash
-            session[:ctx][:envelope][:from] = @cmd_data
+            session[:ctx][:envelope][:from] = cmd_data
             # set sequence state
             session[:cmd_sequence] = :CMD_MAIL
             # reply ok
@@ -1062,15 +1062,15 @@ module MidiSmtpServer
             # check that authentication is enabled if necessary
             raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(session[:ctx])
             # handle command
-            @cmd_data = line.gsub(/^RCPT TO:/i, '').strip
+            cmd_data = line.gsub(/^RCPT TO:/i, '').strip
             # call event to handle data
-            return_value = on_rcpt_to_event(session[:ctx], @cmd_data)
+            return_value = on_rcpt_to_event(session[:ctx], cmd_data)
             if return_value
               # overwrite data with returned value
-              @cmd_data = return_value
+              cmd_data = return_value
             end
             # if no error raised, append to message hash
-            session[:ctx][:envelope][:to] << @cmd_data
+            session[:ctx][:envelope][:to] << cmd_data
             # set sequence state
             session[:cmd_sequence] = :CMD_RCPT
             # reply ok
