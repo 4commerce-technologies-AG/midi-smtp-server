@@ -23,10 +23,6 @@ class BaseIntegrationTest < Minitest::Test
   end
 
   def net_smtp_send_mail(envelope_mail_from, envelope_rcpt_to, message_data, authentication_id: nil, password: nil, auth_type: nil, tls_enabled: false)
-    # use Net::SMTP to connect and send message
-    smtp = Net::SMTP.new('127.0.0.1', 5555)
-    smtp.enable_starttls if tls_enabled
-
     # to verify peer from self signed certificates put the certificate and chain into the client store
     store = OpenSSL::X509::Store.new
     if @smtpd.ssl_context
@@ -34,27 +30,31 @@ class BaseIntegrationTest < Minitest::Test
       @smtpd.ssl_context.extra_chain_cert&.each { |c| store.add_cert(c) }
     end
 
-    if Net::SMTP.const_defined?('VERSION') && (Net::SMTP::VERSION >= '0.2.1')
-      smtp.start('Integration Test client', authentication_id, password, auth_type, ssl_context_params: { cert_store: store, verify_mode: OpenSSL::SSL::VERIFY_PEER }) do
-        # when sending mails, send one additional crlf to safe the original linebreaks
-        smtp.send_message("#{message_data}\r\n", envelope_mail_from, envelope_rcpt_to)
-      end
+    # use Net::SMTP to connect and send message
+    smtp = Net::SMTP.new('127.0.0.1', 5555)
+
+    if tls_enabled
+      smtp.enable_starttls
+      smtp.ssl_context_params = { cert_store: store, verify_mode: OpenSSL::SSL::VERIFY_PEER }
     else
-      smtp.start('Integration Test client', authentication_id, password, auth_type) do
-        # when sending mails, send one additional crlf to safe the original linebreaks
-        smtp.send_message("#{message_data}\r\n", envelope_mail_from, envelope_rcpt_to)
-      end
+      smtp.ssl_context_params = { verify_mode: OpenSSL::SSL::VERIFY_NONE }
+    end
+
+    smtp.start('Integration Test client', authentication_id, password, auth_type) do
+      # when sending mails, send one additional crlf to safe the original linebreaks
+      smtp.send_message("#{message_data}\r\n", envelope_mail_from, envelope_rcpt_to)
     end
   end
 
   def mikel_mail_send_mail(_envelope_mail_from, _envelope_rcpt_to, message_data, authentication_id: nil, password: nil, enable_starttls: false)
-    m = Mail.read_from_string("#{message_data}\r\n")
-
+    # to verify peer from self signed certificates put the certificate and chain into the client store
     store = OpenSSL::X509::Store.new
     if @smtpd.ssl_context
       store.add_cert(@smtpd.ssl_context.cert)
       @smtpd.ssl_context.extra_chain_cert&.each { |c| store.add_cert(c) }
     end
+
+    m = Mail.read_from_string("#{message_data}\r\n")
 
     m.delivery_method \
       :smtp,

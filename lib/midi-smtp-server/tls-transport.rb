@@ -58,7 +58,7 @@ module MidiSmtpServer
         @ssl_context.cert.public_key = @ssl_context.key
         # valid for 90 days
         @ssl_context.cert.not_before = Time.now
-        @ssl_context.cert.not_after = Time.now + 60 * 60 * 24 * 90
+        @ssl_context.cert.not_after = Time.now + (60 * 60 * 24 * 90)
         # setup some cert extensions
         x509_extension_factory = OpenSSL::X509::ExtensionFactory.new
         x509_extension_factory.subject_certificate = @ssl_context.cert
