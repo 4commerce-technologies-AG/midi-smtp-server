@@ -26,8 +26,8 @@ jobs:
       run: |
         apk update
         apk upgrade --force
-        # when using ruby 2.x some gems need to get built
-        [ $(ruby -e "printf(RUBY_VERSION[0..0])") == "2" ] && apk add alpine-sdk openssl-dev
+        # when using ruby some gems need to get built
+        apk add build-base alpine-sdk openssl-dev ruby-dev
         # get git to use gems from github as well
         apk add git
     - name: Update rubygems & bundler
