@@ -64,22 +64,22 @@ class MySlackMailGw < MidiSmtpServer::Smtpd
     logger.debug("mail reveived at: [#{ctx[:server][:local_ip]}:#{ctx[:server][:local_port]}] from: [#{ctx[:envelope][:from]}] for recipient(s): [#{ctx[:envelope][:to]}]...")
 
     # Just decode message ones to make sure, that this message is usable
-    @mail = Mail.read_from_string(ctx[:message][:data])
+    mail = Mail.read_from_string(ctx[:message][:data])
 
     # check for text message
-    if @mail.text_part
+    if mail.text_part
       # use only plain text message
-      s_text = @mail.text_part.body
-    elsif @mail.html_part
+      s_text = mail.text_part.body
+    elsif mail.html_part
       # extract text from html message
-      doc = Oga.parse_html(@mail.html_part.body.to_s.encode('UTF-8', invalid: :replace, undef: :replace, replace: '').delete("\000"))
+      doc = Oga.parse_html(mail.html_part.body.to_s.encode('UTF-8', invalid: :replace, undef: :replace, replace: '').delete("\000"))
       # index to body node
       body_node = doc.xpath('/html/body').first
       # get plain text from dom
       s_text = body_node.text.strip if body_node
     else
       # use the simple decoded body
-      s_text = @mail.body.decoded
+      s_text = mail.body.decoded
     end
 
     # open channel to slack api
@@ -96,8 +96,8 @@ class MySlackMailGw < MidiSmtpServer::Smtpd
       text: '',
       # build message from blocks
       blocks: [
-        slack_block_kit_section_mrkdwn("#{nbsp}\n_Catched E-Mail message from:_\n\n```#{@mail[:from]}```"),
-        slack_block_kit_header_text("#{@mail[:subject]}"),
+        slack_block_kit_section_mrkdwn("#{nbsp}\n_Catched E-Mail message from:_\n\n```#{mail[:from]}```"),
+        slack_block_kit_header_text("#{mail[:subject]}"),
         slack_block_kit_divider,
         slack_block_kit_section_text(s_text.to_s.force_encoding('UTF-8')),
         slack_block_kit_section_text("#{nbsp}")
@@ -105,15 +105,15 @@ class MySlackMailGw < MidiSmtpServer::Smtpd
       # append some additional information as attachments
       attachments: [
         {
-          color: @mail.header['X-Priority'].to_s.match?(/[^0-9]*1[^0-9]*/) ? '#b60707' : '#0c91b6',
+          color: mail.header['X-Priority'].to_s.match?(/[^0-9]*1[^0-9]*/) ? '#b60707' : '#0c91b6',
           fields: [
-            { title: 'Priority', short: false, value: @mail.header['X-Priority'].to_s.match?(/[^0-9]*1[^0-9]*/) ? 'High' : 'Normal / Low' },
-            { title: 'Date', short: false, value: @mail.date }
+            { title: 'Priority', short: false, value: mail.header['X-Priority'].to_s.match?(/[^0-9]*1[^0-9]*/) ? 'High' : 'Normal / Low' },
+            { title: 'Date', short: false, value: mail.date }
           ],
           text: '',
           thumb_url: 'https://4commerce-technologies-ag.github.io/midi-smtp-server/img/midi-smtp-server-logo.png',
           footer: 'MySlackMailGw',
-          ts: @mail.date.to_time.to_i - @mail.date.to_time.utc_offset
+          ts: mail.date.to_time.to_i - mail.date.to_time.utc_offset
         }
       ]
     )

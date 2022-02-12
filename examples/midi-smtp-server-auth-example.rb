@@ -46,10 +46,10 @@ class MySmtpd < MidiSmtpServer::Smtpd
     logger.debug("mail reveived at: [#{ctx[:server][:local_ip]}:#{ctx[:server][:local_port]}] from: [#{ctx[:envelope][:from]}] for recipient(s): [#{ctx[:envelope][:to]}]...")
 
     # Just decode message once to make sure, that this message ist readable
-    @mail = Mail.read_from_string(ctx[:message][:data])
+    mail = Mail.read_from_string(ctx[:message][:data])
 
     # handle incoming mail, just show the message source
-    logger.debug(@mail.to_s)
+    logger.debug(mail.to_s)
   end
 
 end

@@ -12,10 +12,10 @@ class MySmtpd < MidiSmtpServer::Smtpd
     logger.debug("[#{ctx[:envelope][:from]}] for recipient(s): [#{ctx[:envelope][:to]}]...")
 
     # Just decode message once to make sure, that this message ist readable
-    @mail = Mail.read_from_string(ctx[:message][:data])
+    mail = Mail.read_from_string(ctx[:message][:data])
 
     # handle incoming mail, just show the message subject
-    logger.debug(@mail.subject)
+    logger.debug(mail.subject)
   end
 
 end
@@ -33,10 +33,10 @@ This source code shows the example to receive messages via SMTP and store them t
   # get each message after DATA <message> .
   def on_message_data_event(ctx)
     # Just decode message once to make sure, that this message ist readable
-    @mail = Mail.read_from_string(ctx[:message])
+    mail = Mail.read_from_string(ctx[:message])
 
     # Publish to rabbit
-    @bunny_exchange.publish(@mail.to_s, :headers => { 'x-smtp' => @mail.header.to_s }, :routing_key => "to_queue")
+    @bunny_exchange.publish(mail.to_s, :headers => { 'x-smtp' => mail.header.to_s }, :routing_key => "to_queue")
   end
 ```
 
