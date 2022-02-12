@@ -1239,18 +1239,18 @@ module MidiSmtpServer
     def process_auth_plain(session, encoded_auth_response)
       begin
         # extract auth id (and password)
-        @auth_values = Base64.decode64(encoded_auth_response).split("\x00")
+        auth_values = Base64.decode64(encoded_auth_response).split("\x00")
         # check for valid credentials parameters
-        raise Smtpd500Exception unless @auth_values.length == 3
+        raise Smtpd500Exception unless auth_values.length == 3
         # call event function to test credentials
-        return_value = on_auth_event(session[:ctx], @auth_values[0], @auth_values[1], @auth_values[2])
+        return_value = on_auth_event(session[:ctx], auth_values[0], auth_values[1], auth_values[2])
         if return_value
           # overwrite data with returned value as authorization id
-          @auth_values[0] = return_value
+          auth_values[0] = return_value
         end
         # save authentication information to ctx
-        session[:ctx][:server][:authorization_id] = @auth_values[0].to_s.empty? ? @auth_values[1] : @auth_values[0]
-        session[:ctx][:server][:authentication_id] = @auth_values[1]
+        session[:ctx][:server][:authorization_id] = auth_values[0].to_s.empty? ? auth_values[1] : auth_values[0]
+        session[:ctx][:server][:authentication_id] = auth_values[1]
         session[:ctx][:server][:authenticated] = Time.now.utc
         # response code
         return '235 OK'
@@ -1274,20 +1274,20 @@ module MidiSmtpServer
     def process_auth_login_pass(session, encoded_auth_response)
       begin
         # extract auth id (and password)
-        @auth_values = [
+        auth_values = [
           session[:auth_challenge][:authorization_id],
           session[:auth_challenge][:authentication_id],
           Base64.decode64(encoded_auth_response)
         ]
         # check for valid credentials
-        return_value = on_auth_event(session[:ctx], @auth_values[0], @auth_values[1], @auth_values[2])
+        return_value = on_auth_event(session[:ctx], auth_values[0], auth_values[1], auth_values[2])
         if return_value
           # overwrite data with returned value as authorization id
-          @auth_values[0] = return_value
+          auth_values[0] = return_value
         end
         # save authentication information to ctx
-        session[:ctx][:server][:authorization_id] = @auth_values[0].to_s.empty? ? @auth_values[1] : @auth_values[0]
-        session[:ctx][:server][:authentication_id] = @auth_values[1]
+        session[:ctx][:server][:authorization_id] = auth_values[0].to_s.empty? ? auth_values[1] : auth_values[0]
+        session[:ctx][:server][:authentication_id] = auth_values[1]
         session[:ctx][:server][:authenticated] = Time.now.utc
         # response code
         return '235 OK'
