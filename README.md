@@ -146,9 +146,10 @@ We suggest everybody using MidiSmtpServer to switch at least to latest 2.3.y. or
 
 For upgrades from previous versions or outdated _MiniSmtpServer_ gem you may follow the guides (see appendix) how to change your existing code to be compatible with the latest releases.
 
-#### Latest release: 3.0.2 (2021-06-11)
+#### Latest release: 3.0.3 (2022-02-12)
 
-1. Enable support for certificate chain PEM files
+1. Critical fix for thread safety ([check issue 29](https://github.com/4commerce-technologies-AG/midi-smtp-server/issues/39))
+2. Fix tests using net/smtp '>= 0.3.1'
 
 
 #### Changelog history
@@ -190,4 +191,4 @@ Author: [Tom Freudenberg](http://about.me/tom.freudenberg)
 
 [MidiSmtpServer Class](https://github.com/4commerce-technologies-AG/midi-smtp-server/) is inspired from [MiniSmtpServer Class](https://github.com/aarongough/mini-smtp-server) and code written by [Aaron Gough](https://github.com/aarongough) and [Peter Cooper](http://peterc.org/)
 
-Copyright (c) 2014-2021 [Tom Freudenberg](http://www.4commerce.de/), [4commerce technologies AG](http://www.4commerce.de/), released under the MIT license
+Copyright (c) 2014-2022 [Tom Freudenberg](http://www.4commerce.de/), [4commerce technologies AG](http://www.4commerce.de/), released under the MIT license

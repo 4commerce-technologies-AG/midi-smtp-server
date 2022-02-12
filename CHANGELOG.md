@@ -4,6 +4,12 @@ We suggest everybody using MidiSmtpServer to switch at least to latest 2.3.y. or
 
 For upgrades from previous versions or outdated _MiniSmtpServer_ gem you may follow the guides at [Appendix Upgrade](https://midi-smtp-server.readthedocs.io/appendix_upgrade/) to get your code ready for the latest releases.
 
+#### 3.0.3 (2022-02-12)
+
+1. Critical fix for thread safety ([check issue 29](https://github.com/4commerce-technologies-AG/midi-smtp-server/issues/39))
+2. Fix tests using net/smtp '>= 0.3.1'
+
+
 #### 3.0.2 (2021-06-11)
 
 1. Enable support for certificate chain PEM files
@@ -25,6 +31,12 @@ For upgrades from previous versions or outdated _MiniSmtpServer_ gem you may fol
 12. Added `rake` tasks for testing and linting, checkout `bundle exec rake -T`
 13. Re-defined arguments of methods `new`, `join`, `stop` as keyword arguments, check [minor incompatability: upgrade to 3.x](https://midi-smtp-server.readthedocs.io/appendix_upgrade/#upgrade-to-3x)
 14. Enhance the slack recipe in cookbook for [Docker usage](https://github.com/4commerce-technologies-AG/midi-smtp-server/tree/master/cookbook/recipe-slack)
+
+
+#### 2.3.3 (2022-02-12)
+
+1. Critical fix for thread safety ([check issue 29](https://github.com/4commerce-technologies-AG/midi-smtp-server/issues/39))
+2. Fix tests using net/smtp '>= 0.3.1'
 
 
 #### 2.3.2 (2020-01-21)
