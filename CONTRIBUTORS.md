@@ -9,3 +9,4 @@ We like to nominate the contributors:
 - [@TomFreudenberg](https://github.com/TomFreudenberg)
 - [@gencer](https://github.com/gencer)
 - [@ocha](https://github.com/ocha)
+- [@fernandomm](https://github.com/fernandomm)
