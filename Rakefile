@@ -32,7 +32,7 @@ namespace :test do
 
   Rake::MidiSmtpServerTestTask.new(:all) do |t|
     t.desc = format(desc_template, t.name)
-    t.add_test_files(['specs', 'unit', 'integration'])
+    t.add_test_files(['specs', 'unit', 'integration', 'stress'])
   end
 
   Rake::MidiSmtpServerTestTask.new(:specs) do |t|
@@ -48,5 +48,10 @@ namespace :test do
   Rake::MidiSmtpServerTestTask.new(:integration) do |t|
     t.desc = format(desc_template, t.name)
     t.add_test_files('integration')
+  end
+
+  Rake::MidiSmtpServerTestTask.new(:stress) do |t|
+    t.desc = format(desc_template, t.name)
+    t.add_test_files('stress')
   end
 end

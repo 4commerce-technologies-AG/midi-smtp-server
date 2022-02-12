@@ -29,6 +29,8 @@ class MidiSmtpServerTest < MidiSmtpServer::Smtpd
     logger: nil,
     logger_severity: nil
   )
+    # logger for counting errors during tests if necessary
+    @ev_fail_counter = 0
 
     # disable DEBUG log output as default
     logger_severity = 5 if logger_severity.nil? # Logger::UNKNOWN
@@ -67,6 +69,7 @@ class MidiSmtpServerTest < MidiSmtpServer::Smtpd
   public :process_auth_login_pass
 
   # event vars to inspect
+  attr_reader :ev_fail_counter
   attr_reader :ev_auth_authentication_id
   attr_reader :ev_auth_authentication
   attr_reader :ev_auth_authorization_id
@@ -79,7 +82,7 @@ class MidiSmtpServerTest < MidiSmtpServer::Smtpd
     @ev_auth_authentication_id = authentication_id
     @ev_auth_authentication = authentication
     # return role when authenticated
-    if authorization_id == '' && authentication_id == 'administrator' && authentication == 'password'
+    if authorization_id == '' && authentication_id.start_with?('administrator') && authentication == 'password'
       @ev_auth_authorization_id = 'supervisor'
       return @ev_auth_authorization_id
     end
