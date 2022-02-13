@@ -171,6 +171,7 @@ Checkout the [Appendix Upgrade](https://midi-smtp-server.readthedocs.io/appendix
 You may find, use and download the gem package on [RubyGems.org](http://rubygems.org/gems/midi-smtp-server).
 
 [![Gem Version](https://badge.fury.io/rb/midi-smtp-server.svg)](http://badge.fury.io/rb/midi-smtp-server) &nbsp;
+[![Ruby](https://github.com/4commerce-technologies-AG/midi-smtp-server/actions/workflows/push-and-pr-testing-ruby-ci.yml/badge.svg)](https://github.com/4commerce-technologies-AG/midi-smtp-server/actions/workflows/push-and-pr-testing-ruby-ci.yml) &nbsp;
 
 <br>
 
