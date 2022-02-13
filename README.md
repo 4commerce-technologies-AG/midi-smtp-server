@@ -148,7 +148,7 @@ For upgrades from previous versions or outdated _MiniSmtpServer_ gem you may fol
 
 #### Latest release: 3.0.3 (2022-02-12)
 
-1. Critical fix for thread safety ([check issue 29](https://github.com/4commerce-technologies-AG/midi-smtp-server/issues/39))
+1. Critical fix for thread safety ([check issue 39](https://github.com/4commerce-technologies-AG/midi-smtp-server/issues/39))
 2. Fix tests using net/smtp '>= 0.3.1'
 
 
