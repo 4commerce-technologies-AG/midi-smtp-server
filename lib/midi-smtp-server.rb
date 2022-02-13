@@ -780,11 +780,11 @@ module MidiSmtpServer
             # check valid command sequence
             raise Smtpd503Exception if session[:cmd_sequence] != :CMD_HELO
             # handle command
-            @cmd_data = line.gsub(/^(HELO|EHLO)\ /i, '').strip
+            cmd_data = line.gsub(/^(HELO|EHLO)\ /i, '').strip
             # call event to handle data
-            on_helo_event(session[:ctx], @cmd_data)
+            on_helo_event(session[:ctx], cmd_data)
             # if no error raised, append to message hash
-            session[:ctx][:server][:helo] = @cmd_data
+            session[:ctx][:server][:helo] = cmd_data
             # set sequence state as RSET
             session[:cmd_sequence] = :CMD_RSET
             # check whether to answer as HELO or EHLO
@@ -847,34 +847,34 @@ module MidiSmtpServer
             # check that not already authenticated
             raise Smtpd503Exception if authenticated?(session[:ctx])
             # handle command line
-            @auth_data = line.gsub(/^AUTH\ /i, '').strip.gsub(/\s+/, ' ').split(' ')
+            auth_data = line.gsub(/^AUTH\ /i, '').strip.gsub(/\s+/, ' ').split(' ')
             # handle auth command
-            case @auth_data[0]
+            case auth_data[0]
 
               when (/PLAIN/i)
                 # check if only command was given
-                if @auth_data.length == 1
+                if auth_data.length == 1
                   # set sequence for next command input
                   session[:cmd_sequence] = :CMD_AUTH_PLAIN_VALUES
                   # response code include post ending with a space
                   return '334 '
                 else
                   # handle authentication with given auth_id and password
-                  process_auth_plain(session, @auth_data.length == 2 ? @auth_data[1] : [])
+                  process_auth_plain(session, auth_data.length == 2 ? auth_data[1] : [])
                 end
 
               when (/LOGIN/i)
                 # check if auth_id was sent too
-                if @auth_data.length == 1
+                if auth_data.length == 1
                   # reset auth_challenge
                   session[:auth_challenge] = {}
                   # set sequence for next command input
                   session[:cmd_sequence] = :CMD_AUTH_LOGIN_USER
                   # response code with request for Username
                   return '334 ' + Base64.strict_encode64('Username:')
-                elsif @auth_data.length == 2
+                elsif auth_data.length == 2
                   # handle next sequence
-                  process_auth_login_user(session, @auth_data[1])
+                  process_auth_login_user(session, auth_data[1])
                 else
                   raise Smtpd500Exception
                 end
@@ -938,9 +938,9 @@ module MidiSmtpServer
             # check that authentication is enabled if necessary
             raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(session[:ctx])
             # handle command
-            @cmd_data = line.gsub(/^MAIL FROM\:/i, '').strip
+            cmd_data = line.gsub(/^MAIL FROM\:/i, '').strip
             # check for BODY= parameter
-            case @cmd_data
+            case cmd_data
               # test for explicit 7bit
               when (/\sBODY=7BIT(\s|$)/i)
                 # raise exception if not supported
@@ -959,7 +959,7 @@ module MidiSmtpServer
                 raise Smtpd501Exception
             end
             # check for SMTPUTF8 parameter
-            case @cmd_data
+            case cmd_data
               # test for explicit 7bit
               when (/\sSMTPUTF8(\s|$)/i)
                 # raise exception if not supported
@@ -968,15 +968,15 @@ module MidiSmtpServer
                 session[:ctx][:envelope][:encoding_utf8] = 'utf8'
             end
             # drop any BODY= and SMTPUTF8 content
-            @cmd_data = @cmd_data.gsub(/\sBODY=(7BIT|8BITMIME)/i, '').gsub(/\sSMTPUTF8/i, '').strip if @internationalization_extensions
+            cmd_data = cmd_data.gsub(/\sBODY=(7BIT|8BITMIME)/i, '').gsub(/\sSMTPUTF8/i, '').strip if @internationalization_extensions
             # call event to handle data
-            return_value = on_mail_from_event(session[:ctx], @cmd_data)
+            return_value = on_mail_from_event(session[:ctx], cmd_data)
             if return_value
               # overwrite data with returned value
-              @cmd_data = return_value
+              cmd_data = return_value
             end
             # if no error raised, append to message hash
-            session[:ctx][:envelope][:from] = @cmd_data
+            session[:ctx][:envelope][:from] = cmd_data
             # set sequence state
             session[:cmd_sequence] = :CMD_MAIL
             # reply ok
@@ -1006,15 +1006,15 @@ module MidiSmtpServer
             # check that authentication is enabled if necessary
             raise Smtpd530Exception if @auth_mode == :AUTH_REQUIRED && !authenticated?(session[:ctx])
             # handle command
-            @cmd_data = line.gsub(/^RCPT TO\:/i, '').strip
+            cmd_data = line.gsub(/^RCPT TO\:/i, '').strip
             # call event to handle data
-            return_value = on_rcpt_to_event(session[:ctx], @cmd_data)
+            return_value = on_rcpt_to_event(session[:ctx], cmd_data)
             if return_value
               # overwrite data with returned value
-              @cmd_data = return_value
+              cmd_data = return_value
             end
             # if no error raised, append to message hash
-            session[:ctx][:envelope][:to] << @cmd_data
+            session[:ctx][:envelope][:to] << cmd_data
             # set sequence state
             session[:cmd_sequence] = :CMD_RCPT
             # reply ok
@@ -1182,18 +1182,18 @@ module MidiSmtpServer
     def process_auth_plain(session, encoded_auth_response)
       begin
         # extract auth id (and password)
-        @auth_values = Base64.decode64(encoded_auth_response).split("\x00")
+        auth_values = Base64.decode64(encoded_auth_response).split("\x00")
         # check for valid credentials parameters
-        raise Smtpd500Exception unless @auth_values.length == 3
+        raise Smtpd500Exception unless auth_values.length == 3
         # call event function to test credentials
-        return_value = on_auth_event(session[:ctx], @auth_values[0], @auth_values[1], @auth_values[2])
+        return_value = on_auth_event(session[:ctx], auth_values[0], auth_values[1], auth_values[2])
         if return_value
           # overwrite data with returned value as authorization id
-          @auth_values[0] = return_value
+          auth_values[0] = return_value
         end
         # save authentication information to ctx
-        session[:ctx][:server][:authorization_id] = @auth_values[0].to_s.empty? ? @auth_values[1] : @auth_values[0]
-        session[:ctx][:server][:authentication_id] = @auth_values[1]
+        session[:ctx][:server][:authorization_id] = auth_values[0].to_s.empty? ? auth_values[1] : auth_values[0]
+        session[:ctx][:server][:authentication_id] = auth_values[1]
         session[:ctx][:server][:authenticated] = Time.now.utc
         # response code
         return '235 OK'
@@ -1217,20 +1217,20 @@ module MidiSmtpServer
     def process_auth_login_pass(session, encoded_auth_response)
       begin
         # extract auth id (and password)
-        @auth_values = [
+        auth_values = [
           session[:auth_challenge][:authorization_id],
           session[:auth_challenge][:authentication_id],
           Base64.decode64(encoded_auth_response)
         ]
         # check for valid credentials
-        return_value = on_auth_event(session[:ctx], @auth_values[0], @auth_values[1], @auth_values[2])
+        return_value = on_auth_event(session[:ctx], auth_values[0], auth_values[1], auth_values[2])
         if return_value
           # overwrite data with returned value as authorization id
-          @auth_values[0] = return_value
+          auth_values[0] = return_value
         end
         # save authentication information to ctx
-        session[:ctx][:server][:authorization_id] = @auth_values[0].to_s.empty? ? @auth_values[1] : @auth_values[0]
-        session[:ctx][:server][:authentication_id] = @auth_values[1]
+        session[:ctx][:server][:authorization_id] = auth_values[0].to_s.empty? ? auth_values[1] : auth_values[0]
+        session[:ctx][:server][:authentication_id] = auth_values[1]
         session[:ctx][:server][:authenticated] = Time.now.utc
         # response code
         return '235 OK'
