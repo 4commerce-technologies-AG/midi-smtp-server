@@ -15,6 +15,7 @@ jobs:
     strategy:
       matrix:
         container_tag:
+        - 3.1-alpine
         - 3.0-alpine
         - 2.7-alpine
         - 2.6-alpine
