@@ -835,6 +835,10 @@ We suggest everybody using MidiSmtpServer 1.x or 2.x to switch at least to lates
 
 For upgrades from version 1.x or from _Mini_SmtpServer you may follow the guides (see appendix) how to change your existing code to be compatible with the latest 2.x releases.
 
+#### 2.3.3 (2022-02-12)
+
+1. Critical fix for thread safety ([check issue 39](https://github.com/4commerce-technologies-AG/midi-smtp-server/issues/39))
+
 #### 2.3.2 (2020-01-21)
 
 1. New [hosts wildcard and interface detection](https://github.com/4commerce-technologies-AG/midi-smtp-server#hosts-hosts-wildcard-and-interface-detection)
@@ -1045,7 +1049,7 @@ If you are already using MidiSmtpServer it might be only some straight forward w
   def new_message_event(message_hash)
   # message_hash[:from]
   # message_hash[:to]
-  # message_hash[:data]  
+  # message_hash[:data]
 ```
 
 ##### MidiSmtpServer
