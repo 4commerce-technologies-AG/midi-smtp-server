@@ -190,6 +190,6 @@ You may find, use and download the gem package on [RubyGems.org](http://rubygems
 
 Author: [Tom Freudenberg](http://about.me/tom.freudenberg)
 
-[MidiSmtpServer Class](https://github.com/4commerce-technologies-AG/midi-smtp-server/) is inspired from [MiniSmtpServer Class](https://github.com/aarongough/mini-smtp-server) and code written by [Aaron Gough](https://github.com/aarongough) and [Peter Cooper](http://peterc.org/)
+[MidiSmtpServer Class](https://github.com/4commerce-technologies-AG/midi-smtp-server/) is inspired from [MiniSmtpServer Class](https://github.com/aarongough/mini-smtp-server) and code written by [Aaron Gough](https://github.com/aarongough) and [Peter Cooper](https://github.com/4commerce-technologies-AG/midi-smtp-server#author--credits)
 
 Copyright (c) 2014-2022 [Tom Freudenberg](http://www.4commerce.de/), [4commerce technologies AG](http://www.4commerce.de/), released under the MIT license
