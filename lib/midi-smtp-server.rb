@@ -44,8 +44,8 @@ module MidiSmtpServer
     public
 
     # Start the server
-    def start
-      serve_service
+    def start(skip_accept = nil)
+      serve_service(skip_accept)
     end
 
     # Stop the server
@@ -233,6 +233,7 @@ module MidiSmtpServer
 
       # list of TCPServers
       @tcp_servers = []
+      attr_reader :tcp_servers
       # list of running threads
       @tcp_server_threads = []
 
@@ -474,7 +475,7 @@ module MidiSmtpServer
     protected
 
     # Start the listeners for all hosts
-    def serve_service
+    def serve_service(skip_accept = nil)
       raise 'Service was already started' unless stopped?
 
       # set flag to signal shutdown by stop / shutdown command
@@ -485,12 +486,12 @@ module MidiSmtpServer
         # break address into ip_address and port and serve service
         ip_address = address.rpartition(':').first
         port = address.rpartition(':').last
-        serve_service_on_ip_address_and_port(ip_address, port)
+        serve_service_on_ip_address_and_port(ip_address, port, skip_accept)
       end
     end
 
     # Start the listener thread on single ip_address and port
-    def serve_service_on_ip_address_and_port(ip_address, port)
+    def serve_service_on_ip_address_and_port(ip_address, port, skip_accept = nil)
       # log information
       logger.info("Starting service on #{ip_address}:#{port}")
       # check that there is a specific ip_address defined
@@ -500,7 +501,17 @@ module MidiSmtpServer
       # append this server to the list of TCPServers
       @tcp_servers << tcp_server
 
-      # run thread until shutdown
+      # start and run accepting thread until shutdown unless the last
+      # argument is set to a non-nil value. in which case the upstream
+      # callers must arrange to call this method.
+      start_accept_thread(tcp_server) unless skip_accept
+    end
+
+    # the creation of a thread to accept connections is factored
+    # out into another method because this makes it possible to
+    # start the server, fork, and then accept connections in the
+    # forked process.
+    def start_accept_thread(tcp_server)
       @tcp_server_threads << Thread.new do
         begin
           # always check for shutdown request
