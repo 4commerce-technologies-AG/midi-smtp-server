@@ -7,12 +7,12 @@ require 'oga'
 
 # get the slack endpoint from ENV var
 Slack.configure do |config|
-  config.token = ENV['SLACK_API_TOKEN']
+  config.token = ENV.fetch('SLACK_API_TOKEN', '')
   raise 'Missing env SLACK_API_TOKEN setting for startup!' if config.token.to_s.empty?
 end
 
 # check setting for slack channel
-raise 'Missing env SLACK_POST_CHANNEL setting for startup!' if ENV['SLACK_POST_CHANNEL'].to_s.empty?
+raise 'Missing env SLACK_POST_CHANNEL setting for startup!' if ENV.fetch('SLACK_POST_CHANNEL', '').to_s.empty?
 
 # Server class
 class MySlackMailGw < MidiSmtpServer::Smtpd
@@ -91,7 +91,7 @@ class MySlackMailGw < MidiSmtpServer::Smtpd
     # post message to channel
     slack_client.chat_postMessage(
       # define channel to post to
-      channel: ENV['SLACK_POST_CHANNEL'],
+      channel: ENV.fetch('SLACK_POST_CHANNEL'),
       # simple text left empty
       text: '',
       # build message from blocks
@@ -128,12 +128,12 @@ end
 # If no ENV settings use default interfaces 127.0.0.1:2525
 # Attention: 127.0.0.1 is not accessible in Docker container even when ports are exposed
 server = MySlackMailGw.new(
-  ports: ENV['SLACK_GW_PORTS'] || MidiSmtpServer::DEFAULT_SMTPD_PORT,
-  hosts: ENV['SLACK_GW_HOSTS'] || MidiSmtpServer::DEFAULT_SMTPD_HOST,
-  max_processings: ENV['SLACK_GW_MAX_PROCESSINGS'].to_s.empty? ? MidiSmtpServer::DEFAULT_SMTPD_MAX_PROCESSINGS : ENV['SLACK_GW_MAX_PROCESSINGS'].to_i,
+  ports: ENV.fetch('SLACK_GW_PORTS', MidiSmtpServer::DEFAULT_SMTPD_PORT),
+  hosts: ENV.fetch('SLACK_GW_HOSTS', MidiSmtpServer::DEFAULT_SMTPD_HOST),
+  max_processings: ENV.fetch('SLACK_GW_MAX_PROCESSINGS', '').to_s.empty? ? MidiSmtpServer::DEFAULT_SMTPD_MAX_PROCESSINGS : ENV.fetch('SLACK_GW_MAX_PROCESSINGS').to_i,
   auth_mode: :AUTH_OPTIONAL,
   tls_mode: :TLS_FORBIDDEN,
-  logger_severity: ENV['SLACK_GW_DEBUG'].to_s.empty? ? Logger::INFO : Logger::DEBUG
+  logger_severity: ENV.fetch('SLACK_GW_DEBUG', '').to_s.empty? ? Logger::INFO : Logger::DEBUG
 )
 
 # save flag for Ctrl-C pressed
