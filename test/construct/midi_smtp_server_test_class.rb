@@ -9,6 +9,7 @@ class MidiSmtpServerTest < MidiSmtpServer::Smtpd
   def initialize(
     ports: MidiSmtpServer::DEFAULT_SMTPD_PORT,
     hosts: MidiSmtpServer::DEFAULT_SMTPD_HOST,
+    pre_fork: MidiSmtpServer::DEFAULT_SMTPD_PRE_FORK,
     max_processings: MidiSmtpServer::DEFAULT_SMTPD_MAX_PROCESSINGS,
     max_connections: nil,
     crlf_mode: nil,
@@ -39,6 +40,7 @@ class MidiSmtpServerTest < MidiSmtpServer::Smtpd
     super(
       ports: ports,
       hosts: hosts,
+      pre_fork: pre_fork,
       max_processings: max_processings,
       max_connections: max_connections,
       crlf_mode: crlf_mode,
@@ -59,6 +61,12 @@ class MidiSmtpServerTest < MidiSmtpServer::Smtpd
       logger: logger,
       logger_severity: logger_severity
     )
+  end
+
+  def start
+    super
+    # in case of testing we do not use blocking join but attaching threads manually here
+    attach_threads
   end
 
   # change visibilty for testing
