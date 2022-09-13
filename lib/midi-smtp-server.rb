@@ -17,6 +17,7 @@ module MidiSmtpServer
   # default values
   DEFAULT_SMTPD_HOST = '127.0.0.1'
   DEFAULT_SMTPD_PORT = 2525
+  DEFAULT_SMTPD_PRE_FORK = 0
   DEFAULT_SMTPD_MAX_PROCESSINGS = 4
 
   # default values for conformity to RFC(2)822 and addtionals
@@ -34,7 +35,7 @@ module MidiSmtpServer
   DEFAULT_PIPELINING_EXTENSION_ENABLED = false
   DEFAULT_INTERNATIONALIZATION_EXTENSIONS_ENABLED = false
 
-  # Authentification modes
+  # Authentication modes
   AUTH_MODES = [:AUTH_FORBIDDEN, :AUTH_OPTIONAL, :AUTH_REQUIRED].freeze
   DEFAULT_AUTH_MODE = :AUTH_FORBIDDEN
 
@@ -43,31 +44,40 @@ module MidiSmtpServer
 
     public
 
-    # Start the server
+    # Create the server
     def start
-      serve_service
+      create_service
     end
 
     # Stop the server
     def stop(wait_seconds_before_close: 2, gracefully: true)
-      # always signal shutdown
-      shutdown if gracefully
-      # wait if some connection(s) need(s) more time to handle shutdown
-      sleep wait_seconds_before_close if connections?
-      # drop tcp_servers while raising SmtpdStopServiceException
-      @connections_mutex.synchronize do
-        @tcp_server_threads.each do |tcp_server_thread|
-          # use safe navigation (&.) to make sure that obj exists like ... if tcp_server_thread
-          tcp_server_thread&.raise SmtpdStopServiceException
+      begin
+        # signal pre_forked children to stop
+        @children.each { |child_pid| Process.kill(:TERM, child_pid) } if pre_fork? && parent?
+        # always signal shutdown
+        shutdown if gracefully
+        # wait if some connection(s) need(s) more time to handle shutdown
+        sleep wait_seconds_before_close if connections?
+        # drop tcp_servers while raising SmtpdStopServiceException
+        @connections_mutex.synchronize do
+          @tcp_server_threads.each do |tcp_server_thread|
+            # use safe navigation (&.) to make sure that obj exists like ... if tcp_server_thread
+            tcp_server_thread&.raise SmtpdStopServiceException
+          end
         end
+
+      ensure
+        # check for removing TCPServers
+        @tcp_servers.each { |tcp_server| remove_tcp_server(tcp_server) } if parent?
       end
+
       # wait if some connection(s) still need(s) more time to come down
       sleep wait_seconds_before_close if connections? || !stopped?
     end
 
     # Returns true if the server has stopped.
     def stopped?
-      @tcp_server_threads.empty? && @tcp_servers.empty?
+      parent? ? @children.empty? && @tcp_server_threads.empty? && @tcp_servers.empty? : @tcp_server_threads.empty?
     end
 
     # Schedule a shutdown for the server
@@ -100,34 +110,68 @@ module MidiSmtpServer
       @processings.any?
     end
 
+    # Return if in pre-fork mode
+    def pre_fork?
+      @pre_fork > 1
+    end
+
+    # Return if this is the parent process
+    def parent?
+      !@is_forked
+    end
+
+    # Return if this is a forked child process
+    def child?
+      @is_forked
+    end
+
+    # Return number of forked child processes
+    def children
+      @children.size
+    end
+
+    # Return if has active forked child processes
+    def children?
+      @children.any?
+    end
+
     # Join with the server thread(s)
     # before joining the server threads, check and wait optionally a few seconds
     # to let the service(s) come up
     def join(sleep_seconds_before_join: 1)
       # check already existing TCPServers
       return if @tcp_servers.empty?
-      # wait some seconds before joininig the upcoming threads
-      # and check that all TCPServers gots one thread
-      while (@tcp_server_threads.length < @tcp_servers.length) && sleep_seconds_before_join.positive?
-        sleep_seconds_before_join -= 1
-        sleep 1
-      end
-      # try to join any thread
-      begin
-        @tcp_server_threads.each(&:join)
+      # check number of processes to pre-fork
 
-      # catch ctrl-c to stop service
-      rescue Interrupt
+      if pre_fork?
+        # create a number of pre-fork processes and attach and join threads within children
+        @pre_fork.times do
+          # append child pid to list of children
+          @children << fork do
+            # set state for a forked process
+            @is_forked = true
+            # just attach and join the threads to forked child process
+            attach_threads
+            join_threads(sleep_seconds_before_join: sleep_seconds_before_join)
+          end
+        end
+        # Blocking wait until each child process has been finished
+        @children.each { |pid| Process.waitpid(pid) }
+
+      else
+        # just attach and join the threads to running single master process (default)
+        attach_threads
+        join_threads(sleep_seconds_before_join: sleep_seconds_before_join)
       end
     end
 
-    # Array of ports on which to bind, set as string seperated by commata like '2525, 3535' or '2525:3535, 2525'
+    # Array of ports on which to bind, set as string separated by commata like '2525, 3535' or '2525:3535, 2525'
     def ports
       # prevent original array from being changed
       @ports.dup
     end
 
-    # Array of hosts / ip_addresses on which to bind, set as string seperated by commata like 'name.domain.com, 127.0.0.1, ::1'
+    # Array of hosts / ip_addresses on which to bind, set as string separated by commata like 'name.domain.com, 127.0.0.1, ::1'
     def hosts
       # prevent original array from being changed
       @hosts.dup
@@ -139,7 +183,7 @@ module MidiSmtpServer
       @addresses.dup
     end
 
-    # Current TLS OpenSSL::SSL::SSLContext when initalized by :TLS_OPTIONAL, :TLS_REQUIRED
+    # Current TLS OpenSSL::SSL::SSLContext when initialized by :TLS_OPTIONAL, :TLS_REQUIRED
     def ssl_context
       @tls&.ssl_context
     end
@@ -154,11 +198,11 @@ module MidiSmtpServer
     attr_reader :io_cmd_timeout
     # Bytes to read non-blocking from socket into buffer, as a FixNum
     attr_reader :io_buffer_chunk_size
-    # Maximum bytes to read as buffer before expecting completet incoming data line, as a FixNum
+    # Maximum bytes to read as buffer before expecting completed incoming data line, as a FixNum
     attr_reader :io_buffer_max_size
     # Flag if should do reverse DNS lookups on incoming connections
     attr_reader :do_dns_reverse_lookup
-    # Authentification mode
+    # Authentication mode
     attr_reader :auth_mode
     # Encryption mode
     attr_reader :encrypt_mode
@@ -167,13 +211,14 @@ module MidiSmtpServer
     # handle SMTP 8BITMIME and SMTPUTF8 extension
     attr_reader :internationalization_extensions
 
-    # logging object, may be overrriden by special loggers like YELL or others
+    # logging object, may be overridden by special loggers like YELL or others
     attr_reader :logger
 
     # Initialize SMTP Server class
     #
     # +ports+:: ports to listen on. Allows multiple ports like "2525, 3535" or "2525:3535, 2525". Default value = DEFAULT_SMTPD_PORT
     # +hosts+:: interface ip or hostname to listen on or "*" to listen on all interfaces, allows multiple hostnames and ip_addresses like "name.domain.com, 127.0.0.1, ::1". Default value = DEFAULT_SMTPD_HOST
+    # +pre_fork+:: number of processes to pre-fork to enable load balancing over multiple cores. Default value = DEFAULT_SMTPD_PRE_FORK
     # +max_processings+:: maximum number of simultaneous processed connections, this does not limit the number of concurrent TCP connections. Default value = DEFAULT_SMTPD_MAX_PROCESSINGS
     # +max_connections+:: maximum number of connections, this does limit the number of concurrent TCP connections (not set or nil => unlimited)
     # +crlf_mode+:: CRLF handling support (:CRLF_ENSURE [default], :CRLF_LEAVE, :CRLF_STRICT)
@@ -185,7 +230,7 @@ module MidiSmtpServer
     # +internationalization_extensions+:: set to true for support of SMTP 8BITMIME and SMTPUTF8 extensions (DEFAULT_INTERNATIONALIZATION_EXTENSIONS_ENABLED)
     # +auth_mode+:: enable builtin authentication support (:AUTH_FORBIDDEN [default], :AUTH_OPTIONAL, :AUTH_REQUIRED)
     # +tls_mode+:: enable builtin TLS support (:TLS_FORBIDDEN [default], :TLS_OPTIONAL, :TLS_REQUIRED)
-    # +tls_cert_path+:: path to tls cerificate chain file
+    # +tls_cert_path+:: path to tls certificate chain file
     # +tls_key_path+:: path to tls key file
     # +tls_ciphers+:: allowed ciphers for connection
     # +tls_methods+:: allowed methods for protocol
@@ -196,6 +241,7 @@ module MidiSmtpServer
     def initialize(
       ports: DEFAULT_SMTPD_PORT,
       hosts: DEFAULT_SMTPD_HOST,
+      pre_fork: DEFAULT_SMTPD_PRE_FORK,
       max_processings: DEFAULT_SMTPD_MAX_PROCESSINGS,
       max_connections: nil,
       crlf_mode: nil,
@@ -230,6 +276,11 @@ module MidiSmtpServer
         @logger_protected.level = logger_severity unless logger_severity.nil?
         logger.warn('Deprecated: "logger" was set on new! Please use "on_logging_event" instead.')
       end
+
+      # initialize as parent process
+      @is_forked = false
+      # no forked child processes
+      @children = []
 
       # list of TCPServers
       @tcp_servers = []
@@ -311,12 +362,16 @@ module MidiSmtpServer
         end
       end
 
+      # read pre_fork
+      @pre_fork = pre_fork
+      raise 'Number of processes to pre-fork (pre_fork) must be zero or a positive integer greater than 1!' unless @pre_fork.is_a?(Integer) && (@pre_fork.zero? || pre_fork?)
       # read max_processings
       @max_processings = max_processings
       raise 'Number of simultaneous processings (max_processings) must be a positive integer!' unless @max_processings.is_a?(Integer) && @max_processings.positive?
       # check max_connections
       @max_connections = max_connections
-      raise 'Number of concurrent connections is lower than number of simultaneous processings!' if @max_connections && @max_connections < @max_processings
+      raise 'Number of concurrent connections (max_connections) must be nil or a positive integer!' unless @max_connections.nil? || (@max_connections.is_a?(Integer) && @max_connections.positive?)
+      raise 'Number of concurrent connections (max_connections) is lower than number of simultaneous processings (max_processings)!' if @max_connections && @max_connections < @max_processings
 
       # check for crlf mode
       @crlf_mode = crlf_mode.nil? ? DEFAULT_CRLF_MODE : crlf_mode
@@ -336,9 +391,9 @@ module MidiSmtpServer
       @pipelining_extension = pipelining_extension.nil? ? DEFAULT_PIPELINING_EXTENSION_ENABLED : pipelining_extension
       @internationalization_extensions = internationalization_extensions.nil? ? DEFAULT_INTERNATIONALIZATION_EXTENSIONS_ENABLED : internationalization_extensions
 
-      # check for authentification
+      # check for authentication
       @auth_mode = auth_mode.nil? ? DEFAULT_AUTH_MODE : auth_mode
-      raise "Unknown authentification mode #{@auth_mode} was given!" unless AUTH_MODES.include?(@auth_mode)
+      raise "Unknown authentication mode #{@auth_mode} was given!" unless AUTH_MODES.include?(@auth_mode)
 
       # check for encryption
       @encrypt_mode = tls_mode.nil? ? DEFAULT_ENCRYPT_MODE : tls_mode
@@ -420,13 +475,13 @@ module MidiSmtpServer
     # the value is not allowed to return CR nor LF chars and will be stripped
     def on_helo_event(ctx, helo_data) end
 
-    # check the authentification on AUTH
+    # check the authentication on AUTH
     # if any value returned, that will be used for ongoing processing
     # otherwise the original value will be used for authorization_id
     def on_auth_event(ctx, authorization_id, authentication_id, authentication)
-      # if authentification is used, override this event
+      # if authentication is used, override this event
       # and implement your own user management.
-      # otherwise all authentifications are blocked per default
+      # otherwise all authentications are blocked per default
       on_logging_event(ctx, Logger::DEBUG, "Deny access from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} for #{authentication_id}" + (authorization_id == '' ? '' : "/#{authorization_id}") + " with #{authentication}")
       raise Smtpd535Exception
     end
@@ -473,8 +528,8 @@ module MidiSmtpServer
 
     protected
 
-    # Start the listeners for all hosts
-    def serve_service
+    # Prepare all listeners for all hosts
+    def create_service
       raise 'Service was already started' unless stopped?
 
       # set flag to signal shutdown by stop / shutdown command
@@ -485,12 +540,12 @@ module MidiSmtpServer
         # break address into ip_address and port and serve service
         ip_address = address.rpartition(':').first
         port = address.rpartition(':').last
-        serve_service_on_ip_address_and_port(ip_address, port)
+        create_service_on_ip_address_and_port(ip_address, port)
       end
     end
 
-    # Start the listener thread on single ip_address and port
-    def serve_service_on_ip_address_and_port(ip_address, port)
+    # Prepare a listener on single ip_address and port
+    def create_service_on_ip_address_and_port(ip_address, port)
       # log information
       logger.info("Starting service on #{ip_address}:#{port}")
       # check that there is a specific ip_address defined
@@ -499,7 +554,47 @@ module MidiSmtpServer
       tcp_server = TCPServer.new(ip_address, port)
       # append this server to the list of TCPServers
       @tcp_servers << tcp_server
+    end
 
+    # Close and remove the given tcp_server
+    def remove_tcp_server(tcp_server)
+      begin
+        # drop the service
+        tcp_server.close
+        # remove from list
+        @tcp_servers.delete(tcp_server)
+      rescue StandardError
+        # ignore any error from here
+      end
+    end
+
+    # Join with the server thread(s)
+    # before joining the server threads, wait optionally a few seconds
+    # to let the service(s) come up
+    def join_threads(sleep_seconds_before_join: 1)
+      # wait some seconds before joining the upcoming threads
+      # and check that all TCPServers got one thread
+      while (@tcp_server_threads.length < @tcp_servers.length) && sleep_seconds_before_join.positive?
+        sleep_seconds_before_join -= 1
+        sleep 1
+      end
+      # try to join any thread
+      begin
+        @tcp_server_threads.each(&:join)
+
+        # catch ctrl-c to stop service
+      rescue Interrupt
+      end
+    end
+
+    # Create and attach threads to all listeners
+    def attach_threads
+      # loop for all TCPServers listener
+      @tcp_servers.each { |tcp_server| attach_thread(tcp_server) }
+    end
+
+    # Create and attach a thread to a listener
+    def attach_thread(tcp_server)
       # run thread until shutdown
       @tcp_server_threads << Thread.new do
         begin
@@ -527,7 +622,7 @@ module MidiSmtpServer
               ensure
                 begin
                   # always gracefully shutdown connection.
-                  # if the io object was overriden by the
+                  # if the io object was overridden by the
                   # result from serve_client() due to ssl
                   # io, the ssl + io socket will be closed
                   io.close
@@ -552,16 +647,7 @@ module MidiSmtpServer
           # log fatal error while starting new thread
           on_logging_event(nil, Logger::FATAL, "#{e} (#{e.class})".strip, err: e.clone)
         ensure
-          begin
-            # drop the service
-            tcp_server.close
-            # remove from list
-            @tcp_servers.delete(tcp_server)
-            # reset local var
-            tcp_server = nil
-          rescue StandardError
-            # ignore any error from here
-          end
+          # proper connection down?
           if shutdown?
             # wait for finishing opened connections
             @connections_mutex.synchronize do
@@ -604,7 +690,7 @@ module MidiSmtpServer
           on_connect_event(session[:ctx])
 
           # drop connection (respond 421) if too busy
-          raise 'Abort connection while too busy, exceeding max_connections!' if max_connections && connections > max_connections
+          raise Smtpd421Exception, 'Abort connection while too busy, exceeding max_connections!' if max_connections && connections > max_connections
 
           # check active processings for new client
           @connections_mutex.synchronize do
@@ -684,7 +770,7 @@ module MidiSmtpServer
                 # handle input line based on @crlf_mode
                 case crlf_mode
                   when :CRLF_ENSURE
-                    # remove any \r or \n occurence from line
+                    # remove any \r or \n occurrence from line
                     line.delete!("\r\n")
                     # log line, verbosity based on log severity and command sequence
                     on_logging_event(session[:ctx], Logger::DEBUG, +'<<< ' << line << "\n") if session[:cmd_sequence] != :CMD_DATA
@@ -1235,7 +1321,7 @@ module MidiSmtpServer
       )
     end
 
-    # handle plain authentification
+    # handle plain authentication
     def process_auth_plain(session, encoded_auth_response)
       begin
         # extract auth id (and password)
