@@ -16,7 +16,7 @@ pages:
     - Using events: using_events.md
     - Context values: context_values.md
   - Features:
-    - Utilization: feature_utilization.md
+    - Load Balancing: feature_load_balancing.md
     - Authentication: feature_authentication.md
     - Encryption: feature_encryption.md
     - CR LF Modes: feature_cr_lf_modes.md

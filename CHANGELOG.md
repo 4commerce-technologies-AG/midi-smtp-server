@@ -60,7 +60,7 @@ For upgrades from previous versions or outdated _MiniSmtpServer_ gem you may fol
 
 1. Support [IPv4 and IPv6 (documentation)](https://midi-smtp-server.readthedocs.io/instantiate/#ipv4-and-ipv6-ready)
 2. Support binding of [multiple ports and hosts / ip addresses](https://midi-smtp-server.readthedocs.io/instantiate/#ports-and-addresses)
-3. Handle [utilization of connections and processings](https://midi-smtp-server.readthedocs.io/feature_utilization/)
+3. Handle [utilization of connections and processings](https://midi-smtp-server.readthedocs.io/feature_load_balancing/)
 4. Support of RFC(2)822 [CR LF modes](https://midi-smtp-server.readthedocs.io/feature_cr_lf_modes/)
 5. Support (optionally) SMTP [PIPELINING](https://tools.ietf.org/html/rfc2920) extension
 6. Support (optionally) SMTP [8BITMIME](https://midi-smtp-server.readthedocs.io/feature_8bitmime_smtputf8/) extension
