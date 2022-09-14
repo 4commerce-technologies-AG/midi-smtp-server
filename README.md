@@ -96,7 +96,7 @@ Read the [MidiSmtpServer Documentation](https://midi-smtp-server.readthedocs.io/
 
 ## Reliable code
 
-Since version 2.3 implementation and integration tests by minitest framework are added to this repository. While the implementation tests are mostly checking the components, the integration tests try to verify the correct exchange of messages for different scenarios. In addtion all sources are checked by rubocop to ensure they fit to the style guides.
+Since version 2.3 implementation and integration tests by minitest framework are added to this repository. While the implementation tests are mostly checking the components, the integration tests try to verify the correct exchange of messages for different scenarios. Last but not least the stress tests do catch some rare conditions to make sure that no information is leaving its thread and process. In addition all sources are checked by rubocop to ensure they fit to the style guides.
 
 You may run all rubocop tests through the `rake` helper:
 
@@ -116,7 +116,7 @@ or with more verbose output:
   bundle exec rake test:all v=1
 ```
 
-To just run just a part of the tests, you may select the `specs`, `unit` or `integration` tests:
+To just run just a part of the tests, you may select the `specs`, `unit`, `integration` or `stress` tests:
 
 ``` bash
   bundle exec rake test:specs
