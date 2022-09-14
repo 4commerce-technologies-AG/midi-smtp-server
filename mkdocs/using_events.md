@@ -54,7 +54,7 @@ To make it easier for processing addresses, you are able to normalize them like:
   def on_mail_from_event(ctx, mail_from_data)
     # strip and normalize addresses like: <path> to path
     mail_from_data.gsub!(/^\s*<\s*(.*)\s*>\s*$/, '\1')
-    # we believe in downcased addresses
+    # we believe in downcase addresses
     mail_from_data.downcase!
     # return address
     mail_from_data
@@ -64,7 +64,7 @@ To make it easier for processing addresses, you are able to normalize them like:
   def on_rcpt_to_event(ctx, rcpt_to_data)
     # strip and normalize addresses like: <path> to path
     rcpt_to_data.gsub!(/^\s*<\s*(.*)\s*>\s*$/, '\1')
-    # we believe in downcased addresses
+    # we believe in downcase addresses
     rcpt_to_data.downcase!
     # Output for debug
     logger.debug("Normalized to: [#{rcpt_to_data}]...")
@@ -93,7 +93,7 @@ Since release `2.3.1` the `on_message_data_start_event` and `on_message_data_hea
   end
 ```
 
-The `Received` header may be given with more or less additional information like encryption, recipient, sender etc. This should be done while being aware of system safety. Don't reveal too much internal information and choose wisely the published atrributes.
+The `Received` header may be given with more or less additional information like encryption, recipient, sender etc. This should be done while being aware of system safety. Don't reveal too much internal information and choose wisely the published attributes.
 
 Samples for `Received` headers are:
 
@@ -138,16 +138,20 @@ So you can build SPAM protection, when raising exception while getting `RCPT TO`
   end
 ```
 
-You are able to use exceptions on any level of events, so for an example you could raise an exception on `on_message_data_event` if you checked attachments for a pdf-document and fail or so on. If you use the defined `MidiSmtpServer::Smtpd???Exception` classes the remote client get's correct SMTP Server results. For logging purpose the default Exception.message is written to log.
+You are able to use exceptions on any level of events, so for an example you could raise an exception on `on_message_data_event` if you checked attachments for a pdf-document and fail or so on. If you use the defined `MidiSmtpServer::Smtpd???Exception` classes the remote client gets correct SMTP Server results. For logging purpose the Exception.message is written to log.
 
-When using `MidiSmtpServer::Smtpd421Exception` you are able to abort the active connection to the client by replying `421 Service not available, closing transmission channel`. Be aware, that this Exception will actively close the current connection to the client. For logging purposes you may append a message to yourself, this will not be transmitted to the client.
+When using `MidiSmtpServer::Smtpd421Exception` you are able to abort the active connection to the client by replying `421 Service not available, closing transmission channel`. Be aware, that this Exception will actively close the current connection to the client.
+
+**Attention:** For logging purposes you may set a message to log for yourself - **but** - this message will not be transmitted to the client in order not to leak too much (internal) information outside. SMTP Server replies to clients only standardized ones.
 
 ```rb
   # drop connection immediately on SPAM
   def on_rcpt_to_event(ctx, rcpt_to_data)
-    raise MidiSmtpServer::Smtpd421Exception.new("421 Abort: Identified spammer!") if rcpt_to_data == "not.name@domain.con"
+    raise MidiSmtpServer::Smtpd421Exception, '421 Abort: Identified spammer!' if rcpt_to_data == "not.name@domain.con"
   end
 ```
+
+In the above example, the message `421 Abort: Identified spammer! is written to log - and - the client receives the standardized message for code 421.
 
 Please check RFC821 and additional for correct response dialog sequences:
 
