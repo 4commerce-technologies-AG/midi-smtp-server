@@ -52,8 +52,8 @@ module MidiSmtpServer
     # Stop the server
     def stop(wait_seconds_before_close: 2, gracefully: true)
       begin
-        # signal pre_forked children to stop
-        @children.each { |child_pid| Process.kill(:TERM, child_pid) } if pre_fork? && parent?
+        # signal pre_forked workers to stop
+        @workers.each { |worker_pid| Process.kill(:TERM, worker_pid) } if pre_fork? && master?
         # always signal shutdown
         shutdown if gracefully
         # wait if some connection(s) need(s) more time to handle shutdown
@@ -68,7 +68,7 @@ module MidiSmtpServer
 
       ensure
         # check for removing TCPServers
-        @tcp_servers.each { |tcp_server| remove_tcp_server(tcp_server) } if parent?
+        @tcp_servers.each { |tcp_server| remove_tcp_server(tcp_server) } if master?
       end
 
       # wait if some connection(s) still need(s) more time to come down
@@ -77,7 +77,7 @@ module MidiSmtpServer
 
     # Returns true if the server has stopped.
     def stopped?
-      parent? ? @children.empty? && @tcp_server_threads.empty? && @tcp_servers.empty? : @tcp_server_threads.empty?
+      master? ? @workers.empty? && @tcp_server_threads.empty? && @tcp_servers.empty? : @tcp_server_threads.empty?
     end
 
     # Schedule a shutdown for the server
@@ -115,24 +115,24 @@ module MidiSmtpServer
       @pre_fork > 1
     end
 
-    # Return if this is the parent process
-    def parent?
+    # Return if this is the master process
+    def master?
       !@is_forked
     end
 
-    # Return if this is a forked child process
-    def child?
+    # Return if this is a forked worker process
+    def worker?
       @is_forked
     end
 
-    # Return number of forked child processes
-    def children
-      @children.size
+    # Return number of forked worker processes
+    def workers
+      @workers.size
     end
 
-    # Return if has active forked child processes
-    def children?
-      @children.any?
+    # Return if has active forked worker processes
+    def workers?
+      @workers.any?
     end
 
     # Join with the server thread(s)
@@ -144,19 +144,19 @@ module MidiSmtpServer
       # check number of processes to pre-fork
 
       if pre_fork?
-        # create a number of pre-fork processes and attach and join threads within children
+        # create a number of pre-fork processes and attach and join threads within workers
         @pre_fork.times do
-          # append child pid to list of children
-          @children << fork do
+          # append worker pid to list of workers
+          @workers << fork do
             # set state for a forked process
             @is_forked = true
-            # just attach and join the threads to forked child process
+            # just attach and join the threads to forked worker process
             attach_threads
             join_threads(sleep_seconds_before_join: sleep_seconds_before_join)
           end
         end
-        # Blocking wait until each child process has been finished
-        @children.each { |pid| Process.waitpid(pid) }
+        # Blocking wait until each worker process has been finished
+        @workers.each { |pid| Process.waitpid(pid) }
 
       else
         # just attach and join the threads to running single master process (default)
@@ -277,10 +277,10 @@ module MidiSmtpServer
         logger.warn('Deprecated: "logger" was set on new! Please use "on_logging_event" instead.')
       end
 
-      # initialize as parent process
+      # initialize as master process
       @is_forked = false
-      # no forked child processes
-      @children = []
+      # no forked worker processes
+      @workers = []
 
       # list of TCPServers
       @tcp_servers = []

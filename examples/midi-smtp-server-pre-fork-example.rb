@@ -27,9 +27,9 @@ server = MySmtpd.new(pre_fork: 2)
 # save flag for Ctrl-C pressed
 flag_status_ctrl_c_pressed = false
 
-# try to gracefully shutdown on Ctrl-C if parent process
+# try to gracefully shutdown on Ctrl-C if master process
 trap(:INT) do
-  if server&.parent?
+  if server&.master?
     # print an empty line right after ^C
     puts
     # notify flag about Ctrl-C was pressed
@@ -45,7 +45,7 @@ server.logger.info("Starting MySmtpd [#{MidiSmtpServer::VERSION::STRING}|#{MidiS
 # setup exit code
 at_exit do
   # shutdown the main process
-  if server&.parent?
+  if server&.master?
     # Output for debug
     server.logger.info('Ctrl-C interrupted, exit now...') if flag_status_ctrl_c_pressed
     # info about shutdown
@@ -55,7 +55,7 @@ at_exit do
     # Output for debug
     server.logger.info('MySmtpd down!')
   else
-    # shutdown the forked child and disconnect all threads and close connections gracefully
+    # shutdown the forked worker and disconnect all threads and close connections gracefully
     server.stop
   end
 end
