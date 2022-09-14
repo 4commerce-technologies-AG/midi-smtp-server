@@ -105,7 +105,7 @@ server = MySmtpd.new(
 
 ### Using .pem with trust chain and private key
 
-Since release 3.0.2 the parameter `tls_cert_path` allows usage of combined .pem certificates with optional included private keys like described on [digicert](https://www.digicert.com/kb/ssl-support/pem-ssl-creation.htm). In the case of an already included private key, the paramter `tls_key_path` may be left `nil`.
+Since release 3.0.2 the parameter `tls_cert_path` allows usage of combined .pem certificates with optional included private keys like described on [digicert](https://www.digicert.com/kb/ssl-support/pem-ssl-creation.htm). In the case of an already included private key, the parameter `tls_key_path` may be left `nil`.
 
 <br>
 

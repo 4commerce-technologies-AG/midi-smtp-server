@@ -29,7 +29,7 @@ For upgrades from previous versions or outdated _MiniSmtpServer_ gem you may fol
 10. Dropped deprecated empty wildcard `""` support on initialize - please use specific hostnames and / or ip-addresses or star wildcard `"*"` only
 11. Align tests with Rubocop style and coding enforcements
 12. Added `rake` tasks for testing and linting, checkout `bundle exec rake -T`
-13. Re-defined arguments of methods `new`, `join`, `stop` as keyword arguments, check [minor incompatability: upgrade to 3.x](https://midi-smtp-server.readthedocs.io/appendix_upgrade/#upgrade-to-3x)
+13. Re-defined arguments of methods `new`, `join`, `stop` as keyword arguments, check [minor incompatibility: upgrade to 3.x](https://midi-smtp-server.readthedocs.io/appendix_upgrade/#upgrade-to-3x)
 14. Enhance the slack recipe in cookbook for [Docker usage](https://github.com/4commerce-technologies-AG/midi-smtp-server/tree/master/cookbook/recipe-slack)
 
 
@@ -103,7 +103,7 @@ For upgrades from previous versions or outdated _MiniSmtpServer_ gem you may fol
 
 #### 2.x
 
-1. Modulized
+1. Modularized
 2. Removed dependency to GServer
 3. Additional events to interact with
 4. Use logger to log several messages from severity :debug up to :fatal

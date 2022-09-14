@@ -30,11 +30,11 @@ The port(s) the mail gateway is listen on.
 
 ##### SLACK_GW_HOSTS="127.0.0.1"
 
-The ip-adress(es) the mail gateway is listen on.
+The ip-address(es) the mail gateway is listen on.
 
 ##### SLACK_GW_MAX_PROCESSINGS="4"
 
-The number of simultaniously processes.
+The number of simultaneously processes.
 
 ##### SLACK_GW_DEBUG="1"
 

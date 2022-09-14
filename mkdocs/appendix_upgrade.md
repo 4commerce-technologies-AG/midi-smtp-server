@@ -105,14 +105,16 @@ If you are already using MidiSmtpServer it might be only some straight forward w
 
 ```rb
   MidiSmtpServerException
-  MidiSmtpServer???Exception
+  # use your correct exception id instead of 123
+  MidiSmtpServer123Exception
 ```
 
 <h5>2.x</h5>
 
 ```rb
   MidiSmtpServer::SmtpdException
-  MidiSmtpServer::Smtpd???Exception
+  # use your correct exception id instead of 123
+  MidiSmtpServer::Smtpd123Exception
 ```
 
 <br>

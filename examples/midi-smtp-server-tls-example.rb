@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# to test communictaion with ssl server use gnutls-cli tool
+# to test communication with ssl server use gnutls-cli tool
 # > gnutls-cli --insecure -s -p 2525 127.0.0.1
 
 require 'midi-smtp-server'
@@ -19,7 +19,7 @@ class MySmtpd < MidiSmtpServer::Smtpd
   # get each message after DATA <message> .
   def on_message_data_event(ctx)
     # Output for debug
-    logger.debug("mail reveived at: [#{ctx[:server][:local_ip]}:#{ctx[:server][:local_port]}] from: [#{ctx[:envelope][:from]}] for recipient(s): [#{ctx[:envelope][:to]}]...")
+    logger.debug("mail received at: [#{ctx[:server][:local_ip]}:#{ctx[:server][:local_port]}] from: [#{ctx[:envelope][:from]}] for recipient(s): [#{ctx[:envelope][:to]}]...")
 
     # Just decode message ones to make sure, that this message ist readable
     mail = Mail.read_from_string(ctx[:message][:data])

@@ -40,7 +40,7 @@ class PortsAndConnectionsIntegrationTest < Minitest::Test
   def test_020_tcp_2_simultan_connects
     # test open 2 sockets and read welcome message
     # channel 1 will respond while channel 2 will wait until channel 1 is closed
-    # that is in case 2 connections are allowed but only 1 simultanously processing
+    # that is in case 2 connections are allowed but only 1 simultaneously processing
     channel1 = create_socket
     channel2 = create_socket
     result1 = get_blocked_socket(channel1)
@@ -56,7 +56,7 @@ class PortsAndConnectionsIntegrationTest < Minitest::Test
     # test open 3 sockets and read welcome message
     # channel 1 will respond while channel 2 will wait until channel 1 is closed
     # channel 3 will receive an abort message and the channel is closed by server after short period
-    # that is in case only 2 connections are allowed with only 1 simultanously processing
+    # that is in case only 2 connections are allowed with only 1 simultaneously processing
     channel1 = create_socket
     channel2 = create_socket
     channel3 = create_socket

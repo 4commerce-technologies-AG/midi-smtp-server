@@ -26,7 +26,7 @@ If you have enabled authentication you should provide your own user and access m
 Your own server class should implement the `on_auth_event`:
 
 ```rb
-# check the authentification
+# check the authentication
 # if any value returned, that will be used for ongoing processing
 # otherwise the original value will be used for authorization_id
 def on_auth_event(ctx, authorization_id, authentication_id, authentication)
@@ -57,7 +57,7 @@ def on_rcpt_to_event(ctx, rcpt_to_data)
     logger.debug("and authentication id: #{ctx[:server][:authentication_id]}")
   else
     # no
-    logger.debug("Proceed with anonymoous credentials")
+    logger.debug("Proceed with anonymous credentials")
   end
 end
 ```

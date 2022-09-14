@@ -69,7 +69,7 @@ class MidiSmtpServerTest < MidiSmtpServer::Smtpd
     attach_threads
   end
 
-  # change visibilty for testing
+  # change visibility for testing
   public :process_line
   public :process_reset_session
   public :process_auth_plain
@@ -94,7 +94,7 @@ class MidiSmtpServerTest < MidiSmtpServer::Smtpd
       @ev_auth_authorization_id = 'supervisor'
       return @ev_auth_authorization_id
     end
-    # otherwise exit with authentification exception
+    # otherwise exit with authentication exception
     raise MidiSmtpServer::Smtpd535Exception
   end
 

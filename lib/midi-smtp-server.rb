@@ -20,7 +20,7 @@ module MidiSmtpServer
   DEFAULT_SMTPD_PRE_FORK = 0
   DEFAULT_SMTPD_MAX_PROCESSINGS = 4
 
-  # default values for conformity to RFC(2)822 and addtionals
+  # default values for conformity to RFC(2)822 and additional
   # if interested in details, checkout discussion on issue queue at:
   # https://github.com/4commerce-technologies-AG/midi-smtp-server/issues/16
   CRLF_MODES = [:CRLF_ENSURE, :CRLF_LEAVE, :CRLF_STRICT].freeze
@@ -262,7 +262,7 @@ module MidiSmtpServer
       logger: nil,
       logger_severity: nil
     )
-      # create an exposed logger to forward loggings to the on_logging_event
+      # create an exposed logger to forward logging to the on_logging_event
       @logger = MidiSmtpServer::ForwardingLogger.new(method(:on_logging_event))
 
       # external logging
@@ -464,7 +464,7 @@ module MidiSmtpServer
       on_logging_event(ctx, Logger::DEBUG, "Client connect from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} to #{ctx[:server][:local_ip]}:#{ctx[:server][:local_port]}")
     end
 
-    # event before DISONNECT
+    # event before DISCONNECT
     def on_disconnect_event(ctx)
       on_logging_event(ctx, Logger::DEBUG, "Client disconnect from #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]} on #{ctx[:server][:local_ip]}:#{ctx[:server][:local_port]}")
     end
@@ -742,7 +742,7 @@ module MidiSmtpServer
                 raise SmtpdIOTimeoutException if @io_cmd_timeout && Time.now.to_i - timestamp_timeout > @io_cmd_timeout
                 # read chunks of input data until line-feed
                 io_buffer << io.read_nonblock(@io_buffer_chunk_size)
-                # check for buffersize
+                # check for buffer size
                 raise SmtpdIOBufferOverrunException if @io_buffer_max_size && io_buffer.length > @io_buffer_max_size
                 # check for lf in current io_buffer
                 io_buffer_line_lf = io_buffer.index("\n")

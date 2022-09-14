@@ -10,7 +10,7 @@ module MidiSmtpServer
   class SmtpdIOTimeoutException < RuntimeError
   end
 
-  # special internal exception to signal buffer size exceedance
+  # special internal exception to signal buffer size exceeding
   # while waiting for incoming data line
   class SmtpdIOBufferOverrunException < RuntimeError
   end
@@ -286,7 +286,7 @@ module MidiSmtpServer
 
   end
 
-  # Status when expeting CRLF sequence as line breaks (RFC(2)822)
+  # Status when expecting CRLF sequence as line breaks (RFC(2)822)
 
   # 500 Bad input, missing CRLF line termination
   class Smtpd500CrLfSequenceException < SmtpdException

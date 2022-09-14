@@ -9,7 +9,7 @@ The extensions are disabled by default and could be enabled by:
 internationalization_extensions: true
 ```
 
-When enabled and sender is using the 8BITMIME and SMTPUTF8 capabilities, the given enconding information about body and message encoding are set by `MAIL FROM` command. The encodings are read by MidiSmtpServer and published at context vars `ctx[:envelope][:encoding_body]` and `ctx[:envelope][:encoding_utf8]`.
+When enabled and sender is using the 8BITMIME and SMTPUTF8 capabilities, the given encoding information about body and message encoding are set by `MAIL FROM` command. The encodings are read by MidiSmtpServer and published at context vars `ctx[:envelope][:encoding_body]` and `ctx[:envelope][:encoding_utf8]`.
 
 Possible values for `ctx[:envelope][:encoding_body]` are:
 

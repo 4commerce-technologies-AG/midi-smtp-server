@@ -61,7 +61,7 @@ class MySlackMailGw < MidiSmtpServer::Smtpd
   # get each message after DATA <message> .
   def on_message_data_event(ctx)
     # Output for debug
-    logger.debug("mail reveived at: [#{ctx[:server][:local_ip]}:#{ctx[:server][:local_port]}] from: [#{ctx[:envelope][:from]}] for recipient(s): [#{ctx[:envelope][:to]}]...")
+    logger.debug("mail received at: [#{ctx[:server][:local_ip]}:#{ctx[:server][:local_port]}] from: [#{ctx[:envelope][:from]}] for recipient(s): [#{ctx[:envelope][:to]}]...")
 
     # Just decode message ones to make sure, that this message is usable
     mail = Mail.read_from_string(ctx[:message][:data])
@@ -85,7 +85,7 @@ class MySlackMailGw < MidiSmtpServer::Smtpd
     # open channel to slack api
     slack_client = Slack::Web::Client.new
 
-    # check authentification
+    # check authentication
     slack_client.auth_test
 
     # post message to channel
@@ -96,7 +96,7 @@ class MySlackMailGw < MidiSmtpServer::Smtpd
       text: '',
       # build message from blocks
       blocks: [
-        slack_block_kit_section_mrkdwn("#{nbsp}\n_Catched E-Mail message from:_\n\n```#{mail[:from]}```"),
+        slack_block_kit_section_mrkdwn("#{nbsp}\n_Captured E-Mail message from:_\n\n```#{mail[:from]}```"),
         slack_block_kit_header_text("#{mail[:subject]}"),
         slack_block_kit_divider,
         slack_block_kit_section_text(s_text.to_s.force_encoding('UTF-8')),

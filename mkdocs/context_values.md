@@ -27,10 +27,10 @@ You can access important client and server states and values by using the `ctx` 
 
   # counter (int) of exceptions / unknown commands
   ctx[:server][:exceptions]
-  # array with catched exception`s error objects
+  # array with captured exception`s error objects
   ctx[:server][:errors]
 
-  # authentification infos
+  # authentication infos
   ctx[:server][:authorization_id]
   ctx[:server][:authentication_id]
 
@@ -46,7 +46,7 @@ You can access important client and server states and values by using the `ctx` 
   # envelope rcpt_to array
   ctx[:envelope][:to][0]
 
-  # envelope enconding settings
+  # envelope encoding settings
   ctx[:message][:encoding_body]
   ctx[:message][:encoding_utf8]
 

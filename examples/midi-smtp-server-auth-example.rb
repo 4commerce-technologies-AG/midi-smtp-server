@@ -6,7 +6,7 @@ require 'mail'
 # Server class
 class MySmtpd < MidiSmtpServer::Smtpd
 
-  # check the authentification
+  # check the authentication
   # if any value returned, that will be used for ongoing processing
   # otherwise the original value will be used for authorization_id
   def on_auth_event(ctx, authorization_id, authentication_id, authentication)
@@ -21,7 +21,7 @@ class MySmtpd < MidiSmtpServer::Smtpd
       logger.debug("Authenticated id: #{authentication_id} with authentication: #{authentication} from: #{ctx[:server][:remote_ip]}:#{ctx[:server][:remote_port]}")
       return 'supervisor'
     end
-    # otherwise exit with authentification exception
+    # otherwise exit with authentication exception
     raise MidiSmtpServer::Smtpd535Exception
   end
 
@@ -34,7 +34,7 @@ class MySmtpd < MidiSmtpServer::Smtpd
       logger.debug("and authentication id: #{ctx[:server][:authentication_id]}")
     else
       # no
-      logger.debug('Proceed with anonymoous credentials')
+      logger.debug('Proceed with anonymous credentials')
     end
     # return the tested mail_from_data as mail to proceed
     mail_from_data
@@ -43,7 +43,7 @@ class MySmtpd < MidiSmtpServer::Smtpd
   # get each message after DATA <message> .
   def on_message_data_event(ctx)
     # Output for debug
-    logger.debug("mail reveived at: [#{ctx[:server][:local_ip]}:#{ctx[:server][:local_port]}] from: [#{ctx[:envelope][:from]}] for recipient(s): [#{ctx[:envelope][:to]}]...")
+    logger.debug("mail received at: [#{ctx[:server][:local_ip]}:#{ctx[:server][:local_port]}] from: [#{ctx[:envelope][:from]}] for recipient(s): [#{ctx[:envelope][:to]}]...")
 
     # Just decode message once to make sure, that this message ist readable
     mail = Mail.read_from_string(ctx[:message][:data])

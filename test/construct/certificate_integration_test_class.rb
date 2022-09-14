@@ -3,7 +3,7 @@
 # Unit test to check commands without TCP
 class CertificateIntegrationTest < BaseIntegrationTest
 
-  # allow usage of different certificates by setting this properies
+  # allow usage of different certificates by setting this properties
   attr_accessor :use_cert_path, :use_key_path
 
   # initialize before tests

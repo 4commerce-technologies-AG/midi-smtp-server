@@ -35,7 +35,7 @@ MidiSmtpServer can be easily customized via subclassing. Simply subclass the `Mi
 ### on_disconnect_event
 
 ```rb
-  # event before DISONNECT
+  # event before DISCONNECT
   def on_disconnect_event(ctx)
   end
 ```

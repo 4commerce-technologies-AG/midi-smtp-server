@@ -69,7 +69,7 @@ module MidiSmtpServer
         @ssl_context.cert.sign @ssl_context.key, OpenSSL::Digest.new('SHA256')
         logger.debug("SSL: generated test certificate\r\n#{@ssl_context.cert.to_text}")
       else
-        # if any is set, test the pathes
+        # if any is set, test the paths
         raise "File \”#{@cert_path}\" does not exist or is not a regular file. Could not load certificate." unless File.file?(@cert_path.to_s)
         raise "File \”#{@key_path}\" does not exist or is not a regular file. Could not load private key." unless @key_path.nil? || File.file?(@key_path.to_s)
         # try to load certificate and key

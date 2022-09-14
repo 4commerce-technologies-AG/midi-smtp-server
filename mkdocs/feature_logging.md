@@ -1,6 +1,6 @@
 ## Extended logging
 
-Starting from version 3.0.1 there are enhanced logging capabilities. Instead only set a individual logger there is a new exposed event method called `on_logging_event`. When using the `logger` property all messages are forwarded to the new event and could be catched from there. As an example you could post additional log content to monitoring services like sentry:
+Starting from version 3.0.1 there are enhanced logging capabilities. Instead only set a individual logger there is a new exposed event method called `on_logging_event`. When using the `logger` property all messages are forwarded to the new event and could be captured from there. As an example you could post additional log content to monitoring services like sentry:
 
 ```rb
 def on_logging_event(ctx, severity, msg, err: nil)
@@ -13,7 +13,7 @@ def on_logging_event(ctx, severity, msg, err: nil)
     Sentry.capture_exception(err)
     # or use `Sentry.configure_scope do |scope|...`
   end
-  SemanticLogger['Distributer'].error msg, { user: 1, some_ctx_info: {...} }, err if severity >= 1
+  SemanticLogger['Distributor'].error msg, { user: 1, some_ctx_info: {...} }, err if severity >= 1
   super
 end
 ```
