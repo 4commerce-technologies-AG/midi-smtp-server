@@ -751,7 +751,7 @@ module MidiSmtpServer
             # ignore exception when no input data is available yet
             rescue IO::WaitReadable
               # but wait a few moment to slow down system utilization
-              sleep 0.001
+              sleep 0.01
             end
 
             # check if io_buffer is filled and contains already a line-feed
