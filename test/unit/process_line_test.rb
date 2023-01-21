@@ -79,6 +79,7 @@ class ProcessLineUnitTest < Minitest::Test
   def test_00_ehlo
     helo_str = 'Process line unit test'
     result = @smtpd.process_line(@session, "EHLO #{helo_str}", "\r\n")
+
     assert_equal "250-#{@session[:ctx][:server][:helo_response]}\r\n250-8BITMIME\r\n250-SMTPUTF8\r\n250-AUTH LOGIN PLAIN\r\n250-STARTTLS\r\n250 OK", result
     assert_equal @session[:ctx][:server][:helo], helo_str
   end
@@ -90,8 +91,10 @@ class ProcessLineUnitTest < Minitest::Test
 
   def test_10_auth_login_simulate_fail
     result = @smtpd.process_line(@session, 'AUTH LOGIN', "\r\n")
+
     assert_equal (+'') << '334 ' << Base64.strict_encode64('Username:'), result
     result = @smtpd.process_line(@session, Base64.strict_encode64('administrator'), "\r\n")
+
     assert_equal (+'') << '334 ' << Base64.strict_encode64('Password:'), result
     assert_raises(MidiSmtpServer::Smtpd535Exception) { @smtpd.process_line(@session, Base64.strict_encode64('error_password'), "\r\n") }
     assert_equal 'administrator', @smtpd.ev_auth_authentication_id
@@ -103,8 +106,10 @@ class ProcessLineUnitTest < Minitest::Test
 
   def test_11_auth_plain_authenticate_supervisor
     result = @smtpd.process_line(@session, 'AUTH PLAIN', "\r\n")
+
     assert_equal '334 ', result
     result = @smtpd.process_line(@session, 'AGFkbWluaXN0cmF0b3IAcGFzc3dvcmQ', "\r\n")
+
     assert_equal '235 OK', result
     assert_equal 'administrator', @smtpd.ev_auth_authentication_id
     assert_equal 'password', @smtpd.ev_auth_authentication
@@ -117,6 +122,7 @@ class ProcessLineUnitTest < Minitest::Test
   def test_20_mail_from
     address_str = 'demo@local.local'
     result = @smtpd.process_line(@session, "MAIL FROM: #{address_str}", "\r\n")
+
     assert_equal '250 OK', result
     assert_equal address_str, @session[:ctx][:envelope][:from]
   end
@@ -125,8 +131,10 @@ class ProcessLineUnitTest < Minitest::Test
     address_str1 = 'demo1@local.local'
     address_str2 = 'demo2@local.local'
     result = @smtpd.process_line(@session, "RCPT TO: #{address_str1}", "\r\n")
+
     assert_equal '250 OK', result
     result = @smtpd.process_line(@session, "RCPT TO: #{address_str2}", "\r\n")
+
     assert_equal '250 OK', result
     assert_equal 2, @session[:ctx][:envelope][:to].length
     assert_equal address_str1, @session[:ctx][:envelope][:to][0]
@@ -135,6 +143,7 @@ class ProcessLineUnitTest < Minitest::Test
 
   def test_40_data
     result = @smtpd.process_line(@session, 'DATA', "\r\n")
+
     assert result.start_with?('354 ')
     @smtpd.process_line(@session, 'From: <demo@local.local>', "\r\n")
     @smtpd.process_line(@session, 'To: <demo1@local.local>, <demo2@local.local>', "\r\n")
@@ -145,6 +154,7 @@ class ProcessLineUnitTest < Minitest::Test
     @smtpd.process_line(@session, 'Have fun.', "\r\n")
     @smtpd.process_line(@session, +'..', "\r\n")
     result = @smtpd.process_line(@session, '.', "\r\n")
+
     assert result.start_with?('250 ')
     assert_equal :CMD_RSET, @session[:cmd_sequence]
     assert_equal (-1), @session[:ctx][:message][:bytesize]
@@ -153,6 +163,7 @@ class ProcessLineUnitTest < Minitest::Test
     assert_equal 174, @smtpd.ev_message_bytesize
     assert @smtpd.ev_message_data.start_with?("Received: test header\r\n")
     m = Mail.read_from_string(@smtpd.ev_message_data)
+
     assert_equal 'demo@local.local', m.from[0]
     assert_equal 'Unit Test', m.subject
     assert_equal 'test header', m.header['Received'].value
@@ -162,17 +173,20 @@ class ProcessLineUnitTest < Minitest::Test
 
   def test_90_noop
     result = @smtpd.process_line(@session, 'NOOP', "\r\n")
+
     assert_equal '250 OK', result
   end
 
   def test_91_rset
     result = @smtpd.process_line(@session, 'RSET', "\r\n")
+
     assert_equal '250 OK', result
     assert_equal :CMD_RSET, @session[:cmd_sequence]
   end
 
   def test_99_quit
     result = @smtpd.process_line(@session, 'QUIT', "\r\n")
+
     assert_equal '', result
     assert_equal :CMD_QUIT, @session[:cmd_sequence]
   end

@@ -79,3 +79,7 @@ Minitest/MultipleAssertions:
 
 Minitest/TestMethodName:
   Enabled: no
+
+Minitest/TestFileName:
+  Exclude:
+    - "test/construct/*.rb"
