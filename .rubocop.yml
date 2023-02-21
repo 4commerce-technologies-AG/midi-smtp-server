@@ -74,8 +74,14 @@ Naming/FileName:
 Lint/Void:
   CheckForMethodsWithNoSideEffects: true
 
+Minitest/EmptyLineBeforeAssertionMethods:
+  Enabled: no
+
 Minitest/MultipleAssertions:
   Enabled: no
 
 Minitest/TestMethodName:
+  Enabled: no
+
+Minitest/TestFileName:
   Enabled: no
