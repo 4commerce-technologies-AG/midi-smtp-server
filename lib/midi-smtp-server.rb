@@ -371,7 +371,7 @@ module MidiSmtpServer
       # check max_connections
       @max_connections = max_connections
       raise 'Number of concurrent connections (max_connections) must be nil or a positive integer!' unless @max_connections.nil? || (@max_connections.is_a?(Integer) && @max_connections.positive?)
-      raise 'Number of concurrent connections (max_connections) is lower than number of simultaneous processings (max_processings)!' if @max_connections && @max_connections < @max_processings
+      raise 'Number of concurrent connections (max_connections) is lower than number of simultaneous processings (max_processings)!' if !@max_connections.nil? && @max_connections < @max_processings
 
       # check for crlf mode
       @crlf_mode = crlf_mode.nil? ? DEFAULT_CRLF_MODE : crlf_mode
@@ -690,7 +690,7 @@ module MidiSmtpServer
           on_connect_event(session[:ctx])
 
           # drop connection (respond 421) if too busy
-          raise Smtpd421Exception, 'Abort connection while too busy, exceeding max_connections!' if max_connections && connections > max_connections
+          raise Smtpd421Exception, 'Abort connection while too busy, exceeding max_connections!' if !max_connections.nil? && connections > max_connections
 
           # check active processings for new client
           @connections_mutex.synchronize do
