@@ -71,9 +71,9 @@ describe MidiSmtpServerTest do
     end
   end
 
-  describe 'defaults io_waitreadable_timeout' do
+  describe 'defaults io_waitreadable_sleep' do
     it 'must respond with 0.1' do
-      expect(@smtpd.io_waitreadable_timeout).must_equal MidiSmtpServer::DEFAULT_IO_WAITREADABLE_TIMEOUT
+      expect(@smtpd.io_waitreadable_sleep).must_equal MidiSmtpServer::DEFAULT_IO_WAITREADABLE_TIMEOUT
     end
   end
 
