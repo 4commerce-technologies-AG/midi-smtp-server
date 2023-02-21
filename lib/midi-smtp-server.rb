@@ -226,7 +226,7 @@ module MidiSmtpServer
     # +max_connections+:: maximum number of connections, this does limit the number of concurrent TCP connections (not set or nil => unlimited)
     # +crlf_mode+:: CRLF handling support (:CRLF_ENSURE [default], :CRLF_LEAVE, :CRLF_STRICT)
     # +do_dns_reverse_lookup+:: flag if this smtp server should do reverse DNS lookups on incoming connections
-    # +io_waitreadable_sleep+:: time in seconds to sleep on IO::WaitReadable exception (DEFAULT_IO_WAITREADABLE_TIMEOUT)
+    # +io_waitreadable_sleep+:: time in seconds to sleep on IO::WaitReadable exception (DEFAULT_IO_WAITREADABLE_SLEEP)
     # +io_cmd_timeout+:: time in seconds to wait until complete line of data is expected (DEFAULT_IO_CMD_TIMEOUT, nil => disabled test)
     # +io_buffer_chunk_size+:: size of chunks (bytes) to read non-blocking from socket (DEFAULT_IO_BUFFER_CHUNK_SIZE)
     # +io_buffer_max_size+:: max size of buffer (max line length) until \lf ist expected (DEFAULT_IO_BUFFER_MAX_SIZE, nil => disabled test)
@@ -250,7 +250,7 @@ module MidiSmtpServer
       max_connections: nil,
       crlf_mode: nil,
       do_dns_reverse_lookup: nil,
-      io_waitreadable_sleep: DEFAULT_IO_WAITREADABLE_TIMEOUT,
+      io_waitreadable_sleep: DEFAULT_IO_WAITREADABLE_SLEEP,
       io_cmd_timeout: nil,
       io_buffer_chunk_size: nil,
       io_buffer_max_size: nil,
