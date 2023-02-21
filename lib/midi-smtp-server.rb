@@ -27,6 +27,7 @@ module MidiSmtpServer
   DEFAULT_CRLF_MODE = :CRLF_ENSURE
 
   # default values for IO operations
+  DEFAULT_IO_SLEEP_TIME = 0.1
   DEFAULT_IO_CMD_TIMEOUT = 30
   DEFAULT_IO_BUFFER_CHUNK_SIZE = 4 * 1024
   DEFAULT_IO_BUFFER_MAX_SIZE = 1 * 1024 * 1024
@@ -194,6 +195,8 @@ module MidiSmtpServer
     attr_reader :max_connections
     # CRLF handling based on conformity to RFC(2)822
     attr_reader :crlf_mode
+    # Time in seconds to sleep on IO::WaitReadable exception
+    attr_reader :io_sleep_time
     # Maximum time in seconds to wait for a complete incoming data line, as a FixNum
     attr_reader :io_cmd_timeout
     # Bytes to read non-blocking from socket into buffer, as a FixNum
@@ -223,6 +226,7 @@ module MidiSmtpServer
     # +max_connections+:: maximum number of connections, this does limit the number of concurrent TCP connections (not set or nil => unlimited)
     # +crlf_mode+:: CRLF handling support (:CRLF_ENSURE [default], :CRLF_LEAVE, :CRLF_STRICT)
     # +do_dns_reverse_lookup+:: flag if this smtp server should do reverse DNS lookups on incoming connections
+    # +io_sleep_time+:: time in seconds to sleep on IO::WaitReadable exception (DEFAULT_IO_SLEEP_TIME)
     # +io_cmd_timeout+:: time in seconds to wait until complete line of data is expected (DEFAULT_IO_CMD_TIMEOUT, nil => disabled test)
     # +io_buffer_chunk_size+:: size of chunks (bytes) to read non-blocking from socket (DEFAULT_IO_BUFFER_CHUNK_SIZE)
     # +io_buffer_max_size+:: max size of buffer (max line length) until \lf ist expected (DEFAULT_IO_BUFFER_MAX_SIZE, nil => disabled test)
@@ -246,6 +250,7 @@ module MidiSmtpServer
       max_connections: nil,
       crlf_mode: nil,
       do_dns_reverse_lookup: nil,
+      io_sleep_time: DEFAULT_IO_SLEEP_TIME,
       io_cmd_timeout: nil,
       io_buffer_chunk_size: nil,
       io_buffer_max_size: nil,
@@ -383,6 +388,7 @@ module MidiSmtpServer
       @do_dns_reverse_lookup = do_dns_reverse_lookup.nil? ? true : do_dns_reverse_lookup
 
       # io and buffer settings
+      @io_sleep_time = io_sleep_time
       @io_cmd_timeout = io_cmd_timeout.nil? ? DEFAULT_IO_CMD_TIMEOUT : io_cmd_timeout
       @io_buffer_chunk_size = io_buffer_chunk_size.nil? ? DEFAULT_IO_BUFFER_CHUNK_SIZE : io_buffer_chunk_size
       @io_buffer_max_size = io_buffer_max_size.nil? ? DEFAULT_IO_BUFFER_MAX_SIZE : io_buffer_max_size
@@ -751,7 +757,7 @@ module MidiSmtpServer
             # ignore exception when no input data is available yet
             rescue IO::WaitReadable
               # but wait a few moment to slow down system utilization
-              sleep 0.01
+              sleep @io_sleep_time
             end
 
             # check if io_buffer is filled and contains already a line-feed
