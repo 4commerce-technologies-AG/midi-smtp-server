@@ -14,7 +14,7 @@ class MidiSmtpServerTest < MidiSmtpServer::Smtpd
     max_connections: nil,
     crlf_mode: nil,
     do_dns_reverse_lookup: nil,
-    io_waitreadable_sleep: MidiSmtpServer::DEFAULT_IO_WAITREADABLE_SLEEP,
+    io_waitreadable_sleep: nil,
     io_cmd_timeout: nil,
     io_buffer_chunk_size: nil,
     io_buffer_max_size: nil,
