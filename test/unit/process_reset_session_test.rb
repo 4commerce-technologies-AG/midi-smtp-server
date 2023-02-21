@@ -11,16 +11,19 @@ class ProcessResetSessionUnitTest < Minitest::Test
 
   def test_reset_helo
     @smtpd.process_reset_session(@session, connection_initialize: true)
+
     assert_equal :CMD_HELO, @session[:cmd_sequence]
   end
 
   def test_reset_rset
     @smtpd.process_reset_session(@session, connection_initialize: false)
+
     assert_equal :CMD_RSET, @session[:cmd_sequence]
   end
 
   def test_session_status
     @smtpd.process_reset_session(@session, connection_initialize: true)
+
     assert_instance_of Hash, @session[:auth_challenge]
     assert_equal '', @session[:ctx][:server][:local_host]
     assert_equal '', @session[:ctx][:server][:local_ip]

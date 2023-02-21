@@ -31,6 +31,7 @@ class CertificateIntegrationTest < BaseIntegrationTest
 
   def helper_net_smtp_auth_login_and_simple_send_1_mail_with_ssl
     net_smtp_send_mail @envelope_mail_from, @envelope_rcpt_to, @doc_simple_mail, authentication_id: 'administrator', password: 'password', auth_type: :login, tls_enabled: true
+
     assert_equal @doc_simple_mail, @smtpd.ev_message_data
     assert_equal 'supervisor', @smtpd.ev_auth_authorization_id
   end

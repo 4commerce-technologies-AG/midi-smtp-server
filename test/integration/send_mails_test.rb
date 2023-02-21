@@ -28,6 +28,7 @@ class SendMailsIntegrationTest < BaseIntegrationTest
 
   def test_net_smtp_simple_send_1_mail
     net_smtp_send_mail @envelope_mail_from, @envelope_rcpt_to, @doc_simple_mail
+
     assert_equal @doc_simple_mail, @smtpd.ev_message_data
   end
 
@@ -35,17 +36,20 @@ class SendMailsIntegrationTest < BaseIntegrationTest
     10.times do
       net_smtp_send_mail @envelope_mail_from, @envelope_rcpt_to, @doc_simple_mail
     end
+
     assert_equal @doc_simple_mail, @smtpd.ev_message_data
   end
 
   def test_net_smtp_auth_plain_and_simple_send_1_mail
     net_smtp_send_mail @envelope_mail_from, @envelope_rcpt_to, @doc_simple_mail, authentication_id: 'administrator', password: 'password', auth_type: :plain
+
     assert_equal @doc_simple_mail, @smtpd.ev_message_data
     assert_equal 'supervisor', @smtpd.ev_auth_authorization_id
   end
 
   def test_net_smtp_auth_login_and_simple_send_1_mail
     net_smtp_send_mail @envelope_mail_from, @envelope_rcpt_to, @doc_simple_mail, authentication_id: 'administrator', password: 'password', auth_type: :login
+
     assert_equal @doc_simple_mail, @smtpd.ev_message_data
     assert_equal 'supervisor', @smtpd.ev_auth_authorization_id
   end
@@ -56,11 +60,13 @@ class SendMailsIntegrationTest < BaseIntegrationTest
 
   def test_mikel_mail_simple_send_1_mail
     mikel_mail_send_mail @envelope_mail_from, @envelope_rcpt_to, @doc_simple_mail
+
     assert_equal @doc_simple_mail, @smtpd.ev_message_data
   end
 
   def test_mikel_mail_simple_send_1_mail_starttls
     mikel_mail_send_mail @envelope_mail_from, @envelope_rcpt_to, @doc_simple_mail, authentication_id: 'administrator', password: 'password', enable_starttls: true
+
     assert_equal @doc_simple_mail, @smtpd.ev_message_data
     assert_equal 'supervisor', @smtpd.ev_auth_authorization_id
   end

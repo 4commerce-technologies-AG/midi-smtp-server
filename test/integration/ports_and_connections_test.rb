@@ -33,6 +33,7 @@ class PortsAndConnectionsIntegrationTest < Minitest::Test
     # test open 1 socket and read welcome message
     channel1 = create_socket
     result1 = get_blocked_socket(channel1)
+
     assert_equal MSG_WELCOME, result1
     close_socket(channel1)
   end
@@ -44,10 +45,12 @@ class PortsAndConnectionsIntegrationTest < Minitest::Test
     channel1 = create_socket
     channel2 = create_socket
     result1 = get_blocked_socket(channel1)
+
     assert_equal MSG_WELCOME, result1
     assert_raises(IO::WaitReadable) { get_nonblocked_socket(channel2) }
     close_socket(channel1)
     result2 = get_blocked_socket(channel2)
+
     assert_equal MSG_WELCOME, result2
     close_socket(channel2)
   end
@@ -61,17 +64,21 @@ class PortsAndConnectionsIntegrationTest < Minitest::Test
     channel2 = create_socket
     channel3 = create_socket
     result1 = get_blocked_socket(channel1)
+
     assert_equal MSG_WELCOME, result1
     assert_raises(IO::WaitReadable) { get_nonblocked_socket(channel2) }
     close_socket(channel1)
     result2 = get_blocked_socket(channel2)
+
     assert_equal MSG_WELCOME, result2
     close_socket(channel2)
     result3 = get_blocked_socket(channel3)
+
     assert_equal MSG_ABORT, result3
     assert_raises(Errno::EPIPE) { 100.times { send_blocked_socket(channel3, "NOOP\r\n") } }
     result3 = +''
     100.times { result3 << get_state_ignored_socket(channel3, 1000, 0.1) }
+
     assert_empty result3
     close_socket(channel3)
   end

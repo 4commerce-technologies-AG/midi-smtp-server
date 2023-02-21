@@ -79,3 +79,6 @@ Minitest/MultipleAssertions:
 
 Minitest/TestMethodName:
   Enabled: no
+
+Minitest/TestFileName:
+  Enabled: no
