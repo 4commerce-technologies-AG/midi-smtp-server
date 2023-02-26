@@ -4,7 +4,7 @@ This project has got a lot of support from the community over it's lifetime.
 
 Thanks to all of you using MidiSmtpServer.
 
-We like to nominate the contributors:
+We like to nominate the contributors (chronologically ordered):
 
 - [@TomFreudenberg](https://github.com/TomFreudenberg)
 - [@gencer](https://github.com/gencer)
