@@ -19,7 +19,7 @@ MidiSmtpServer is the highly customizable ruby SMTP-Server and SMTP-Service libr
 
 As a library it is mainly designed to be integrated into your projects as serving a SMTP-Server service. The lib will do nothing with your mail and you have to create your own event functions to handle and operate on incoming mails. We are using this in conjunction with [Mikel Lindsaar](https://github.com/mikel) great Mail component (https://github.com/mikel/mail). Time to run your own SMTP-Server service.
 
-Checkout all the features and improvements (3.0.1 Logging enhancement, 2.3.x Multiple ports and addresses, 2.2.x Encryption [StartTLS], 2.1.0 Authentication [AUTH], 2.1.1 significant speed improvement, etc.) and get more details from section [changes and updates](https://github.com/4commerce-technologies-AG/midi-smtp-server#changes-and-updates).
+Checkout all the features and improvements (3.1.1 Process parallelization, 3.0.1 Logging enhancement, 2.3.x Multiple ports and addresses, 2.2.x Encryption [StartTLS], 2.1.0 Authentication [AUTH], 2.1.1 significant speed improvement, etc.) and get more details from section [changes and updates](https://github.com/4commerce-technologies-AG/midi-smtp-server#changes-and-updates).
 
 MidiSmtpServer is an extremely flexible library and almost any aspect of SMTP communications can be handled by deriving its events and using its configuration options.
 
@@ -100,31 +100,31 @@ Since version 2.3 implementation and integration tests by minitest framework are
 
 You may run all rubocop tests through the `rake` helper:
 
-``` bash
+```bash
   bundle exec rake rubocop
 ```
 
 You may also run all tests through the `rake` helper:
 
-``` bash
+```bash
   bundle exec rake test:all
 ```
 
 or with more verbose output:
 
-``` bash
+```bash
   bundle exec rake test:all v=1
 ```
 
 To just run just a part of the tests, you may select the `specs`, `unit`, `integration` or `stress` tests:
 
-``` bash
+```bash
   bundle exec rake test:specs
 ```
 
 To just run some selected (by regular expression) tests, you may use the `T=filter` option. The example will run only the tests and specs containing the word _connections_ in their method_name or describe_text:
 
-``` bash
+```bash
   bundle exec rake test:all v=1 T=connections
 ```
 
@@ -147,12 +147,13 @@ We suggest everybody using MidiSmtpServer to switch at least to latest 2.3.y. or
 For upgrades from previous versions or outdated _MiniSmtpServer_ gem you may follow the guides (see appendix) how to change your existing code to be compatible with the latest releases.
 
 
-#### Latest release: 3.1.1 (2023-02-21)
+#### Latest release: 3.1.1 (2023-02-26)
 
 1. Add option to additional activate [pre-forking workers](https://midi-smtp-server.readthedocs.io/feature_load_balancing/#pre-forking) (beta) ([check issue 42](https://github.com/4commerce-technologies-AG/midi-smtp-server/issues/42))
 2. Adjust sleep idle time while in command and data loop to speedup processing ([check issue 47](https://github.com/4commerce-technologies-AG/midi-smtp-server/issues/47))
-3. Modify github workflow and apply testing of ruby 3.1 and ruby 3.2
-4. Generate updated openssl test certificates for TLS tests
+3. Mark the current default value `0.1` for `io_waitreadable_sleep` as deprecated, will become `0.03` in a future version.
+4. Modify github workflow and apply testing of ruby 3.1 and ruby 3.2
+5. Generate updated openssl test certificates for TLS tests
 
 
 #### Changelog history
@@ -195,4 +196,4 @@ Author: [Tom Freudenberg](http://about.me/tom.freudenberg)
 
 [MidiSmtpServer Class](https://github.com/4commerce-technologies-AG/midi-smtp-server/) is inspired from [MiniSmtpServer Class](https://github.com/aarongough/mini-smtp-server) and code written by [Aaron Gough](https://github.com/aarongough) and [Peter Cooper](https://github.com/4commerce-technologies-AG/midi-smtp-server#author--credits)
 
-Copyright (c) 2014-2023 [Tom Freudenberg](http://www.4commerce.de/), [4commerce technologies AG](http://www.4commerce.de/), released under the MIT license
+Copyright (c) 2014-2023 [Tom Freudenberg](https://github.com/TomFreudenberg), [4commerce technologies AG](https://www.4commerce.de/), released under the MIT license

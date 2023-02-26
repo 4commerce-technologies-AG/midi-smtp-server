@@ -24,7 +24,13 @@ If you need 1.000.000 mail per hour than probably 416 simultaneously processed t
 
 The number of `max_connections` should always be equal or higher than `max_processings`. In the above examples it should be fine to use 512 or 1024 if your system does fit with its resources. If an unlimited number of concurrent TCP connections should be allowed, then set the value for `max_connections` to `nil` (which is also the default when not specified).
 
-In addition it is possible to adjust the idle sleep time when no input data is available while in loop for commands and data. Time in fraction of seconds is available thru `io_waitreadable_sleep` option. The default value is `0.1` seconds but can be adjusted to e.g. `0.02` for faster processings.
+In addition it is possible to adjust the idle sleep time when no input data is available while in loop for commands and data. Time in fraction of seconds is available thru `io_waitreadable_sleep` option. The default value is `0.1` seconds but can be adjusted up to e.g. `0.01` for faster processings. Be aware that faster processing may also raise the overall system utilization and have that in mind when tuning your environment.
+
+<br>
+
+!!! Note
+
+    The current default value `0.1` for `io_waitreadable_sleep` is deprecated with release 3.1.1 and will be replaced by `0.03` as the new default value in a future version.
 
 <br>
 
@@ -33,6 +39,8 @@ In addition it is possible to adjust the idle sleep time when no input data is a
 When running ruby applications on multi-core CPUs, ruby by default will run all its processes and threads per one (1) CORE only, handled by Ruby GIL and executed one thread action after next thread action. The `pre_fork` option enables more cores by forking processes and let each fork handle a number of threads per each core (forked process) to handle simultaneously (parallel) sessions. This pattern is often used to let the operating system load balance connections to several processes without the need of proxies like Apache or HAProxy.
 
 Ruby has a global interpreter lock so if a server has 10 cores then to fully utilize all the cores will require spawning more than one process to listen for connections because threads are not mapped to a process. Here is a good article explaining some of the implementation details of Ruby's threads: [Ruby threads worth it?](https://medium.com/gympass/ruby-threads-worth-it-46167522142b)
+
+<br>
 
 !!! Note
 

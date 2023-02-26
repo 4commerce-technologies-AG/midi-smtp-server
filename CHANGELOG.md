@@ -5,12 +5,13 @@ We suggest everybody using MidiSmtpServer to switch at least to latest 2.3.y. or
 For upgrades from previous versions or outdated _MiniSmtpServer_ gem you may follow the guides at [Appendix Upgrade](https://midi-smtp-server.readthedocs.io/appendix_upgrade/) to get your code ready for the latest releases.
 
 
-#### 3.1.1 (2023-02-21)
+#### 3.1.1 (2023-02-26)
 
 1. Add option to additional activate [pre-forking workers](https://midi-smtp-server.readthedocs.io/feature_load_balancing/#pre-forking) (beta) ([check issue 42](https://github.com/4commerce-technologies-AG/midi-smtp-server/issues/42))
 2. Adjust sleep idle time while in command and data loop to speedup processing ([check issue 47](https://github.com/4commerce-technologies-AG/midi-smtp-server/issues/47))
-3. Modify github workflow and apply testing of ruby 3.1 and ruby 3.2
-4. Generate updated openssl test certificates for TLS tests
+3. Mark the current default value `0.1` for `io_waitreadable_sleep` as deprecated, will become `0.03` in a future version.
+4. Modify github workflow and apply testing of ruby 3.1 and ruby 3.2
+5. Generate updated openssl test certificates for TLS tests
 
 
 #### 3.0.3 (2022-02-12)
