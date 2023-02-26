@@ -8,6 +8,7 @@ We like to nominate the contributors (chronologically ordered):
 
 - [@TomFreudenberg](https://github.com/TomFreudenberg)
 - [@yms9654](https://github.com/yms9654)
+- [@mwhobrey](https://github.com/mwhobrey)
 - [@gencer](https://github.com/gencer)
 - [@ocha](https://github.com/ocha)
 - [@fernandomm](https://github.com/fernandomm)
