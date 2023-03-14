@@ -6,7 +6,7 @@ Context values are a powerful feature of the MidiSmtpServer library. They allow 
 
 <br>
 
-<h2>ctx hash</h2>
+<h2>Per connection ctx object</h2>
 
 #### ctx[:server][:local_response]
 
@@ -68,15 +68,15 @@ This value stores an array of error objects that were captured during the sessio
 
 #### ctx[:server][:authorization_id]
 
-This value stores the username that was provided during the AUTH command.
+This value stores the username that was provided during the AUTH command. See also the ["Feature Authentication support"](feature_authentication.md) for more details.
 
 #### ctx[:server][:authentication_id]
 
-This value stores the username that was successfully authenticated during the session.
+This value stores the username that was successfully authenticated during the session. See also the ["Feature Authentication support"](feature_authentication.md) for more details.
 
 #### ctx[:server][:authenticated]
 
-This value stores the timestamp (in UTC) when the user was successfully authenticated.
+This value stores the timestamp (in UTC) when the user was successfully authenticated. See also the ["Feature Authentication support"](feature_authentication.md) for more details.
 
 <br>
 
@@ -90,11 +90,11 @@ This value stores the first email address from the RCPT TO command.
 
 #### ctx[:envelope][:encoding_body]
 
-This value stores the encoding of the message body.
+This value stores the encoding of the message body. See also the ["Feature 8BITMIME, SMTPUTF8"](feature_8bitmime_smtputf8.md) for more details.
 
 #### ctx[:envelope][:encoding_utf8]
 
-This value stores the encoding of the message headers.
+This value stores the encoding of the message headers. See also the ["Feature 8BITMIME, SMTPUTF8"](feature_8bitmime_smtputf8.md) for more details.
 
 <br>
 
