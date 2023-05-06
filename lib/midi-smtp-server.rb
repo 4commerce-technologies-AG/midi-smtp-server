@@ -48,6 +48,8 @@ module MidiSmtpServer
     # Create the server
     def start
       create_service
+      # immediately attach the threads to running single master process (default)
+      attach_threads unless pre_fork?
     end
 
     # Stop the server
@@ -160,8 +162,7 @@ module MidiSmtpServer
         @workers.each { |pid| Process.waitpid(pid) }
 
       else
-        # just attach and join the threads to running single master process (default)
-        attach_threads
+        # just join the threads to running single master process (default)
         join_threads(sleep_seconds_before_join: sleep_seconds_before_join)
       end
     end
