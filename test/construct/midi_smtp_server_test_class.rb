@@ -65,12 +65,6 @@ class MidiSmtpServerTest < MidiSmtpServer::Smtpd
     )
   end
 
-  def start
-    super
-    # in case of testing we do not use blocking join but attaching threads manually here
-    attach_threads
-  end
-
   # change visibility for testing
   public :process_line
   public :process_reset_session
