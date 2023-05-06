@@ -5,6 +5,11 @@ We suggest everybody using MidiSmtpServer to switch at least to latest 2.3.y. or
 For upgrades from previous versions or outdated _MiniSmtpServer_ gem you may follow the guides at [Appendix Upgrade](https://midi-smtp-server.readthedocs.io/appendix_upgrade/) to get your code ready for the latest releases.
 
 
+#### 3.1.2 (2023-05-06)
+
+1. Minor fix for backwards compatibility to method `start` when not using pre_fork options.
+
+
 #### 3.1.1 (2023-02-26)
 
 1. Add option to additional activate [pre-forking workers](https://midi-smtp-server.readthedocs.io/feature_load_balancing/#pre-forking) (beta) ([check issue 42](https://github.com/4commerce-technologies-AG/midi-smtp-server/issues/42))
