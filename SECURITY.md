@@ -9,6 +9,7 @@ with security updates.
 | ------- | ----------------------------- |
 | 3.x.y   | Yes                           |
 | 2.3.y   | Critical security issues only |
+|         | EOL end of 2023               |
 | < 2.3   | No                            |
 
 #### Supported Ruby
@@ -18,9 +19,7 @@ with security updates.
 | 3.2.y   | Yes                           |
 | 3.1.y   | Yes                           |
 | 3.0.y   | Yes                           |
-| 2.7.x   | EOL April 2023                |
-| 2.6.x   | No                            |
-| < 2.6   | No                            |
+| < 3.0   | No                            |
 
 #### Reporting a Vulnerability
 
