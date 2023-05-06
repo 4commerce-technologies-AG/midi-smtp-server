@@ -10,6 +10,7 @@ Gem::Specification.new do |s|
   s.authors     = ['Tom Freudenberg']
   s.email       = 'develop.rb.midi-smtp-server@4commerce.net'
   s.license     = 'MIT'
+  s.homepage    = 'https://4commerce-technologies-ag.github.io/midi-smtp-server'
   s.files       = [
     'README.md',
     'CHANGELOG.md',
