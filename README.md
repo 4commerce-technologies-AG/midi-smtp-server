@@ -76,13 +76,25 @@ This source code shows the example to receive messages via SMTP and store them t
 
 ## Installation
 
-MidiSmtpServer is packaged as a RubyGem so that you can easily install by entering following at your command line:
+MidiSmtpServer is packaged as a RubyGem and hosted on rubygems.
+
+#### CLI
+
+You can easily install the package by entering following at your command line:
 
   `gem install midi-smtp-server`
 
 Use the component in your project sources by:
 
   `require 'midi-smtp-server'`
+
+#### Gemfile
+
+When a `Gemfile` handles your dependencies, please consider to use the [pessimistic operator](https://thoughtbot.com/blog/rubys-pessimistic-operator) at least:
+
+  `gem 'midi-smtp-server', '~> 3.1.2''`
+
+All changes by PATCH versions are always functional and compatible with no issues on update!
 
 <br>
 
