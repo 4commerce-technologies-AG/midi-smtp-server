@@ -6,7 +6,7 @@ copyright: "Copyright &copy; 2014 - 2023 Tom Freudenberg, 4commerce technologies
 
 docs_dir: mkdocs
 
-pages:
+nav:
   - Home: index.md
   - Installation: installation.md
   - Basic usage: basic_usage.md
@@ -22,11 +22,11 @@ pages:
     - CR LF Modes: feature_cr_lf_modes.md
     - Internationalization: feature_8bitmime_smtputf8.md
     - Logging: feature_logging.md
-  - <br>Cookbook:
+  - Cookbook:
     - Recipes: cookbook.md
     - Slack MTA: cookbook_recipe_slack_mta.md
-  - <br>Support: support.md
-  - <br>Appendix:
+  - Support: support.md
+  - Appendix:
     - Security: appendix_security.md
     - Upgrade: appendix_upgrade.md
 
@@ -42,3 +42,6 @@ markdown_extensions:
 
 theme:
   name: readthedocs
+  prev_next_buttons_location: none
+  navigation_depth: 3
+  sticky_navigation: false
