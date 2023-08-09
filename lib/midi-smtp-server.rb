@@ -33,11 +33,9 @@ module MidiSmtpServer
   DEFAULT_IO_BUFFER_MAX_SIZE = 1 * 1024 * 1024
 
   # default value for SMTPD extensions support
+  DEFAULT_PROXY_EXTENSION_ENABLED = false
   DEFAULT_PIPELINING_EXTENSION_ENABLED = false
   DEFAULT_INTERNATIONALIZATION_EXTENSIONS_ENABLED = false
-
-  # default value for SMTPD features support
-  DEFAULT_PROXY_FEATURE_ENABLED = false
 
   # Authentication modes
   AUTH_MODES = [:AUTH_FORBIDDEN, :AUTH_OPTIONAL, :AUTH_REQUIRED].freeze
@@ -217,8 +215,8 @@ module MidiSmtpServer
     attr_reader :pipelining_extension
     # handle SMTP 8BITMIME and SMTPUTF8 extension
     attr_reader :internationalization_extensions
-    # handle PROXY connection feature
-    attr_reader :proxy_feature
+    # handle PROXY connections
+    attr_reader :proxy_extension
 
     # logging object, may be overridden by special loggers like YELL or others
     attr_reader :logger
@@ -238,7 +236,7 @@ module MidiSmtpServer
     # +io_buffer_max_size+:: max size of buffer (max line length) until \lf ist expected (DEFAULT_IO_BUFFER_MAX_SIZE, nil => disabled test)
     # +pipelining_extension+:: set to true for support of SMTP PIPELINING extension (DEFAULT_PIPELINING_EXTENSION_ENABLED)
     # +internationalization_extensions+:: set to true for support of SMTP 8BITMIME and SMTPUTF8 extensions (DEFAULT_INTERNATIONALIZATION_EXTENSIONS_ENABLED)
-    # +proxy_feature+:: set to true for supporting PROXY network connections (DEFAULT_PROXY_FEATURE_ENABLED)
+    # +proxy_extension+:: set to true for supporting PROXY connections (DEFAULT_PROXY_EXTENSION_ENABLED)
     # +auth_mode+:: enable builtin authentication support (:AUTH_FORBIDDEN [default], :AUTH_OPTIONAL, :AUTH_REQUIRED)
     # +tls_mode+:: enable builtin TLS support (:TLS_FORBIDDEN [default], :TLS_OPTIONAL, :TLS_REQUIRED)
     # +tls_cert_path+:: path to tls certificate chain file
@@ -263,7 +261,7 @@ module MidiSmtpServer
       io_buffer_max_size: nil,
       pipelining_extension: nil,
       internationalization_extensions: nil,
-      proxy_feature: nil,
+      proxy_extension: nil,
       auth_mode: nil,
       tls_mode: nil,
       tls_cert_path: nil,
@@ -406,8 +404,8 @@ module MidiSmtpServer
       @internationalization_extensions = internationalization_extensions.nil? ? DEFAULT_INTERNATIONALIZATION_EXTENSIONS_ENABLED : internationalization_extensions
 
       # smtp features
-      @proxy_feature = proxy_feature.nil? ? DEFAULT_PROXY_FEATURE_ENABLED : proxy_feature
-      require 'ipaddr' if @proxy_feature
+      @proxy_extension = proxy_extension.nil? ? DEFAULT_PROXY_EXTENSION_ENABLED : proxy_extension
+      require 'ipaddr' if @proxy_extension
 
       # check for authentication
       @auth_mode = auth_mode.nil? ? DEFAULT_AUTH_MODE : auth_mode
@@ -989,7 +987,7 @@ module MidiSmtpServer
             # PROXY UNKNOWN ffff:f...f:ffff ffff:f...f:ffff 65535 65535
             # ---------
             # check that proxy is allowed
-            raise Smtpd500Exception unless @proxy_feature
+            raise Smtpd500Exception unless @proxy_extension
             # check valid command sequence
             raise Smtpd503Exception if session[:cmd_sequence] != :CMD_HELO
             # get values from proxy command
