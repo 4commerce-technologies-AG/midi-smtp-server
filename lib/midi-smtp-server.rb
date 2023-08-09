@@ -402,8 +402,6 @@ module MidiSmtpServer
       # smtp extensions
       @pipelining_extension = pipelining_extension.nil? ? DEFAULT_PIPELINING_EXTENSION_ENABLED : pipelining_extension
       @internationalization_extensions = internationalization_extensions.nil? ? DEFAULT_INTERNATIONALIZATION_EXTENSIONS_ENABLED : internationalization_extensions
-
-      # smtp features
       @proxy_extension = proxy_extension.nil? ? DEFAULT_PROXY_EXTENSION_ENABLED : proxy_extension
       require 'ipaddr' if @proxy_extension
 
