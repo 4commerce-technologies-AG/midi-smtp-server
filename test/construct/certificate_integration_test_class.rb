@@ -20,6 +20,7 @@ class CertificateIntegrationTest < BaseIntegrationTest
       tls_mode: :TLS_REQUIRED,
       tls_cert_path: File.join(__dir__, '../data', @use_cert_path),
       tls_key_path: @use_key_path.nil? ? nil : File.join(__dir__, '../data', @use_key_path),
+      proxy_extension: true,
       pipelining_extension: false,
       internationalization_extensions: true
     )
