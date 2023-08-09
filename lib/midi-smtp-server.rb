@@ -1014,6 +1014,25 @@ module MidiSmtpServer
                   raise unless cmd_data[3].to_i.between?(1, 65_535)
                   raise unless cmd_data[4].to_i.between?(1, 65_535)
 
+                  # create hash to inspect by event
+                  proxy_data = {
+                    proto: cmd_data[0],
+                    source_ip: cmd_data[1],
+                    source_host: cmd_data[1],
+                    source_port: cmd_data[3],
+                    dest_ip: cmd_data[2],
+                    dest_host: cmd_data[2],
+                    dest_port: cmd_data[4]
+                  }
+                  # call event to handle data
+                  return_value = on_proxy_event(session[:ctx], proxy_data)
+                  if return_value
+                    # overwrite data with returned value
+                    proxy_data = return_value
+                  end
+                  # if no error raised, append to server hash
+                  session[:ctx][:server][:proxies].unshift(proxy_data)
+
                 rescue StandardError
                   # change exception into Smtpd exception
                   raise Smtpd501Exception
@@ -1025,24 +1044,6 @@ module MidiSmtpServer
 
             end
 
-            # create hash to inspect by event
-            proxy_data = {
-              proto: cmd_data[0],
-              source_ip: cmd_data[1],
-              source_host: cmd_data[1],
-              source_port: cmd_data[3],
-              dest_ip: cmd_data[2],
-              dest_host: cmd_data[2],
-              dest_port: cmd_data[4]
-            }
-            # call event to handle data
-            return_value = on_proxy_event(session[:ctx], proxy_data)
-            if return_value
-              # overwrite data with returned value
-              proxy_data = return_value
-            end
-            # if no error raised, append to server hash
-            session[:ctx][:server][:proxies].unshift(proxy_data)
             # reply ok
             return '250 OK'
 
