@@ -1001,7 +1001,7 @@ module MidiSmtpServer
               when /^TCP(4|6)$/i
                 begin
                   # check that given addresses correct by type
-                  if cmd_data[0].casecmp('TCP4')
+                  if cmd_data[0].casecmp?('TCP4')
                     raise unless IPAddr.new(cmd_data[1]).ipv4?
                     raise unless IPAddr.new(cmd_data[2]).ipv4?
                   else
@@ -1018,10 +1018,10 @@ module MidiSmtpServer
                     proto: cmd_data[0],
                     source_ip: cmd_data[1],
                     source_host: cmd_data[1],
-                    source_port: cmd_data[3],
+                    source_port: cmd_data[3].to_i,
                     dest_ip: cmd_data[2],
                     dest_host: cmd_data[2],
-                    dest_port: cmd_data[4]
+                    dest_port: cmd_data[4].to_i
                   }
                   # call event to handle data
                   return_value = on_proxy_event(session[:ctx], proxy_data)
