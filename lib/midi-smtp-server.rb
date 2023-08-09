@@ -970,7 +970,7 @@ module MidiSmtpServer
                 return "250 OK #{session[:ctx][:server][:helo_response].to_s.strip}".strip
             end
 
-          when (/^PROXY(\s+)(UNKNOWN.*|TCP(4|6)(\s+)([0-9a-f.:]+)(\s+)([0-9a-f.:]+)(\s+)[0-9]{1,5}(\s+)[0-9]{1,5})$/i)
+          when (/^PROXY(\s+)(UNKNOWN.*|TCP(4|6)(\s+)([0-9a-f.:]+)(\s+)([0-9a-f.:]+)(\s+)([0-9]+)(\s+)([0-9]+)(\s*))$/i)
             # PROXY
             # 250 Requested mail action okay, completed
             # 421 <domain> Service not available, closing transmission channel
