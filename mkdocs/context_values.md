@@ -52,7 +52,7 @@ This value stores the port number that the client is connected on.
 
 This array stores the given connection information from PROXY command. See also the ["Feature Proxy support"](feature_proxy.md) for more details.
 
-Each entry will get this data:
+Each entry will save this data:
 
 1. [:source_ip]
 1. [:source_host]
@@ -61,7 +61,7 @@ Each entry will get this data:
 1. [:dest_host]
 1. [:dest_port]
 
-The entry [0] gets always the lates PROXY data what is the origin client source_ip.
+The entry [0] stores always the lates PROXY data what is the origin client source_ip.
 
 <br>
 

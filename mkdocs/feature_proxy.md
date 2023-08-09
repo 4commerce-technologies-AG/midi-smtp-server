@@ -24,7 +24,7 @@ def on_proxy_event(ctx, proxy_data)
 end
 ```
 
-Instead changing the `remote_ip` and others you may also just have access to the server context `ctx[:server][:proxies]`. A chain of given `PROXY` is pushed to the context array.
+Instead changing the `remote_ip` and other `ctx[:server]` vars, you could also just have access to the server context proxy data `ctx[:server][:proxies]`. A chain of received `PROXY` commands is pushed reversed to the context array.
 
 ```rb
 def other_event(ctx)
