@@ -998,28 +998,35 @@ module MidiSmtpServer
 
               when /^TCP(4|6)$/i
                 begin
+                  # try to build valid addresses from given strings
+                  source_ip = IPAddr.new(cmd_data[1])
+                  source_port = cmd_data[3].to_i
+                  dest_ip = IPAddr.new(cmd_data[2])
+                  dest_port = cmd_data[4].to_i
+
                   # check that given addresses correct by type
                   if cmd_data[0].casecmp?('TCP4')
-                    raise unless IPAddr.new(cmd_data[1]).ipv4?
-                    raise unless IPAddr.new(cmd_data[2]).ipv4?
+                    raise unless source_ip.ipv4?
+                    raise unless dest_ip.ipv4?
                   else
-                    raise unless IPAddr.new(cmd_data[1]).ipv6?
-                    raise unless IPAddr.new(cmd_data[2]).ipv6?
+                    raise unless source_ip.ipv6?
+                    raise unless dest_ip.ipv6?
                   end
 
                   # check that ports within valid ranges
-                  raise unless cmd_data[3].to_i.between?(1, 65_535)
-                  raise unless cmd_data[4].to_i.between?(1, 65_535)
+                  raise unless source_port.between?(1, 65_535)
+                  raise unless dest_port.between?(1, 65_535)
 
                   # create hash to inspect by event
+                  # normalize ip addresses
                   proxy_data = {
                     proto: cmd_data[0],
-                    source_ip: cmd_data[1],
-                    source_host: cmd_data[1],
-                    source_port: cmd_data[3].to_i,
-                    dest_ip: cmd_data[2],
-                    dest_host: cmd_data[2],
-                    dest_port: cmd_data[4].to_i
+                    source_ip: source_ip.to_s,
+                    source_host: source_ip.to_s,
+                    source_port: source_port,
+                    dest_ip: dest_ip.to_s,
+                    dest_host: dest_ip.to_s,
+                    dest_port: dest_port
                   }
                   # call event to handle data
                   return_value = on_proxy_event(session[:ctx], proxy_data)

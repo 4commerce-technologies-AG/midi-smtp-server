@@ -85,7 +85,7 @@ class ProcessLineUnitTest < Minitest::Test
     assert_equal 1111, @session[:ctx][:server][:proxies][0][:source_port]
     assert_equal '2.2.2.2', @session[:ctx][:server][:proxies][0][:dest_ip]
     assert_equal 2222, @session[:ctx][:server][:proxies][0][:dest_port]
-    result = @smtpd.process_line(@session, 'PROXY TCP6 3::3 4::4 3333 4444', "\r\n")
+    result = @smtpd.process_line(@session, 'PROXY TCP6 003::0003 4::4 000003333 4444', "\r\n")
     assert_equal '250 OK', result
     assert_equal 2, @session[:ctx][:server][:proxies].count
     assert_equal '1.1.1.1', @session[:ctx][:server][:proxies][1][:source_ip]
