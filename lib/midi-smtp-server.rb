@@ -407,6 +407,7 @@ module MidiSmtpServer
 
       # smtp features
       @proxy_feature = proxy_feature.nil? ? DEFAULT_PROXY_FEATURE_ENABLED : proxy_feature
+      require 'ipaddr' if @proxy_feature
 
       # check for authentication
       @auth_mode = auth_mode.nil? ? DEFAULT_AUTH_MODE : auth_mode
