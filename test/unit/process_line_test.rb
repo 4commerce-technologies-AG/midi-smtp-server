@@ -40,6 +40,7 @@ class ProcessLineUnitTest < Minitest::Test
       max_processings: 1,
       auth_mode: :AUTH_OPTIONAL,
       tls_mode: :TLS_OPTIONAL,
+      proxy_extension: true,
       pipelining_extension: false,
       internationalization_extensions: true
     )
@@ -76,19 +77,44 @@ class ProcessLineUnitTest < Minitest::Test
 
   ### TEST SUITE
 
-  def test_00_ehlo
+  def test_00_proxy
+    result = @smtpd.process_line(@session, 'PROXY TCP4 1.1.1.1 2.2.2.2 1111 2222', "\r\n")
+    assert_equal '250 OK', result
+    assert_equal 1, @session[:ctx][:server][:proxies].count
+    assert_equal '1.1.1.1', @session[:ctx][:server][:proxies][0][:source_ip]
+    assert_equal 1111, @session[:ctx][:server][:proxies][0][:source_port]
+    assert_equal '2.2.2.2', @session[:ctx][:server][:proxies][0][:dest_ip]
+    assert_equal 2222, @session[:ctx][:server][:proxies][0][:dest_port]
+    result = @smtpd.process_line(@session, 'PROXY TCP6 003::0003 4::4 000003333 4444', "\r\n")
+    assert_equal '250 OK', result
+    assert_equal 2, @session[:ctx][:server][:proxies].count
+    assert_equal '1.1.1.1', @session[:ctx][:server][:proxies][1][:source_ip]
+    assert_equal 1111, @session[:ctx][:server][:proxies][1][:source_port]
+    assert_equal '2.2.2.2', @session[:ctx][:server][:proxies][1][:dest_ip]
+    assert_equal 2222, @session[:ctx][:server][:proxies][1][:dest_port]
+    assert_equal '3::3', @session[:ctx][:server][:proxies][0][:source_ip]
+    assert_equal 3333, @session[:ctx][:server][:proxies][0][:source_port]
+    assert_equal '4::4', @session[:ctx][:server][:proxies][0][:dest_ip]
+    assert_equal 4444, @session[:ctx][:server][:proxies][0][:dest_port]
+  end
+
+  def test_10_ehlo
     helo_str = 'Process line unit test'
     result = @smtpd.process_line(@session, "EHLO #{helo_str}", "\r\n")
     assert_equal "250-#{@session[:ctx][:server][:helo_response]}\r\n250-8BITMIME\r\n250-SMTPUTF8\r\n250-AUTH LOGIN PLAIN\r\n250-STARTTLS\r\n250 OK", result
     assert_equal @session[:ctx][:server][:helo], helo_str
   end
 
-  def test_01_ehlo_bad_sequence
+  def test_11_ehlo_bad_sequence
     helo_str = 'Process line unit test'
     assert_raises(MidiSmtpServer::Smtpd503Exception) { @smtpd.process_line(@session, "EHLO #{helo_str}", "\r\n") }
   end
 
-  def test_10_auth_login_simulate_fail
+  def test_12_proxy_bad_sequence
+    assert_raises(MidiSmtpServer::Smtpd503Exception) { @smtpd.process_line(@session, 'PROXY UNKNOWN', "\r\n") }
+  end
+
+  def test_20_auth_login_simulate_fail
     result = @smtpd.process_line(@session, 'AUTH LOGIN', "\r\n")
     assert_equal (+'') << '334 ' << Base64.strict_encode64('Username:'), result
     result = @smtpd.process_line(@session, Base64.strict_encode64('administrator'), "\r\n")
@@ -101,7 +127,7 @@ class ProcessLineUnitTest < Minitest::Test
     assert_equal '', @session[:ctx][:server][:authenticated].to_s
   end
 
-  def test_11_auth_plain_authenticate_supervisor
+  def test_21_auth_plain_authenticate_supervisor
     result = @smtpd.process_line(@session, 'AUTH PLAIN', "\r\n")
     assert_equal '334 ', result
     result = @smtpd.process_line(@session, 'AGFkbWluaXN0cmF0b3IAcGFzc3dvcmQ', "\r\n")
@@ -114,14 +140,14 @@ class ProcessLineUnitTest < Minitest::Test
     assert_in_delta Time.now, @session[:ctx][:server][:authenticated], 1.0
   end
 
-  def test_20_mail_from
+  def test_30_mail_from
     address_str = 'demo@local.local'
     result = @smtpd.process_line(@session, "MAIL FROM: #{address_str}", "\r\n")
     assert_equal '250 OK', result
     assert_equal address_str, @session[:ctx][:envelope][:from]
   end
 
-  def test_30_rcpt_to
+  def test_40_rcpt_to
     address_str1 = 'demo1@local.local'
     address_str2 = 'demo2@local.local'
     result = @smtpd.process_line(@session, "RCPT TO: #{address_str1}", "\r\n")
@@ -133,7 +159,7 @@ class ProcessLineUnitTest < Minitest::Test
     assert_equal address_str2, @session[:ctx][:envelope][:to][1]
   end
 
-  def test_40_data
+  def test_50_data
     result = @smtpd.process_line(@session, 'DATA', "\r\n")
     assert result.start_with?('354 ')
     @smtpd.process_line(@session, 'From: <demo@local.local>', "\r\n")

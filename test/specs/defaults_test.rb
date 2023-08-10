@@ -111,6 +111,12 @@ describe MidiSmtpServerTest do
     end
   end
 
+  describe 'defaults proxy_extension status' do
+    it 'must respond with false' do
+      expect(@smtpd.proxy_extension).must_equal MidiSmtpServer::DEFAULT_PROXY_EXTENSION_ENABLED
+    end
+  end
+
   describe 'defaults pipelining_extension status' do
     it 'must respond with false' do
       expect(@smtpd.pipelining_extension).must_equal MidiSmtpServer::DEFAULT_PIPELINING_EXTENSION_ENABLED

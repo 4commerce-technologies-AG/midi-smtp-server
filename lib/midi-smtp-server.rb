@@ -33,6 +33,7 @@ module MidiSmtpServer
   DEFAULT_IO_BUFFER_MAX_SIZE = 1 * 1024 * 1024
 
   # default value for SMTPD extensions support
+  DEFAULT_PROXY_EXTENSION_ENABLED = false
   DEFAULT_PIPELINING_EXTENSION_ENABLED = false
   DEFAULT_INTERNATIONALIZATION_EXTENSIONS_ENABLED = false
 
@@ -214,6 +215,8 @@ module MidiSmtpServer
     attr_reader :pipelining_extension
     # handle SMTP 8BITMIME and SMTPUTF8 extension
     attr_reader :internationalization_extensions
+    # handle PROXY connections
+    attr_reader :proxy_extension
 
     # logging object, may be overridden by special loggers like YELL or others
     attr_reader :logger
@@ -233,6 +236,7 @@ module MidiSmtpServer
     # +io_buffer_max_size+:: max size of buffer (max line length) until \lf ist expected (DEFAULT_IO_BUFFER_MAX_SIZE, nil => disabled test)
     # +pipelining_extension+:: set to true for support of SMTP PIPELINING extension (DEFAULT_PIPELINING_EXTENSION_ENABLED)
     # +internationalization_extensions+:: set to true for support of SMTP 8BITMIME and SMTPUTF8 extensions (DEFAULT_INTERNATIONALIZATION_EXTENSIONS_ENABLED)
+    # +proxy_extension+:: set to true for supporting PROXY connections (DEFAULT_PROXY_EXTENSION_ENABLED)
     # +auth_mode+:: enable builtin authentication support (:AUTH_FORBIDDEN [default], :AUTH_OPTIONAL, :AUTH_REQUIRED)
     # +tls_mode+:: enable builtin TLS support (:TLS_FORBIDDEN [default], :TLS_OPTIONAL, :TLS_REQUIRED)
     # +tls_cert_path+:: path to tls certificate chain file
@@ -257,6 +261,7 @@ module MidiSmtpServer
       io_buffer_max_size: nil,
       pipelining_extension: nil,
       internationalization_extensions: nil,
+      proxy_extension: nil,
       auth_mode: nil,
       tls_mode: nil,
       tls_cert_path: nil,
@@ -397,6 +402,8 @@ module MidiSmtpServer
       # smtp extensions
       @pipelining_extension = pipelining_extension.nil? ? DEFAULT_PIPELINING_EXTENSION_ENABLED : pipelining_extension
       @internationalization_extensions = internationalization_extensions.nil? ? DEFAULT_INTERNATIONALIZATION_EXTENSIONS_ENABLED : internationalization_extensions
+      @proxy_extension = proxy_extension.nil? ? DEFAULT_PROXY_EXTENSION_ENABLED : proxy_extension
+      require 'ipaddr' if @proxy_extension
 
       # check for authentication
       @auth_mode = auth_mode.nil? ? DEFAULT_AUTH_MODE : auth_mode
@@ -481,6 +488,15 @@ module MidiSmtpServer
     # that this will be used as greeting string
     # the value is not allowed to return CR nor LF chars and will be stripped
     def on_helo_event(ctx, helo_data) end
+
+    # event on PROXY
+    # you may raise an exception if you want to block some addresses
+    # otherwise the addresses are added to ctx[:server][:proxies] in reverse order
+    # of their occurence so that the latest PROXY entry is always element [0]
+    # you also may change or add any value of the hash {proto, source_ip, source_host,
+    # source_port, dest_ip, dest_host, dest_port}
+    # a returned hash will be added to ctx[:server][:proxies]
+    def on_proxy_event(ctx, proxy_data) end
 
     # check the authentication on AUTH
     # if any value returned, that will be used for ongoing processing
@@ -952,6 +968,89 @@ module MidiSmtpServer
                 return "250 OK #{session[:ctx][:server][:helo_response].to_s.strip}".strip
             end
 
+          when (/^PROXY(\s+)(UNKNOWN.*|TCP(4|6)(\s+)([0-9a-f.:]+)(\s+)([0-9a-f.:]+)(\s+)([0-9]+)(\s+)([0-9]+)(\s*))$/i)
+            # PROXY
+            # 250 Requested mail action okay, completed
+            # 421 <domain> Service not available, closing transmission channel
+            # 500 Syntax error, command unrecognised
+            # 501 Syntax error in parameters or arguments
+            # ---------
+            # Documentation at https://github.com/haproxy/haproxy/blob/master/doc/proxy-protocol.txt
+            # syntax
+            # PROXY PROTO source-ip dest-ip source-port dest-port
+            # supported commands:
+            # PROXY TCP4 255.255.255.255 255.255.255.255 65535 65535
+            # PROXY TCP6 ffff:f...f:ffff ffff:f...f:ffff 65535 65535
+            # PROXY UNKNOWN
+            # PROXY UNKNOWN ffff:f...f:ffff ffff:f...f:ffff 65535 65535
+            # ---------
+            # check that proxy is allowed
+            raise Smtpd500Exception unless @proxy_extension
+            # check valid command sequence
+            raise Smtpd503Exception if session[:cmd_sequence] != :CMD_HELO
+            # get values from proxy command
+            cmd_data = line.gsub(/^PROXY\ /i, '').strip.gsub(/\s+/, ' ').split
+            # test proto
+            case cmd_data[0]
+
+              when /^UNKNOWN$/i
+                # ignore the unknown proxy
+
+              when /^TCP(4|6)$/i
+                begin
+                  # try to build valid addresses from given strings
+                  source_ip = IPAddr.new(cmd_data[1])
+                  source_port = cmd_data[3].to_i
+                  dest_ip = IPAddr.new(cmd_data[2])
+                  dest_port = cmd_data[4].to_i
+
+                  # check that given addresses correct by type
+                  if cmd_data[0].casecmp?('TCP4')
+                    raise unless source_ip.ipv4?
+                    raise unless dest_ip.ipv4?
+                  else
+                    raise unless source_ip.ipv6?
+                    raise unless dest_ip.ipv6?
+                  end
+
+                  # check that ports within valid ranges
+                  raise unless source_port.between?(1, 65_535)
+                  raise unless dest_port.between?(1, 65_535)
+
+                  # create hash to inspect by event
+                  # normalize ip addresses
+                  proxy_data = {
+                    proto: cmd_data[0],
+                    source_ip: source_ip.to_s,
+                    source_host: source_ip.to_s,
+                    source_port: source_port,
+                    dest_ip: dest_ip.to_s,
+                    dest_host: dest_ip.to_s,
+                    dest_port: dest_port
+                  }
+                  # call event to handle data
+                  return_value = on_proxy_event(session[:ctx], proxy_data)
+                  if return_value
+                    # overwrite data with returned value
+                    proxy_data = return_value
+                  end
+                  # if no error raised, append to server hash
+                  session[:ctx][:server][:proxies].unshift(proxy_data)
+
+                rescue StandardError
+                  # change exception into Smtpd exception
+                  raise Smtpd501Exception
+                end
+
+              else
+                # invalid options and parameters
+                raise Smtpd501Exception
+
+            end
+
+            # reply ok
+            return '250 OK'
+
           when /^STARTTLS\s*$/i
             # STARTTLS
             # 220 Ready to start TLS
@@ -1294,6 +1393,7 @@ module MidiSmtpServer
             remote_host: +'',
             remote_ip: +'',
             remote_port: +'',
+            proxies: [],
             helo: +'',
             helo_response: +'',
             connected: +'',

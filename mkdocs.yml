@@ -22,6 +22,7 @@ nav:
     - CR LF Modes: feature_cr_lf_modes.md
     - Internationalization: feature_8bitmime_smtputf8.md
     - Logging: feature_logging.md
+    - Proxy: feature_proxy.md
   - Cookbook:
     - Recipes: cookbook.md
     - Slack MTA: cookbook_recipe_slack_mta.md

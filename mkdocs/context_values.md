@@ -48,6 +48,23 @@ This value stores the port number that the client is connected on.
 
 <br>
 
+#### ctx[:server][:proxies]
+
+This array stores the given connection information from PROXY command. See also the ["Feature Proxy support"](feature_proxy.md) for more details.
+
+Each entry will save this data:
+
+1. [:source_ip]
+1. [:source_host]
+1. [:source_port]
+1. [:dest_ip]
+1. [:dest_host]
+1. [:dest_port]
+
+The entry [0] stores always the lates PROXY data what is the origin client source_ip.
+
+<br>
+
 #### ctx[:server][:connected]
 
 This value stores the timestamp (in UTC) when the client connected to the server.
@@ -86,7 +103,7 @@ This value stores the email address from the MAIL FROM command.
 
 #### ctx[:envelope][:to][0]
 
-This value stores the first email address from the RCPT TO command. 
+This value stores the first email address from the RCPT TO command.
 
 #### ctx[:envelope][:encoding_body]
 
@@ -108,7 +125,7 @@ This value stores the timestamp (in UTC) when the message data was completely re
 
 #### ctx[:message][:headers]
 
-This value is a boolean flag that indicates if the headers of the message have already been received and processed by `on_message_data_headers_event`. 
+This value is a boolean flag that indicates if the headers of the message have already been received and processed by `on_message_data_headers_event`.
 
 <br>
 
