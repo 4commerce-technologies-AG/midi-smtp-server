@@ -1048,8 +1048,11 @@ module MidiSmtpServer
 
             end
 
-            # reply ok
-            return '250 OK'
+            # reply nothing
+            # otherwise on buffering clients or enabled feature pipelining
+            # the original client will receive unhandleable responses
+            # and gets interrupted
+            return ''
 
           when /^STARTTLS\s*$/i
             # STARTTLS
