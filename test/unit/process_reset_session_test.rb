@@ -29,7 +29,7 @@ class ProcessResetSessionUnitTest < Minitest::Test
     assert_equal '', @session[:ctx][:server][:remote_host]
     assert_equal '', @session[:ctx][:server][:remote_ip]
     assert_equal '', @session[:ctx][:server][:remote_port]
-    assert_equal 0, @session[:ctx][:server][:proxies].length
+    assert_nil @session[:ctx][:server][:proxy]
     assert_equal '', @session[:ctx][:server][:helo]
     assert_equal '', @session[:ctx][:server][:helo_response]
     assert_equal '', @session[:ctx][:server][:connected]

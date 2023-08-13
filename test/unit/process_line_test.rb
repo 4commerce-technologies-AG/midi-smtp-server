@@ -40,7 +40,6 @@ class ProcessLineUnitTest < Minitest::Test
       max_processings: 1,
       auth_mode: :AUTH_OPTIONAL,
       tls_mode: :TLS_OPTIONAL,
-      proxy_extension: true,
       pipelining_extension: false,
       internationalization_extensions: true
     )
@@ -77,25 +76,6 @@ class ProcessLineUnitTest < Minitest::Test
 
   ### TEST SUITE
 
-  def test_00_proxy
-    @smtpd.process_line(@session, 'PROXY TCP4 1.1.1.1 2.2.2.2 1111 2222', "\r\n")
-    assert_equal 1, @session[:ctx][:server][:proxies].count
-    assert_equal '1.1.1.1', @session[:ctx][:server][:proxies][0][:source_ip]
-    assert_equal 1111, @session[:ctx][:server][:proxies][0][:source_port]
-    assert_equal '2.2.2.2', @session[:ctx][:server][:proxies][0][:dest_ip]
-    assert_equal 2222, @session[:ctx][:server][:proxies][0][:dest_port]
-    @smtpd.process_line(@session, 'PROXY TCP6 003::0003 4::4 000003333 4444', "\r\n")
-    assert_equal 2, @session[:ctx][:server][:proxies].count
-    assert_equal '1.1.1.1', @session[:ctx][:server][:proxies][1][:source_ip]
-    assert_equal 1111, @session[:ctx][:server][:proxies][1][:source_port]
-    assert_equal '2.2.2.2', @session[:ctx][:server][:proxies][1][:dest_ip]
-    assert_equal 2222, @session[:ctx][:server][:proxies][1][:dest_port]
-    assert_equal '3::3', @session[:ctx][:server][:proxies][0][:source_ip]
-    assert_equal 3333, @session[:ctx][:server][:proxies][0][:source_port]
-    assert_equal '4::4', @session[:ctx][:server][:proxies][0][:dest_ip]
-    assert_equal 4444, @session[:ctx][:server][:proxies][0][:dest_port]
-  end
-
   def test_10_ehlo
     helo_str = 'Process line unit test'
     result = @smtpd.process_line(@session, "EHLO #{helo_str}", "\r\n")
@@ -106,10 +86,6 @@ class ProcessLineUnitTest < Minitest::Test
   def test_11_ehlo_bad_sequence
     helo_str = 'Process line unit test'
     assert_raises(MidiSmtpServer::Smtpd503Exception) { @smtpd.process_line(@session, "EHLO #{helo_str}", "\r\n") }
-  end
-
-  def test_12_proxy_bad_sequence
-    assert_raises(MidiSmtpServer::Smtpd503Exception) { @smtpd.process_line(@session, 'PROXY UNKNOWN', "\r\n") }
   end
 
   def test_20_auth_login_simulate_fail

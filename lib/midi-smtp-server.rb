@@ -491,11 +491,9 @@ module MidiSmtpServer
 
     # event on PROXY
     # you may raise an exception if you want to block some addresses
-    # otherwise the addresses are added to ctx[:server][:proxies] in reverse order
-    # of their occurence so that the latest PROXY entry is always element [0]
-    # you also may change or add any value of the hash {proto, source_ip, source_host,
-    # source_port, dest_ip, dest_host, dest_port}
-    # a returned hash will be added to ctx[:server][:proxies]
+    # you also may change or add any value of the hash:
+    # {proto, source_ip, source_host, source_port, dest_ip, dest_host, dest_port}
+    # a returned value hash is set as ctx[:server][:proxy]
     def on_proxy_event(ctx, proxy_data) end
 
     # check the authentication on AUTH
@@ -788,7 +786,7 @@ module MidiSmtpServer
               # process commands and handle special SmtpdExceptions
               begin
                 # check for pipelining extension or violation
-                raise Smtpd500PipeliningException unless @pipelining_extension || !io_buffer_line_lf || (session[:cmd_sequence] == :CMD_DATA)
+                raise Smtpd500PipeliningException unless !io_buffer_line_lf || @pipelining_extension || (proxy_extension && (session[:cmd_sequence] == :CMD_HELO)) || (session[:cmd_sequence] == :CMD_DATA)
 
                 # handle input line based on @crlf_mode
                 case crlf_mode
@@ -968,7 +966,7 @@ module MidiSmtpServer
                 return "250 OK #{session[:ctx][:server][:helo_response].to_s.strip}".strip
             end
 
-          when (/^PROXY(\s+)(UNKNOWN.*|TCP(4|6)(\s+)([0-9a-f.:]+)(\s+)([0-9a-f.:]+)(\s+)([0-9]+)(\s+)([0-9]+)(\s*))$/i)
+          when @proxy_extension && (/^PROXY(\s+)/i)
             # PROXY
             # 250 Requested mail action okay, completed
             # 421 <domain> Service not available, closing transmission channel
@@ -984,69 +982,65 @@ module MidiSmtpServer
             # PROXY UNKNOWN
             # PROXY UNKNOWN ffff:f...f:ffff ffff:f...f:ffff 65535 65535
             # ---------
-            # check that proxy is allowed
-            raise Smtpd500Exception unless @proxy_extension
             # check valid command sequence
             raise Smtpd503Exception if session[:cmd_sequence] != :CMD_HELO
+            # check valid command
+            raise Smtpd421Exception, 'Abort connection while illegal PROXY command!' unless line.match?(/^PROXY(\s+)(UNKNOWN(|(\s+).*)|TCP(4|6)(\s+)([0-9a-f.:]+)(\s+)([0-9a-f.:]+)(\s+)([0-9]+)(\s+)([0-9]+)(\s*))$/i)
+            # check command usage is allowed only once
+            raise Smtpd421Exception, 'Abort connection while PROXY already set!' if session[:ctx][:server][:proxy]
             # get values from proxy command
             cmd_data = line.gsub(/^PROXY\ /i, '').strip.gsub(/\s+/, ' ').split
+            # create an empty hash to inspect by event
+            proxy_data = {
+              proto: cmd_data[0].upcase,
+              source_ip: nil,
+              source_host: nil,
+              source_port: nil,
+              dest_ip: nil,
+              dest_host: nil,
+              dest_port: nil
+            }
             # test proto
-            case cmd_data[0]
-
-              when /^UNKNOWN$/i
-                # ignore the unknown proxy
-
-              when /^TCP(4|6)$/i
-                begin
-                  # try to build valid addresses from given strings
-                  source_ip = IPAddr.new(cmd_data[1])
-                  source_port = cmd_data[3].to_i
-                  dest_ip = IPAddr.new(cmd_data[2])
-                  dest_port = cmd_data[4].to_i
-
-                  # check that given addresses correct by type
-                  if cmd_data[0].casecmp?('TCP4')
-                    raise unless source_ip.ipv4?
-                    raise unless dest_ip.ipv4?
-                  else
-                    raise unless source_ip.ipv6?
-                    raise unless dest_ip.ipv6?
-                  end
-
-                  # check that ports within valid ranges
-                  raise unless source_port.between?(1, 65_535)
-                  raise unless dest_port.between?(1, 65_535)
-
-                  # create hash to inspect by event
-                  # normalize ip addresses
-                  proxy_data = {
-                    proto: cmd_data[0],
-                    source_ip: source_ip.to_s,
-                    source_host: source_ip.to_s,
-                    source_port: source_port,
-                    dest_ip: dest_ip.to_s,
-                    dest_host: dest_ip.to_s,
-                    dest_port: dest_port
-                  }
-                  # call event to handle data
-                  return_value = on_proxy_event(session[:ctx], proxy_data)
-                  if return_value
-                    # overwrite data with returned value
-                    proxy_data = return_value
-                  end
-                  # if no error raised, append to server hash
-                  session[:ctx][:server][:proxies].unshift(proxy_data)
-
-                rescue StandardError
-                  # change exception into Smtpd exception
-                  raise Smtpd501Exception
+            unless proxy_data[:proto] == 'UNKNOWN'
+              begin
+                # try to build valid addresses from given strings
+                proxy_data[:source_ip] = IPAddr.new(cmd_data[1])
+                proxy_data[:source_port] = cmd_data[3].to_i
+                proxy_data[:dest_ip] = IPAddr.new(cmd_data[2])
+                proxy_data[:dest_port] = cmd_data[4].to_i
+                # check that given addresses correct by type
+                if proxy_data[:proto] == 'TCP4'
+                  raise unless proxy_data[:source_ip].ipv4?
+                  raise unless proxy_data[:dest_ip].ipv4?
+                else
+                  raise unless proxy_data[:source_ip].ipv6?
+                  raise unless proxy_data[:dest_ip].ipv6?
                 end
+                # check that ports within valid ranges
+                raise unless proxy_data[:source_port].between?(1, 65_535)
+                raise unless proxy_data[:dest_port].between?(1, 65_535)
 
-              else
-                # invalid options and parameters
-                raise Smtpd501Exception
+                # update hash to inspect by event
+                # normalize ip addresses
+                proxy_data[:source_ip] = proxy_data[:source_ip].to_s
+                proxy_data[:source_host] = proxy_data[:source_ip]
+                proxy_data[:dest_ip] = proxy_data[:dest_ip].to_s
+                proxy_data[:dest_host] = proxy_data[:dest_ip]
 
+              rescue StandardError
+                # change exception into Smtpd exception and drop connection
+                raise Smtpd421Exception, 'Abort connection for unsupported PROXY parameters!'
+              end
             end
+
+            # call event to handle data
+            return_value = on_proxy_event(session[:ctx], proxy_data)
+            if return_value
+              # overwrite data with returned value
+              proxy_data = return_value
+            end
+            # if no error raised, append to server hash
+            session[:ctx][:server][:proxy] = proxy_data
 
             # reply nothing
             # otherwise on buffering clients or enabled feature pipelining
@@ -1396,7 +1390,7 @@ module MidiSmtpServer
             remote_host: +'',
             remote_ip: +'',
             remote_port: +'',
-            proxies: [],
+            proxy: nil,
             helo: +'',
             helo_response: +'',
             connected: +'',
