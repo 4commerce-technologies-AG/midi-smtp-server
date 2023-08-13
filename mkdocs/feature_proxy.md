@@ -36,6 +36,24 @@ end
 
 <br>
 
+### Rules for Proxy support
+
+#### proxy_extension = false (DEFAULT)
+
+1. PROXY commands are ignored and could be catch in a individual method using the `on_process_line_unknown_event`
+
+#### proxy_extension = true
+
+1. Only valid PROXY protocol v1 commands are allowed
+2. All invalid PROXY commands causes immediately a drop and close of the connection (Code 421)
+3. PROXY command is in general optional and not mandatory even when extension is enabled
+4. Strict checking of values on processing like tcp4/6 addresses and port ranges
+5. Only ONE PROXY LINE is allowed - check the `accept-proxy` directive if having issues
+6. At the `on_proxy_event` you may check the connection data and grant or disallow access.
+7. If a `PROXY` command is used later while already in a session it just raises an invalid sequence error
+
+<br>
+
 ### Resolv client ip address as hostname (DNS)
 
 If you need for some reason the client hostname you may use the builtin library `resolv` for that job. Checkout the ruby documentation at [Resolv](https://ruby-doc.org/3.2.2/stdlibs/resolv/Resolv.html).
@@ -60,3 +78,5 @@ def on_proxy_event(ctx, proxy_data)
   proxy_data
 end
 ```
+
+<br>
