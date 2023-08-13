@@ -35,3 +35,28 @@ end
 ```
 
 <br>
+
+### Resolv client ip address as hostname (DNS)
+
+If you need for some reason the client hostname you may use the builtin library `resolv` for that job. Checkout the ruby documentation at [Resolv](https://ruby-doc.org/3.2.2/stdlibs/resolv/Resolv.html).
+
+A simple implementation looks like:
+
+```rb
+# require the builtin library
+require 'resolv'
+
+def on_proxy_event(ctx, proxy_data)
+  # update the proxy data
+  begin
+    proxy_data[:source_host] = Resolv.getname(proxy_data[:source_ip])
+  rescue NameError
+  end
+  # rewrite the remote connection information
+  ctx[:server][:remote_ip] = proxy_data[:source_ip]
+  ctx[:server][:remote_host] = proxy_data[:source_ip]
+  ctx[:server][:remote_port] = proxy_data[:source_port]
+  # return the values to store as proxy data
+  proxy_data
+end
+```
