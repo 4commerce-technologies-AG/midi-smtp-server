@@ -45,13 +45,11 @@ MidiSmtpServer can be easily customized via subclassing. Simply subclass the `Mi
 ### on_proxy_event
 
 ```rb
-  # event on PROXY
-  # you may raise an exception if you want to block some addresses
-  # otherwise the addresses are added to ctx[:server][:proxies] in reverse order
-  # of their occurence so that the latest PROXY entry is always element [0]
-  # you also may change or add any value of the hash {proto, source_ip, source_host,
-  # source_port, dest_ip, dest_host, dest_port}
-  # a returned hash will be added to ctx[:server][:proxies]
+    # event on PROXY
+    # you may raise an exception if you want to block some addresses
+    # you also may change or add any value of the hash:
+    # {proto, source_ip, source_host, source_port, dest_ip, dest_host, dest_port}
+    # a returned value hash is set as ctx[:server][:proxy]
   def on_proxy_event(ctx, proxy_data) end
 ```
 

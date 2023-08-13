@@ -48,11 +48,11 @@ This value stores the port number that the client is connected on.
 
 <br>
 
-#### ctx[:server][:proxies]
+#### ctx[:server][:proxy]
 
-This array stores the given connection information from PROXY command. See also the ["Feature Proxy support"](feature_proxy.md) for more details.
+This value stores a hash with the current connection information from PROXY command. See also the ["Feature Proxy support"](feature_proxy.md) for more details.
 
-Each entry will save this data:
+If proxy data exists, the entry will have this fields:
 
 1. [:source_ip]
 1. [:source_host]
@@ -61,7 +61,7 @@ Each entry will save this data:
 1. [:dest_host]
 1. [:dest_port]
 
-The entry [0] stores always the lates PROXY data what is the origin client source_ip.
+The field `[:source_ip]` contains the origin client source_ip.
 
 <br>
 
