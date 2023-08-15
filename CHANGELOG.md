@@ -5,6 +5,12 @@ We suggest everybody using MidiSmtpServer to switch at least to latest 2.3.y. or
 For upgrades from previous versions or outdated _MiniSmtpServer_ gem you may follow the guides at [Appendix Upgrade](https://midi-smtp-server.readthedocs.io/appendix_upgrade/) to get your code ready for the latest releases.
 
 
+#### 3.2.1 (2023-08-15)
+
+1. New feature [proxy](https://midi-smtp-server.readthedocs.io/feature_proxy) ([check issue 49](https://github.com/4commerce-technologies-AG/midi-smtp-server/issues/49))
+2. mkdocs update for readthedocs
+
+
 #### 3.1.2 (2023-05-06)
 
 1. Minor fix for backwards compatibility to method `start` when not using pre_fork options.
