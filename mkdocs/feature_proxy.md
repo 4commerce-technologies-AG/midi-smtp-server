@@ -72,7 +72,7 @@ def on_proxy_event(ctx, proxy_data)
   end
   # rewrite the remote connection information
   ctx[:server][:remote_ip] = proxy_data[:source_ip]
-  ctx[:server][:remote_host] = proxy_data[:source_ip]
+  ctx[:server][:remote_host] = proxy_data[:source_host]
   ctx[:server][:remote_port] = proxy_data[:source_port]
   # return the values to store as proxy data
   proxy_data
