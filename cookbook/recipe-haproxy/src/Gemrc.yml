@@ -1,0 +1,20 @@
+---
+# sometimes update from remotes on docker will hang on IPv6
+ipv4_fallback_enabled: true
+
+# Self explanatory :-)
+benchmark: false
+
+# Verbosity of the gem command. false, true, and :really are the levels
+verbose: false
+
+# Enable/disable automatic updating of repository metadata
+update_sources: true
+
+# Print backtrace when RubyGems encounters an error
+backtrace: true
+
+# <gem_command>: A string containing arguments for the specified gem command
+# -N, --no-document - Disable documentation generation
+# --[no-]suggestions - Suggest alternates when gems are not found
+gem: --no-document --no-suggestions

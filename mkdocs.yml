@@ -26,6 +26,7 @@ nav:
   - Cookbook:
     - Recipes: cookbook.md
     - Slack MTA: cookbook_recipe_slack_mta.md
+    - HAProxy load-balancing: cookbook_recipe_haproxy_mta.md
   - Support: support.md
   - Appendix:
     - Security: appendix_security.md
