@@ -2,9 +2,9 @@
 
 require 'midi-smtp-server'
 
-
 # Server class
 class MySmtpGw < MidiSmtpServer::Smtpd
+
   # get each message after DATA <message> .
   def on_message_data_event(ctx)
     # Output for debug
