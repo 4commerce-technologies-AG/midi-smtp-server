@@ -1,0 +1,22 @@
+---
+services:
+  proxy-master:
+    image: haproxy:lts
+    user: root
+    volumes:
+      - ./data/proxy-master:/usr/local/etc/haproxy:ro
+    ports:
+      - "5555:5555"
+  proxy-chain:
+    image: haproxy:lts
+    user: root
+    volumes:
+      - ./data/proxy-chain:/usr/local/etc/haproxy:ro
+    ports:
+      - "4444:4444"
+  midi-smtp:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    ports:
+      - "2525:2525"
