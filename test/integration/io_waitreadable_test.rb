@@ -50,7 +50,7 @@ class IoWaitReadableIntegrationSlowTest < IoWaitReadableIntegrationTest
   def test_slow_io_waitreadable_sleep
     # This test hits IO::WaitReadable exception multiple times
     # For that, this test must run longer than 1 second
-    assert measure_io_waitreadable_sleep > 1
+    assert_operator measure_io_waitreadable_sleep, :>, 1
   end
 
 end
@@ -67,7 +67,7 @@ class IoWaitReadableIntegrationFastTest < IoWaitReadableIntegrationTest
   def test_fast_io_waitreadable_sleep
     # This test hits IO::WaitReadable exception multiple times
     # For that, this test must run longer than 1 second
-    assert measure_io_waitreadable_sleep < 1
+    assert_operator measure_io_waitreadable_sleep, :<, 1
   end
 
 end
