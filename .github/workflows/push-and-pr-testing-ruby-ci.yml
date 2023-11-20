@@ -40,7 +40,7 @@ jobs:
         # handle IPv6 issues with bundler
         echo ":ipv4_fallback_enabled: true" > .gemrc
         export GEMRC=".gemrc"
-        bundle install -j16
+        bundle install
     - name: Run rubocop
       run: |
         bundle exec rake rubocop
