@@ -143,15 +143,21 @@ module MidiSmtpServer
     # before joining the server threads, check and wait optionally a few seconds
     # to let the service(s) come up
     def join(sleep_seconds_before_join: 1)
+      # set process name
+      $0 = "[MidiSmtp] #{ARGV.join(' ')} (main)"
       # check already existing TCPServers
       return if @tcp_servers.empty?
       # check number of processes to pre-fork
 
       if pre_fork?
         # create a number of pre-fork processes and attach and join threads within workers
+        idx = 0
         @pre_fork.times do
           # append worker pid to list of workers
           @workers << fork do
+            # set forked process name
+            $0 = "[MidiSmtp] #{ARGV.join(' ')} (worker #{idx})"
+            idx += 1
             # set state for a forked process
             @is_forked = true
             # just attach and join the threads to forked worker process
