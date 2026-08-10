@@ -2,6 +2,7 @@
 
 require 'logger'
 require 'socket'
+require 'io/wait'
 require 'resolv'
 require 'base64'
 
@@ -197,7 +198,7 @@ module MidiSmtpServer
     attr_reader :max_connections
     # CRLF handling based on conformity to RFC(2)822
     attr_reader :crlf_mode
-    # Time in seconds to sleep on IO::WaitReadable exception
+    # Deprecated, without any effect: the loop now blocks on the socket via wait_readable
     attr_reader :io_waitreadable_sleep
     # Maximum time in seconds to wait for a complete incoming data line, as a FixNum
     attr_reader :io_cmd_timeout
@@ -230,7 +231,7 @@ module MidiSmtpServer
     # +max_connections+:: maximum number of connections, this does limit the number of concurrent TCP connections (not set or nil => unlimited)
     # +crlf_mode+:: CRLF handling support (:CRLF_ENSURE [default], :CRLF_LEAVE, :CRLF_STRICT)
     # +do_dns_reverse_lookup+:: flag if this smtp server should do reverse DNS lookups on incoming connections
-    # +io_waitreadable_sleep+:: seconds to sleep in loop when no input data is available (DEFAULT_IO_WAITREADABLE_SLEEP)
+    # +io_waitreadable_sleep+:: deprecated, without any effect: the loop now blocks on the socket via wait_readable
     # +io_cmd_timeout+:: time in seconds to wait until complete line of data is expected (DEFAULT_IO_CMD_TIMEOUT, nil => disabled test)
     # +io_buffer_chunk_size+:: size of chunks (bytes) to read non-blocking from socket (DEFAULT_IO_BUFFER_CHUNK_SIZE)
     # +io_buffer_max_size+:: max size of buffer (max line length) until \lf ist expected (DEFAULT_IO_BUFFER_MAX_SIZE, nil => disabled test)
@@ -395,6 +396,7 @@ module MidiSmtpServer
 
       # io and buffer settings
       @io_waitreadable_sleep = io_waitreadable_sleep.nil? ? DEFAULT_IO_WAITREADABLE_SLEEP : io_waitreadable_sleep
+      @logger.warn('Deprecated: "io_waitreadable_sleep" was set on new but is without any effect! The loop now blocks on the socket via wait_readable.') unless io_waitreadable_sleep.nil?
       @io_cmd_timeout = io_cmd_timeout.nil? ? DEFAULT_IO_CMD_TIMEOUT : io_cmd_timeout
       @io_buffer_chunk_size = io_buffer_chunk_size.nil? ? DEFAULT_IO_BUFFER_CHUNK_SIZE : io_buffer_chunk_size
       @io_buffer_max_size = io_buffer_max_size.nil? ? DEFAULT_IO_BUFFER_MAX_SIZE : io_buffer_max_size
@@ -684,6 +686,15 @@ module MidiSmtpServer
       end
     end
 
+    # seconds left before the io_cmd_timeout check in serve_client fires,
+    # used as blocking limit for wait_readable / wait_writable
+    # (nil when io_cmd_timeout is disabled => wait unlimited)
+    def io_cmd_timeout_remaining(timestamp_timeout)
+      # add 1 second so that a timed out wait re-enters the loop strictly
+      # after the deadline and raises SmtpdIOTimeoutException there
+      @io_cmd_timeout ? timestamp_timeout + @io_cmd_timeout - Time.now.to_i + 1 : nil
+    end
+
     # handle connection
     def serve_client(session, io)
       # handle connection
@@ -769,10 +780,17 @@ module MidiSmtpServer
                 io_buffer_line_lf = io_buffer.index("\n")
               end
 
-            # ignore exception when no input data is available yet
+            # no input data is available yet, block on the underlying socket
+            # until data arrives or the remaining io_cmd_timeout has elapsed,
+            # instead of sleep-polling (io.to_io resolves the plain socket
+            # behind an OpenSSL::SSL::SSLSocket, where wait_readable is not defined)
             rescue IO::WaitReadable
-              # but wait a few moment to slow down system utilization
-              sleep @io_waitreadable_sleep
+              io.to_io.wait_readable(io_cmd_timeout_remaining(timestamp_timeout))
+
+            # during TLS (re)negotiation a read may require the socket to
+            # become writable first
+            rescue IO::WaitWritable
+              io.to_io.wait_writable(io_cmd_timeout_remaining(timestamp_timeout))
             end
 
             # check if io_buffer is filled and contains already a line-feed

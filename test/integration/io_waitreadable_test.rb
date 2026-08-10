@@ -48,26 +48,10 @@ class IoWaitReadableIntegrationSlowTest < IoWaitReadableIntegrationTest
   ### TEST SUITE
 
   def test_slow_io_waitreadable_sleep
-    # This test hits IO::WaitReadable exception multiple times
-    # For that, this test must run longer than 1 second
-    assert measure_io_waitreadable_sleep > 1
-  end
-
-end
-
-class IoWaitReadableIntegrationFastTest < IoWaitReadableIntegrationTest
-
-  def io_waitreadable_sleep
-    # use short sleep
-    0.05
-  end
-
-  ### TEST SUITE
-
-  def test_fast_io_waitreadable_sleep
-    # This test hits IO::WaitReadable exception multiple times
-    # For that, this test must run longer than 1 second
-    assert measure_io_waitreadable_sleep < 1
+    # io_waitreadable_sleep is deprecated and without any effect:
+    # the loop blocks on the socket via wait_readable, so even a
+    # long sleep value must not slow down the session
+    assert_operator measure_io_waitreadable_sleep, :<, 1
   end
 
 end
