@@ -30,4 +30,7 @@ Gem::Specification.new do |s|
     'wiki_uri'          => 'https://midi-smtp-server.readthedocs.io/'
   }
   s.required_ruby_version = '>= 2.6.0'
+
+  # base64 is no longer a default gem since Ruby 3.4
+  s.add_dependency 'base64'
 end
