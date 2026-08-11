@@ -1302,7 +1302,11 @@ module MidiSmtpServer
         # If we are in date mode then ...
 
         # call event to signal beginning of message data transfer
-        on_message_data_start_event(session[:ctx]) unless session[:ctx][:message][:data][0]
+        # (String#empty? tests bytesize only; String#[] would consult the
+        # coderange, which appends keep invalidating - on Ruby >= 3.3 that
+        # forces a full rescan of the accumulated message data per line,
+        # turning large message reception into O(n^2) CPU time)
+        on_message_data_start_event(session[:ctx]) if session[:ctx][:message][:data].empty?
 
         # ... and the entire new message data (line) does NOT consists
         # solely of a period (.) on a line by itself then we are being
