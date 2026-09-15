@@ -13,3 +13,4 @@ We like to nominate the contributors (chronologically ordered):
 - [@iuri-gg](https://github.com/iuri-gg)
 - [@fernandomm](https://github.com/fernandomm)
 - [@davidk01](https://github.com/davidk01)
+- [@sangar](https://github.com/sangar)
