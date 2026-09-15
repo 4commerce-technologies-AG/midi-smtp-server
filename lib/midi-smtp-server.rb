@@ -1302,7 +1302,7 @@ module MidiSmtpServer
         # If we are in date mode then ...
 
         # call event to signal beginning of message data transfer
-        on_message_data_start_event(session[:ctx]) unless session[:ctx][:message][:data][0]
+        on_message_data_start_event(session[:ctx]) if session[:ctx][:message][:data].empty?
 
         # ... and the entire new message data (line) does NOT consists
         # solely of a period (.) on a line by itself then we are being
