@@ -3,7 +3,7 @@ From: Integration Test <integration@local.local>
 To: Destination Test <out@local.local>
 Message-ID: <unique.message.id.string@local.local>
 Subject: Integration test message
-Mime-Version: 1.0
+MIME-Version: 1.0
 Content-Type: text/plain;
  charset=UTF-8
 Content-Transfer-Encoding: 7bit

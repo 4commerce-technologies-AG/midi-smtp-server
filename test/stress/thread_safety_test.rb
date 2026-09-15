@@ -16,13 +16,14 @@ class MidiSmtpServerThreadSafetyStressTest < MidiSmtpServerTest
       end
     end
 
+    # rubocop: disable-next Style/SuperArguments
     super(ctx, authorization_id, authentication_id, authentication)
   end
 
   def on_message_data_event(ctx)
     # test if ctx was (partial) overwritten by another thread
     @ev_fail_counter += 1 \
-      if ctx[:envelope][:from] != "<#{ctx[:server][:authentication_id]}>" || \
+      if ctx[:envelope][:from] != "<#{ctx[:server][:authentication_id]}>" ||
          ctx[:envelope][:from] != ctx[:envelope][:to].first
   end
 

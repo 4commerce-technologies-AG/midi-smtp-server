@@ -22,16 +22,17 @@ Gem::Specification.new do |s|
     'lib/midi-smtp-server/tls-transport.rb'
   ]
   s.metadata = {
-    'homepage_uri'      => 'https://4commerce-technologies-ag.github.io/midi-smtp-server',
-    'source_code_uri'   => 'https://github.com/4commerce-technologies-AG/midi-smtp-server',
-    'changelog_uri'     => 'https://github.com/4commerce-technologies-AG/midi-smtp-server#changes-and-updates',
-    'bug_tracker_uri'   => 'https://github.com/4commerce-technologies-AG/midi-smtp-server/issues',
+    'homepage_uri' => 'https://4commerce-technologies-ag.github.io/midi-smtp-server',
+    'source_code_uri' => 'https://github.com/4commerce-technologies-AG/midi-smtp-server',
+    'changelog_uri' => 'https://github.com/4commerce-technologies-AG/midi-smtp-server#changes-and-updates',
+    'bug_tracker_uri' => 'https://github.com/4commerce-technologies-AG/midi-smtp-server/issues',
     'documentation_uri' => "https://www.rubydoc.info/gems/midi-smtp-server/#{MidiSmtpServer::VERSION::STRING}",
-    'wiki_uri'          => 'https://midi-smtp-server.readthedocs.io/'
+    'wiki_uri' => 'https://midi-smtp-server.readthedocs.io/',
+    'rubygems_mfa_required' => 'true'
   }
   s.required_ruby_version = '>= 2.7.0'
 
   # no longer default stdlib gems
-  s.add_dependency 'base64'
-  s.add_dependency 'logger'
+  s.add_dependency 'base64', '~> 0.2'
+  s.add_dependency 'logger', '~> 1.6'
 end

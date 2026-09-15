@@ -14,7 +14,8 @@ class MidiSmtpServerTest < MidiSmtpServer::Smtpd
     max_connections: nil,
     crlf_mode: nil,
     do_dns_reverse_lookup: nil,
-    io_waitreadable_sleep: nil,
+    io_wait_mode: nil,
+    io_wait_available: nil,
     io_cmd_timeout: nil,
     io_buffer_chunk_size: nil,
     io_buffer_max_size: nil,
@@ -39,6 +40,7 @@ class MidiSmtpServerTest < MidiSmtpServer::Smtpd
     logger_severity = 5 if logger_severity.nil? # Logger::UNKNOWN
 
     # initialize
+    # rubocop: disable-next Style/SuperArguments
     super(
       ports: ports,
       hosts: hosts,
@@ -47,7 +49,8 @@ class MidiSmtpServerTest < MidiSmtpServer::Smtpd
       max_connections: max_connections,
       crlf_mode: crlf_mode,
       do_dns_reverse_lookup: do_dns_reverse_lookup,
-      io_waitreadable_sleep: io_waitreadable_sleep,
+      io_wait_mode: io_wait_mode,
+      io_wait_available: io_wait_available,
       io_cmd_timeout: io_cmd_timeout,
       io_buffer_chunk_size: io_buffer_chunk_size,
       io_buffer_max_size: io_buffer_max_size,

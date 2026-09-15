@@ -15,9 +15,9 @@ jobs:
     strategy:
       matrix:
         container_tag:
-        - 3.2-alpine
-        - 3.1-alpine
-        - 3.0-alpine
+        - 4.0-alpine
+        - 3.4-alpine
+        - 3.3-alpine
     container:
       image: ruby:${{ matrix.container_tag }}
     steps:

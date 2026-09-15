@@ -69,9 +69,15 @@ describe MidiSmtpServerTest do
     end
   end
 
-  describe 'defaults io_waitreadable_sleep' do
+  describe 'defaults io_wait_mode' do
+    it 'must respond with :IO_WAIT_EVENT' do
+      expect(@smtpd.io_wait_mode).must_equal MidiSmtpServer::DEFAULT_IO_WAIT_MODE
+    end
+  end
+
+  describe 'defaults io_wait_available' do
     it 'must respond with 0.1' do
-      expect(@smtpd.io_waitreadable_sleep).must_equal MidiSmtpServer::DEFAULT_IO_WAITREADABLE_SLEEP
+      expect(@smtpd.io_wait_available).must_equal MidiSmtpServer::DEFAULT_IO_WAIT_AVAILABLE
     end
   end
 

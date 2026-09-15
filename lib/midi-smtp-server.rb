@@ -2,6 +2,7 @@
 
 require 'logger'
 require 'socket'
+require 'io/wait'
 require 'resolv'
 require 'base64'
 
@@ -27,7 +28,9 @@ module MidiSmtpServer
   DEFAULT_CRLF_MODE = :CRLF_ENSURE
 
   # default values for IO operations
-  DEFAULT_IO_WAITREADABLE_SLEEP = 0.1
+  IO_WAIT_MODES = [:IO_WAIT_SLEEP, :IO_WAIT_EVENT].freeze
+  DEFAULT_IO_WAIT_MODE = :IO_WAIT_EVENT
+  DEFAULT_IO_WAIT_AVAILABLE = 0.1
   DEFAULT_IO_CMD_TIMEOUT = 30
   DEFAULT_IO_BUFFER_CHUNK_SIZE = 4 * 1024
   DEFAULT_IO_BUFFER_MAX_SIZE = 1 * 1024 * 1024
@@ -197,8 +200,10 @@ module MidiSmtpServer
     attr_reader :max_connections
     # CRLF handling based on conformity to RFC(2)822
     attr_reader :crlf_mode
-    # Time in seconds to sleep on IO::WaitReadable exception
-    attr_reader :io_waitreadable_sleep
+    # how to wait on IO::WaitReadable exception
+    attr_reader :io_wait_mode
+    # Time in fraction of a second to wait on IO::WaitReadable exception
+    attr_reader :io_wait_available
     # Maximum time in seconds to wait for a complete incoming data line, as a FixNum
     attr_reader :io_cmd_timeout
     # Bytes to read non-blocking from socket into buffer, as a FixNum
@@ -230,7 +235,8 @@ module MidiSmtpServer
     # +max_connections+:: maximum number of connections, this does limit the number of concurrent TCP connections (not set or nil => unlimited)
     # +crlf_mode+:: CRLF handling support (:CRLF_ENSURE [default], :CRLF_LEAVE, :CRLF_STRICT)
     # +do_dns_reverse_lookup+:: flag if this smtp server should do reverse DNS lookups on incoming connections
-    # +io_waitreadable_sleep+:: seconds to sleep in loop when no input data is available (DEFAULT_IO_WAITREADABLE_SLEEP)
+    # +io_wait_mode+:: how to wait when no input data is available (DEFAULT_IO_WAIT_MODE)
+    # +io_wait_available+:: fraction of a second to wait in loop when no input data is available (DEFAULT_IO_WAIT_AVAILABLE)
     # +io_cmd_timeout+:: time in seconds to wait until complete line of data is expected (DEFAULT_IO_CMD_TIMEOUT, nil => disabled test)
     # +io_buffer_chunk_size+:: size of chunks (bytes) to read non-blocking from socket (DEFAULT_IO_BUFFER_CHUNK_SIZE)
     # +io_buffer_max_size+:: max size of buffer (max line length) until \lf ist expected (DEFAULT_IO_BUFFER_MAX_SIZE, nil => disabled test)
@@ -255,7 +261,9 @@ module MidiSmtpServer
       max_connections: nil,
       crlf_mode: nil,
       do_dns_reverse_lookup: nil,
-      io_waitreadable_sleep: nil,
+      io_wait_mode: nil,
+      io_wait_available: nil,
+      io_waitreadable_sleep: nil, # deprecated, but for compatibility
       io_cmd_timeout: nil,
       io_buffer_chunk_size: nil,
       io_buffer_max_size: nil,
@@ -343,7 +351,7 @@ module MidiSmtpServer
             # test for all local valid ipv4 and ipv6 ip_addresses
             # check question on stackoverflow for details
             # https://stackoverflow.com/questions/59770803/identify-all-relevant-ip-addresses-from-ruby-socket-ip-address-list
-            ip_addresses_for_host << a.ip_address if \
+            ip_addresses_for_host << a.ip_address if
               (a.ipv4? &&
                 (a.ipv4_loopback? || a.ipv4_private? ||
                  !(a.ipv4_loopback? || a.ipv4_private? || a.ipv4_multicast?)
@@ -391,10 +399,21 @@ module MidiSmtpServer
       # always prevent auto resolving hostnames to prevent a delay on socket connect
       BasicSocket.do_not_reverse_lookup = true
       # do reverse lookups manually if enabled by io.addr and io.peeraddr
+      # rubocop: disable-next Style/RedundantCondition
       @do_dns_reverse_lookup = do_dns_reverse_lookup.nil? ? true : do_dns_reverse_lookup
 
+      # deprecated compatibility
+      raise 'Not allowed to use io_wait_available and deprecated io_waitreadable_sleep at the same time!' unless io_waitreadable_sleep.nil? || io_wait_available.nil?
+      unless io_waitreadable_sleep.nil?
+        io_wait_available = io_waitreadable_sleep
+        io_wait_mode = :IO_WAIT_SLEEP
+        @logger_protected.warn('Deprecated: "io_waitreadable_sleep" was replaced! Please use "io_wait_available" and "io_wait_mode" instead.')
+      end
       # io and buffer settings
-      @io_waitreadable_sleep = io_waitreadable_sleep.nil? ? DEFAULT_IO_WAITREADABLE_SLEEP : io_waitreadable_sleep
+      @io_wait_mode = io_wait_mode.nil? ? DEFAULT_IO_WAIT_MODE : io_wait_mode
+      raise "Unknown io wait mode #{@io_wait_mode} was given!" unless IO_WAIT_MODES.include?(@io_wait_mode)
+      @io_wait_available = io_wait_available.nil? ? DEFAULT_IO_WAIT_AVAILABLE : io_wait_available
+      raise 'Value of time must be positive (io_wait_available)' unless @io_wait_available.positive?
       @io_cmd_timeout = io_cmd_timeout.nil? ? DEFAULT_IO_CMD_TIMEOUT : io_cmd_timeout
       @io_buffer_chunk_size = io_buffer_chunk_size.nil? ? DEFAULT_IO_BUFFER_CHUNK_SIZE : io_buffer_chunk_size
       @io_buffer_max_size = io_buffer_max_size.nil? ? DEFAULT_IO_BUFFER_MAX_SIZE : io_buffer_max_size
@@ -769,10 +788,25 @@ module MidiSmtpServer
                 io_buffer_line_lf = io_buffer.index("\n")
               end
 
-            # ignore exception when no input data is available yet
+            # handle no input data is available yet
             rescue IO::WaitReadable
-              # but wait a few moment to slow down system utilization
-              sleep @io_waitreadable_sleep
+              if @io_wait_mode == :IO_WAIT_SLEEP
+                # reduce the processing speed and thereby the system
+                # utilization by sleeping the configured time
+                sleep @io_wait_available
+              else
+                # block on the underlying socket until new data has arrived,
+                # but wake up at least after wait time so that the loop
+                # keeps checking shutdown? and io_cmd_timeout
+                # (io.to_io resolves the plain socket behind an
+                # OpenSSL::SSL::SSLSocket, otherwise wait_readable is not defined
+                io.to_io.wait_readable(@io_wait_available)
+              end
+
+            # during TLS (re)negotiation a read may require the socket
+            # to become writable first. this always waits by event
+            rescue IO::WaitWritable
+              io.to_io.wait_writable(@io_wait_available)
             end
 
             # check if io_buffer is filled and contains already a line-feed
@@ -946,8 +980,8 @@ module MidiSmtpServer
             # check whether to answer as HELO or EHLO
             case line
               when (/^EHLO/i)
-                # rubocop:disable Style/StringConcatenation
                 # reply supported extensions
+                # rubocop: disable-next Style/StringConcatenation
                 return "250-#{session[:ctx][:server][:helo_response].to_s.strip}\r\n" +
                        # respond with 8BITMIME extension
                        (@internationalization_extensions ? "250-8BITMIME\r\n" : '') +
@@ -960,7 +994,6 @@ module MidiSmtpServer
                        # respond with STARTTLS if available and not already enabled
                        (@encrypt_mode == :TLS_FORBIDDEN || encrypted?(session[:ctx]) ? '' : "250-STARTTLS\r\n") +
                        '250 OK'
-                # rubocop:enable all
               else
                 # reply ok only
                 return "250 OK #{session[:ctx][:server][:helo_response].to_s.strip}".strip

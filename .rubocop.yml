@@ -1,4 +1,4 @@
-require:
+plugins:
   - rubocop-performance
   - rubocop-minitest
 
@@ -6,6 +6,9 @@ AllCops:
   TargetRubyVersion: 2.6
   NewCops: enable
   SuggestExtensions: false
+
+Gemspec/DeprecatedAttributeAssignment:
+  Enabled: false
 
 Layout/EmptyLinesAroundModuleBody:
   EnforcedStyle: empty_lines

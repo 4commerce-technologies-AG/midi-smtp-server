@@ -38,7 +38,7 @@ module MidiSmtpServer
       @smtpd_return_code = smtpd_return_code
       @smtpd_return_text = smtpd_return_text
       # call inherited constructor
-      super msg
+      super(msg)
     end
 
     def smtpd_result
@@ -52,7 +52,7 @@ module MidiSmtpServer
 
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 421, 'Service too busy or not available, closing transmission channel'
+      super(msg, 421, 'Service too busy or not available, closing transmission channel')
     end
 
   end
@@ -63,7 +63,7 @@ module MidiSmtpServer
 
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 450, 'Requested mail action not taken: mailbox unavailable'
+      super(msg, 450, 'Requested mail action not taken: mailbox unavailable')
     end
 
   end
@@ -73,7 +73,7 @@ module MidiSmtpServer
 
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 451, 'Requested action aborted: local error in processing'
+      super(msg, 451, 'Requested action aborted: local error in processing')
     end
 
   end
@@ -83,7 +83,7 @@ module MidiSmtpServer
 
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 452, 'Requested action not taken: insufficient system storage'
+      super(msg, 452, 'Requested action not taken: insufficient system storage')
     end
 
   end
@@ -94,7 +94,7 @@ module MidiSmtpServer
 
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 500, 'Syntax error, command unrecognised or error in parameters or arguments'
+      super(msg, 500, 'Syntax error, command unrecognised or error in parameters or arguments')
     end
 
   end
@@ -104,7 +104,7 @@ module MidiSmtpServer
 
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 501, 'Syntax error in parameters or arguments'
+      super(msg, 501, 'Syntax error in parameters or arguments')
     end
 
   end
@@ -114,7 +114,7 @@ module MidiSmtpServer
 
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 502, 'Command not implemented'
+      super(msg, 502, 'Command not implemented')
     end
 
   end
@@ -124,7 +124,7 @@ module MidiSmtpServer
 
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 503, 'Bad sequence of commands'
+      super(msg, 503, 'Bad sequence of commands')
     end
 
   end
@@ -134,7 +134,7 @@ module MidiSmtpServer
 
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 504, 'Command parameter not implemented'
+      super(msg, 504, 'Command parameter not implemented')
     end
 
   end
@@ -144,7 +144,7 @@ module MidiSmtpServer
 
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 521, 'Service does not accept mail'
+      super(msg, 521, 'Service does not accept mail')
     end
 
   end
@@ -155,7 +155,7 @@ module MidiSmtpServer
 
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 550, 'Requested action not taken: mailbox unavailable'
+      super(msg, 550, 'Requested action not taken: mailbox unavailable')
     end
 
   end
@@ -165,7 +165,7 @@ module MidiSmtpServer
 
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 552, 'Requested mail action aborted: exceeded storage allocation'
+      super(msg, 552, 'Requested mail action aborted: exceeded storage allocation')
     end
 
   end
@@ -175,7 +175,7 @@ module MidiSmtpServer
 
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 553, 'Requested action not taken: mailbox name not allowed'
+      super(msg, 553, 'Requested action not taken: mailbox name not allowed')
     end
 
   end
@@ -185,7 +185,7 @@ module MidiSmtpServer
 
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 554, 'Transaction failed'
+      super(msg, 554, 'Transaction failed')
     end
 
   end
@@ -197,7 +197,7 @@ module MidiSmtpServer
 
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 432, 'Password transition is needed'
+      super(msg, 432, 'Password transition is needed')
     end
 
   end
@@ -207,7 +207,7 @@ module MidiSmtpServer
 
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 454, 'Temporary authentication failure'
+      super(msg, 454, 'Temporary authentication failure')
     end
 
   end
@@ -217,7 +217,7 @@ module MidiSmtpServer
 
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 530, 'Authentication required'
+      super(msg, 530, 'Authentication required')
     end
 
   end
@@ -227,7 +227,7 @@ module MidiSmtpServer
 
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 534, 'Authentication mechanism is too weak'
+      super(msg, 534, 'Authentication mechanism is too weak')
     end
 
   end
@@ -237,7 +237,7 @@ module MidiSmtpServer
 
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 535, 'Authentication credentials invalid'
+      super(msg, 535, 'Authentication credentials invalid')
     end
 
   end
@@ -247,7 +247,7 @@ module MidiSmtpServer
 
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 538, 'Encryption required for requested authentication mechanism'
+      super(msg, 538, 'Encryption required for requested authentication mechanism')
     end
 
   end
@@ -259,7 +259,7 @@ module MidiSmtpServer
 
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 454, 'TLS not available'
+      super(msg, 454, 'TLS not available')
     end
 
   end
@@ -269,7 +269,7 @@ module MidiSmtpServer
 
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 530, 'Encryption required, must issue STARTTLS command first'
+      super(msg, 530, 'Encryption required, must issue STARTTLS command first')
     end
 
   end
@@ -281,7 +281,7 @@ module MidiSmtpServer
 
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 500, 'Bad input, PIPELINING is not allowed'
+      super(msg, 500, 'Bad input, PIPELINING is not allowed')
     end
 
   end
@@ -293,7 +293,7 @@ module MidiSmtpServer
 
     def initialize(msg = nil)
       # call inherited constructor
-      super msg, 500, 'Bad input, Lines must be terminated by CRLF sequence'
+      super(msg, 500, 'Bad input, Lines must be terminated by CRLF sequence')
     end
 
   end

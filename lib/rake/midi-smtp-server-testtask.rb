@@ -8,7 +8,7 @@ module Rake
   class MidiSmtpServerTestTask < TestTask
 
     # Create a testing task.
-    # rubocop: disable Lint/MissingSuper
+    # rubocop: disable-next Lint/MissingSuper
     def initialize(name)
       @name = name
       @libs = ['lib']
@@ -28,7 +28,6 @@ module Rake
       yield self if block_given?
       define
     end
-    # rubocop: enable Lint/MissingSuper
 
     def desc=(description)
       @description = description

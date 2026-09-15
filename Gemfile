@@ -1,4 +1,4 @@
-source "https://rubygems.org"
+source 'https://rubygems.org'
 ruby RUBY_VERSION
 gemspec
 
@@ -7,14 +7,14 @@ group :development do
   gem 'bundler'
   gem 'rake'
   gem 'rubocop'
-  gem 'rubocop-performance'
   gem 'rubocop-minitest'
+  gem 'rubocop-performance'
 end
 
 # stuff useful while testing
 group :testing do
-  gem 'openssl'
+  gem 'mail', '>= 2.9.1'
   gem 'minitest'
   gem 'net-smtp', '>= 0.3.1'
-  gem 'mail'
+  gem 'openssl'
 end

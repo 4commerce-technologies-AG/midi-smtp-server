@@ -26,14 +26,14 @@ class ProcessLineUnitTest < Minitest::Test
   # with same session object. so its just initialized
   # once as a class var but setup will link each test
   # the instance vars
-  # rubocop:disable Style/ClassVars
+  # rubocop: disable-next Style/ClassVars
   @@smtpd = nil
+  # rubocop: disable-next Style/ClassVars
   @@session = nil
-  # rubocop:enable Style/ClassVars
 
   # initialize once before tests
   def preliminary_setup_smtpd
-    # rubocop:disable Style/ClassVars
+    # rubocop: disable-next Style/ClassVars
     @@smtpd = MidiSmtpServerProcessLineTest.new(
       ports: '2525',
       hosts: '127.0.0.1',
@@ -43,15 +43,13 @@ class ProcessLineUnitTest < Minitest::Test
       pipelining_extension: false,
       internationalization_extensions: true
     )
-    # rubocop:enable Style/ClassVars
   end
 
   # initialize once before tests
   def preliminary_setup_session
     # prepare a session hash
-    # rubocop:disable Style/ClassVars
+    # rubocop: disable-next Style/ClassVars
     @@session = {}
-    # rubocop:enable Style/ClassVars
     @@smtpd.process_reset_session(@@session, connection_initialize: true)
     # enter some valid status
     @@session[:ctx][:server][:local_host] = 'localhost.local'
