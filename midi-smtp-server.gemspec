@@ -29,5 +29,9 @@ Gem::Specification.new do |s|
     'documentation_uri' => "https://www.rubydoc.info/gems/midi-smtp-server/#{MidiSmtpServer::VERSION::STRING}",
     'wiki_uri'          => 'https://midi-smtp-server.readthedocs.io/'
   }
-  s.required_ruby_version = '>= 2.6.0'
+  s.required_ruby_version = '>= 2.7.0'
+
+  # no longer default stdlib gems
+  s.add_dependency 'base64'
+  s.add_dependency 'logger'
 end
