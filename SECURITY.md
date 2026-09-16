@@ -8,18 +8,18 @@ with security updates.
 | Version | Supported                     |
 | ------- | ----------------------------- |
 | 3.x.y   | Yes                           |
-| 2.3.y   | Critical security issues only |
-|         | EOL end of 2023               |
-| < 2.3   | No                            |
+| <= 3.2  | Critical security issues only |
+|         | EOL end of 2026               |
+| <  3.x  | No                            |
 
 #### Supported Ruby
 
 | Version | Supported                     |
 | ------- | ----------------------------- |
-| 3.2.y   | Yes                           |
-| 3.1.y   | Yes                           |
-| 3.0.y   | Yes                           |
-| < 3.0   | No                            |
+| 4.0.y   | Yes                           |
+| 3.4.y   | Yes                           |
+| 3.3.y   | Yes                           |
+| <= 3.2  | No, but function down to 2.7  |
 
 #### Reporting a Vulnerability
 

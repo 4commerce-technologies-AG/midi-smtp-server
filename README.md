@@ -159,10 +159,13 @@ We suggest everybody using MidiSmtpServer to switch at least to latest 2.3.y. or
 For upgrades from previous versions or outdated _MiniSmtpServer_ gem you may follow the guides (see appendix) how to change your existing code to be compatible with the latest releases.
 
 
-#### Latest release: 3.2.1 (2023-08-15)
+#### Latest release: 3.3.1 (2026-09-16)
 
-1. New feature [proxy](https://midi-smtp-server.readthedocs.io/feature_proxy) ([check issue 49](https://github.com/4commerce-technologies-AG/midi-smtp-server/issues/49))
-2. mkdocs update for readthedocs
+1. Updates and fixes for Ruby versions 3.3, 3.4 and 4.0
+2. New feature and optimization for [IO wait](https://midi-smtp-server.readthedocs.io/feature_load_balancing) by event mode
+3. Deprecate `io_waitreadable_sleep` in favor of `io_wait_mode` and `io_wait_available`
+4. Test fixes for newer Ruby (3.3+) and OS-specific socket behaviour
+5. mkdocs update for readthedocs
 
 
 #### Changelog history
@@ -205,4 +208,4 @@ Author: [Tom Freudenberg](http://about.me/tom.freudenberg)
 
 [MidiSmtpServer Class](https://github.com/4commerce-technologies-AG/midi-smtp-server/) is inspired from [MiniSmtpServer Class](https://github.com/aarongough/mini-smtp-server) and code written by [Aaron Gough](https://github.com/aarongough) and [Peter Cooper](https://github.com/4commerce-technologies-AG/midi-smtp-server#author--credits)
 
-Copyright (c) 2014-2023 [Tom Freudenberg](https://github.com/TomFreudenberg), [4commerce technologies AG](https://www.4commerce.de/), released under the MIT license
+Copyright (c) 2014-2026 [Tom Freudenberg](https://github.com/TomFreudenberg), [4commerce technologies AG](https://www.4commerce.de/), released under the MIT license

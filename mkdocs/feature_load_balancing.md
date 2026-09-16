@@ -24,13 +24,19 @@ If you need 1.000.000 mail per hour than probably 416 simultaneously processed t
 
 The number of `max_connections` should always be equal or higher than `max_processings`. In the above examples it should be fine to use 512 or 1024 if your system does fit with its resources. If an unlimited number of concurrent TCP connections should be allowed, then set the value for `max_connections` to `nil` (which is also the default when not specified).
 
-In addition it is possible to adjust the idle sleep time when no input data is available while in loop for commands and data. Time in fraction of seconds is available thru `io_waitreadable_sleep` option. The default value is `0.1` seconds but can be adjusted up to e.g. `0.01` for faster processings. Be aware that faster processing may also raise the overall system utilization and have that in mind when tuning your environment.
+In addition it is possible to adjust how the server waits while no input data is available in loop for commands and data. This behaviour is controlled by the `io_wait_mode` option, which supports two modes. With the default mode `:IO_WAIT_EVENT` the loop does not sleep but blocks event driven on the socket and continues immediately when new data has arrived, which enables the fastest possible processing. With mode `:IO_WAIT_SLEEP` the loop instead sleeps for a fixed time on each cycle when no input data is available, which reduces the processing speed and thereby the overall system utilization. The waiting time in fraction of seconds is set thru the `io_wait_available` option — it is used as the sleep time in `:IO_WAIT_SLEEP` mode and as the maximum interval to wake up and re-check in `:IO_WAIT_EVENT` mode. Sensible values range from `0.05` up to `1` second in steps of `0.05`.
 
 <br>
 
 !!! Note
 
-    The current default value `0.1` for `io_waitreadable_sleep` is deprecated with release 3.1.1 and will be replaced by `0.03` as the new default value in a future version.
+    From release 3.3.1 the loop is able to block event driven on the socket. `:IO_WAIT_EVENT` has become the new default IO mode with a default `io_wait_available` time of `0.1` seconds. This enables faster processing while it also lowers the idle system utilization. Be aware that faster processing may also raise the overall system utilization and have that in mind when tuning your environment.
+
+<br>
+
+!!! Note
+
+    The former `io_waitreadable_sleep` option is deprecated from release 3.3.1 on and has been replaced by `io_wait_mode` and `io_wait_available`. For backward compatibility it is still accepted: when set, its value is applied as `io_wait_available` together with mode `:IO_WAIT_SLEEP`, and a deprecation warning is logged. It cannot be combined with `io_wait_available` at the same time.
 
 <br>
 
