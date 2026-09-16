@@ -92,7 +92,7 @@ Use the component in your project sources by:
 
 When a `Gemfile` handles your dependencies, please consider to use the [pessimistic operator](https://thoughtbot.com/blog/rubys-pessimistic-operator) at least:
 
-  `gem 'midi-smtp-server', '~> 3.1.2''`
+  `gem 'midi-smtp-server', '~> 3.3.2''`
 
 All changes by PATCH versions are always functional and compatible with no issues on update!
 
@@ -159,7 +159,7 @@ We suggest everybody using MidiSmtpServer to switch at least to latest 2.3.y. or
 For upgrades from previous versions or outdated _MiniSmtpServer_ gem you may follow the guides (see appendix) how to change your existing code to be compatible with the latest releases.
 
 
-#### Latest release: 3.3.1 (2026-09-16)
+#### Latest release: 3.3.2 (2026-09-16)
 
 1. Updates and fixes for Ruby versions 3.3, 3.4 and 4.0
 2. New feature and optimization for [IO wait](https://midi-smtp-server.readthedocs.io/feature_load_balancing) by event mode
