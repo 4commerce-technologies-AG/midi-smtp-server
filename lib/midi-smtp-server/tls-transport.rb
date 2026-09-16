@@ -75,7 +75,7 @@ module MidiSmtpServer
         # try to load certificate and key
         cert_lines = File.read(@cert_path.to_s).lines
         # check if the cert file contains a chain of certs
-        cert_indexes = cert_lines.each_with_index.map { |line, index| index if line.downcase.include?('-begin certificate-') }.compact
+        cert_indexes = cert_lines.each_with_index.filter_map { |line, index| index if line.downcase.include?('-begin certificate-') }
         # create each cert in the chain
         certs = []
         cert_indexes.each_with_index do |cert_index, current_index|

@@ -6,6 +6,37 @@ For upgrades from previous versions or outdated MiniSmtpServer gem you may follo
 
 <br>
 
+### Upgrade to 3.3.x
+
+If you are already using MidiSmtpServer 3.x it is a straight forward path to get your code ready for MidiSmtpServer version 3.3.x. Most important for the 3.3.x release:
+
+* bound to Ruby 2.7+ (Ruby 2.6 is no longer supported)
+* tested on Ruby 3.3, 3.4 and 4.0
+* the loop waiting for input data is now event driven by default, which makes processing significantly faster
+* the option `io_waitreadable_sleep` is deprecated and replaced by `io_wait_mode` and `io_wait_available`
+
+<h4>MINOR INCOMPATIBILITY to 3.2.x.</h4>
+
+The option `io_waitreadable_sleep` is still accepted for backward compatibility, but it logs a deprecation warning and cannot be combined with `io_wait_available`. When set, its value is applied as `io_wait_available` together with mode `:IO_WAIT_SLEEP`, so your service behaves exactly as before.
+
+Please use:
+
+```rb
+daemon = MySmtpd.new(ports: '2525', hosts: '127.0.0.1', io_wait_mode: :IO_WAIT_SLEEP, io_wait_available: 0.1)
+```
+
+instead of:
+
+```rb
+daemon = MySmtpd.new(ports: '2525', hosts: '127.0.0.1', io_waitreadable_sleep: 0.1)
+```
+
+If you never set `io_waitreadable_sleep`, there is nothing to change in your code: without the option your service automatically uses the new event driven default `:IO_WAIT_EVENT`, which is the fastest choice. See [Load Balancing](feature_load_balancing.md) for all details on `io_wait_mode` and `io_wait_available`.
+
+Anything else is still compatible to previous releases >=3.0.0.
+
+<br>
+
 ### Upgrade to 3.x
 
 If you are already using MidiSmtpServer 2.x it is an easy forward path to get your code ready for MidiSmtpServer version 3.x. Most important for the 3.x release:
